@@ -1,0 +1,39 @@
+{
+  "name": "hey",
+  "version": "1.0.0",
+  "private": true,
+  "main": "electron/main.js",
+  "homepage": ".",
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-scripts": "5.0.1"
+  },
+  "devDependencies": {
+    "electron": "^39.2.2",
+    "electron-builder": "^26.0.12",
+    "concurrently": "^9.0.0"
+  },
+  "scripts": {
+    "start-react": "cd react && npm run dev",
+    "start-electron": "electron .",
+    "dev": "concurrently \"npm run start-react\" \"npm run start-electron\""
+  },
+  "build": {
+    "win": {
+      "signAndEditExecutable": false
+    }
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  }
+}
