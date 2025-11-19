@@ -11,7 +11,24 @@ function createWindow() {
   });
 
   // Load React in dev mode
-  win.loadURL("http://localhost:5173");
+  // win.loadURL("http://localhost:5173");
+
+  // PROD MODE - correct
+  const indexPath = path.resolve(
+    __dirname,
+    "..",
+    "react",
+    "dist",
+    "index.html"
+  );
+  console.log(
+    "path resolve",
+    path.resolve(__dirname, "..", "react", "dist", "index.html")
+  );
+
+  console.log("Loading React from:", indexPath);
+
+  win.loadFile(indexPath);
 
   win.webContents.openDevTools();
 }
