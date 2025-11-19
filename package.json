@@ -1,12 +1,13 @@
 {
-  "name": "hey",
+  "name": "gnani",
   "version": "1.0.0",
   "private": true,
   "main": "electron/main.js",
   "scripts": {
     "start-react": "cd react && npm run dev",
+    "start-electron-dev": "cross-env NODE_ENV=development electron .",
     "start-electron": "electron .",
-    "dev": "concurrently \"npm run start-react\" \"npm run start-electron\"",
+    "dev": "concurrently \"npm run start-react\" \"npm run start-electron-dev\"",
     "build-react": "cd react && npm run build",
     "build": "npm run build-react && electron-builder"
   },
@@ -15,9 +16,11 @@
     "react-dom": "^18.2.0"
   },
   "devDependencies": {
-    "concurrently": "^9.0.0",
+    "concurrently": "^9.2.1",
+    "cross-env": "^10.1.0",
     "electron": "^39.2.2",
-    "electron-builder": "^26.0.12"
+    "electron-builder": "^26.0.12",
+    "electron-reloader": "^1.2.3"
   },
   "build": {
     "appId": "com.hey.app",
