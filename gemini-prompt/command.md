@@ -1,0 +1,3 @@
+Context load:
+
+Get-Content D:\learning\gnani-rnd\gemini-prompt\gnani.context.md | gemini "You are my Senior Electron + React Engineer. Load the entire context provided via stdin. Say 'Context loaded' once complete."

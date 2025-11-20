@@ -1,0 +1,107 @@
+// electron/ipc/stream.js
+const { ipcMain } = require('electron');
+const logger = require('../utils/logger');
+
+function setupStreamIPC(streamingClient, ttsPlayer) {
+  logger.info('Setting up Stream IPC channels.');
+
+  // --- Main -> Renderer ---
+  streamingClient.on('stream:connected', (payload) => {
+    logger.debug('Sending stream:connected to renderer.');
+    if (global.mainWindow) {
+      global.mainWindow.webContents.send('stream:connected', payload);
+    }
+  });
+
+  streamingClient.on('stream:disconnected', (payload) => {
+    logger.debug('Sending stream:disconnected to renderer.');
+    if (global.mainWindow) {
+      global.mainWindow.webContents.send('stream:disconnected', payload);
+    }
+  });
+
+  streamingClient.on('stream:partial', (payload) => {
+    logger.debug('Sending stream:partial to renderer.', payload.text);
+    if (global.mainWindow) {
+      global.mainWindow.webContents.send('stream:partial', payload);
+    }
+  });
+
+  streamingClient.on('stream:final', (payload) => {
+    logger.debug('Sending stream:final to renderer.', payload.text);
+    if (global.mainWindow) {
+      global.mainWindow.webContents.send('stream:final', payload);
+    }
+  });
+
+  streamingClient.on('stream:tts_chunk', (payload) => {
+    logger.debug(`Received stream:tts_chunk from client for segment ${payload.segment_id}. Passing to TTS Player.`);
+    // Pass to TTS Player for actual playback
+    ttsPlayer.playTtsChunk(payload.segment_id, payload.pcm_base64, payload.sampleRate, payload.format);
+    // Also forward to renderer if UI needs to know about TTS chunks directly
+    if (global.mainWindow) {
+      global.mainWindow.webContents.send('stream:tts_chunk', payload);
+    }
+  });
+
+  streamingClient.on('stream:error', (payload) => {
+    logger.error('Sending stream:error to renderer.', payload);
+    if (global.mainWindow) {
+      global.mainWindow.webContents.send('stream:error', payload);
+    }
+  });
+
+  streamingClient.on('stream:metrics', (payload) => {
+    // logger.debug('Sending stream:metrics to renderer.', payload); // Can be verbose
+    if (global.mainWindow) {
+      global.mainWindow.webContents.send('stream:metrics', payload);
+    }
+  });
+
+  ttsPlayer.on('tts:started', (segmentId) => {
+    logger.debug(`Sending tts:started for ${segmentId} to renderer.`);
+    if (global.mainWindow) {
+      global.mainWindow.webContents.send('tts:started', { segment_id: segmentId });
+    }
+  });
+
+  ttsPlayer.on('tts:ended', (segmentId) => {
+    logger.debug(`Sending tts:ended for ${segmentId} to renderer.`);
+    if (global.mainWindow) {
+      global.mainWindow.webContents.send('tts:ended', { segment_id: segmentId });
+    }
+  });
+
+  ttsPlayer.on('tts:error', (payload) => {
+    logger.error('Sending tts:error to renderer.', payload);
+    if (global.mainWindow) {
+      global.mainWindow.webContents.send('tts:error', payload);
+    }
+  });
+  
+  // --- Renderer -> Main ---
+  ipcMain.on('stream:start', (event, options) => {
+    logger.info('Received stream:start from renderer.', options);
+    streamingClient.init(options); // Re-init client with potentially new options
+    streamingClient.connect();
+    streamingClient.startAudioStreaming();
+  });
+
+  ipcMain.on('stream:stop', () => {
+    logger.info('Received stream:stop from renderer.');
+    streamingClient.stopAudioStreaming();
+    streamingClient.disconnect();
+  });
+
+  ipcMain.handle('stream:getStatus', async () => {
+    logger.info('Received stream:getStatus request from renderer.');
+    return streamingClient.getStatus();
+  });
+
+  ipcMain.on('stream:setEndpoint', (event, cfg) => {
+    logger.info('Received stream:setEndpoint from renderer.', cfg);
+    streamingClient.setEndpoint(cfg);
+  });
+}
+
+module.exports = { setupStreamIPC };

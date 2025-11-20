@@ -1,0 +1,19 @@
+{
+  "endpoint": "wss://api.example.com/v1/stream",
+  "apiKey": "<REPLACE_WITH_YOUR_API_KEY>",
+  "chunkMs": 200,
+  "sampleRate": 16000,
+  "reconnect": {
+    "maxRetries": 10,
+    "baseMs": 500,
+    "maxMs": 60000,
+    "factor": 2,
+    "jitter": 0.1
+  },
+  "tls": {
+    "rejectUnauthorized": true
+  },
+  "maxBufferSeconds": 5,
+  "backendPreferred": "websocket",
+  "debugLogRawAudio": false
+}
