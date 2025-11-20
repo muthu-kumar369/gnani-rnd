@@ -31,13 +31,13 @@ NO backend or Electron implementation is needed here.
 ------------------------------------------------------------
 1. **Do NOT redesign UI components.**  
    Use the same files you built in Stage 1:
-   - GnaniCore.jsx
-   - MicButton.jsx
-   - Waveform.jsx
-   - StatusBar.jsx
-   - ResponseConsole.jsx
+   - GnaniCore.tsx
+   - MicButton.tsx
+   - Waveform.tsx
+   - StatusBar.tsx
+   - ResponseConsole.tsx
    - useIPC.js
-   - App.jsx
+   - App.tsx
 
 2. **Extend them with real logic**:
    - Real microphone start/stop (with fallback for permission errors)

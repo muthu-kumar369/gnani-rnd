@@ -4,33 +4,39 @@ const logger = require('../../utils/logger');
 class WebRTCVadBackend {
   constructor() {
     this.options = {};
+    this.speechCounter = 0;
+    this.isCurrentlySpeech = false;
     logger.info('WebRTCVAD Backend initialized (mock).');
   }
 
   init(options) {
-    this.options = {
-      sampleRate: options.sampleRate || 16000,
-      frameSize: options.frameSize || 480, // 30ms at 16kHz
-      aggressiveness: options.aggressiveness || 3, // 0-3
-    };
+    this.options = { ...options };
     logger.info('WebRTCVAD Backend init options:', this.options);
     return true; // Simulate successful initialization
   }
 
   process(frame) {
-    // In a real implementation:
-    // const vad = require('node-webrtc-vad');
-    // return vad.process(frame, this.options.sampleRate, this.options.aggressiveness);
+    // This is a more realistic mock. It will simulate a block of speech
+    // for a certain number of frames, then a block of silence.
+    // This allows the VadManager's state machine to work correctly.
     
-    // Mocked behavior: randomly return speech or non-speech
-    const isSpeech = Math.random() > 0.5; // 50% chance of speech
-    // logger.debug(`WebRTCVAD Mock Processed frame: isSpeech = ${isSpeech}`);
-    return { speech: isSpeech };
+    this.speechCounter++;
+
+    // Every 20 frames (approx 2 seconds), toggle between speech and silence
+    if (this.speechCounter % 20 === 0) {
+      this.isCurrentlySpeech = !this.isCurrentlySpeech;
+      logger.debug(`WebRTCVAD Mock: Toggling speech state to ${this.isCurrentlySpeech}`);
+    }
+
+    if (this.speechCounter > 1000) { // Reset periodically
+        this.speechCounter = 0;
+    }
+    
+    return { speech: this.isCurrentlySpeech };
   }
 
   cleanup() {
     logger.info('WebRTCVAD Backend cleanup (mock).');
-    // In a real implementation, release native resources
   }
 }
 

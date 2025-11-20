@@ -75,18 +75,9 @@ class VadManager extends EventEmitter {
             if (this.nonSpeechFramesCount >= this.config.speechEndThreshold) {
               this._endSpeechSegment();
             }
-          } else if (this.state === "monitoring") {
-            // Reset monitoring if non-speech after some initial speech frames
-            this.nonSpeechFramesCount++;
-            if (
-              this.nonSpeechFramesCount >=
-              this.config.speechEndThreshold / 2
-            ) {
-              // Shorter reset for monitoring
-              this.setState("idle");
-              this.speechBuffer = [];
-            }
           }
+          // The 'monitoring' state should persist until explicitly stopped or until speech is found.
+          // The previous logic that caused it to revert to 'idle' is removed.
         }
       })
       .catch((error) => {

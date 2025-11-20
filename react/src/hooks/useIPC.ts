@@ -1,85 +1,106 @@
 // /react/src/hooks/useIPC.ts
-// @ts-nocheck
-import { useEffect, useCallback, useRef } from 'react';
+import { useEffect, useState, useRef } from 'react';
 
-// Define the shape of the gnani API on the window object for TypeScript
 declare global {
   interface Window {
     gnani?: {
       send: (channel: string, data?: any) => void;
       on: (channel: string, callback: (...args: any[]) => void) => () => void;
-      invoke: (channel: string, ...args: any[]) => Promise<any>;
-      startMic: () => void;
-      stopMic: () => void;
-      wake: {
-        startWakeWord: () => void;
-        stopWakeWord: () => void;
-        getWakeStatus: () => Promise<any>;
-      };
-      vad: {
-        startVAD: () => void;
-        stopVAD: () => void;
-        getVADStatus: () => Promise<any>;
-        setAggressiveness: (level: number) => void;
-      };
-      stream: {
-        startStream: (options?: any) => void;
-        stopStream: () => void;
-        setEndpoint: (cfg: any) => void;
-        getStatus: () => Promise<any>;
-      };
     };
   }
 }
 
-const useIPC = () => {
-  const listenersRef = useRef({});
+export type AppStatus = 'idle' | 'listening' | 'thinking' | 'speaking';
+
+export interface Message {
+  id: string;
+  text: string;
+  sender: 'user' | 'ai';
+  isFinal?: boolean;
+}
+
+export const useIPC = () => {
+  const [status, setStatus] = useState<AppStatus>('idle');
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [isWakeWordReady, setIsWakeWordReady] = useState(false);
+  const [isVADReady, setIsVADReady] = useState(false);
+  
+  // Ref to track if TTS is playing for a more robust state transition
+  const isSpeakingRef = useRef(false);
 
   useEffect(() => {
-    if (!window.gnani) {
-      console.warn("window.gnani API not available. Running in a non-Electron environment or preload script not loaded.");
-      return;
+    if (!window.gnani) return;
+
+    const unsubs: (() => void)[] = [];
+
+    // System Status Listeners
+    unsubs.push(window.gnani.on('wake:status', ({ state }) => setIsWakeWordReady(state === 'ready')));
+    unsubs.push(window.gnani.on('vad:status', ({ state }) => setIsVADReady(state === 'ready')));
+
+    // Main State Machine Logic
+    unsubs.push(window.gnani.on('wake:triggered', () => {
+      console.log('Wake triggered, setting status to listening');
+      setStatus('listening');
+    }));
+    
+    unsubs.push(window.gnani.on('audio:listening', (isListening) => {
+      setStatus(prevStatus => {
+        if (isListening) {
+          return 'listening';
+        }
+        // Only transition from listening to thinking if mic turns off
+        if (!isListening && prevStatus === 'listening') {
+          return 'thinking';
+        }
+        return prevStatus;
+      });
+    }));
+    
+    unsubs.push(window.gnani.on('audio:ended', () => {
+      setStatus(prevStatus => prevStatus === 'listening' ? 'thinking' : prevStatus);
+    }));
+
+    // AI Response (LLM) Listeners
+    unsubs.push(window.gnani.on('stream:partial', (response) => {
+      setStatus('speaking');
+      setMessages(prev => {
+          const existingMessage = prev.find(m => m.id === response.segment_id);
+          if (existingMessage) {
+              return prev.map(m => m.id === response.segment_id ? { ...m, text: response.text, isFinal: false } : m);
+          }
+          return [...prev, { id: response.segment_id, text: response.text, sender: 'ai', isFinal: false }];
+      });
+    }));
+
+    unsubs.push(window.gnani.on('stream:final', (response) => {
+      setMessages(prev => prev.map(m => m.id === response.segment_id ? { ...m, text: response.text, isFinal: true } : m));
+    }));
+    
+    // TTS Listeners
+    unsubs.push(window.gnani.on('tts:started', () => {
+      isSpeakingRef.current = true;
+      setStatus('speaking');
+    }));
+    
+    unsubs.push(window.gnani.on('tts:ended', () => {
+      isSpeakingRef.current = false;
+      setStatus('idle');
+    }));
+
+    // Cleanup on unmount
+    return () => {
+      unsubs.forEach(unsub => unsub());
+    };
+  }, []); // Empty dependency array is crucial to prevent re-subscribing
+
+  const sendUserMessage = (text: string) => {
+    const newMessage: Message = { id: Date.now().toString(), text, sender: 'user', isFinal: true };
+    setMessages(prev => [...prev, newMessage]);
+    if (window.gnani) {
+        window.gnani.send('user:message', text);
     }
-  }, []);
-
-  const send = useCallback((channel: string, data?: any) => {
-    window.gnani?.send(channel, data);
-  }, []);
-
-  const on = useCallback((channel: string, callback: (...args: any[]) => void) => {
-    return window.gnani?.on(channel, callback);
-  }, []);
-
-  const invoke = useCallback(async (channel: string, ...args: any[]) => {
-    return window.gnani?.invoke(channel, ...args);
-  }, []);
-
-  const startMic = useCallback(() => window.gnani?.startMic(), []);
-  const stopMic = useCallback(() => window.gnani?.stopMic(), []);
-  const startWakeWord = useCallback(() => window.gnani?.wake?.startWakeWord(), []);
-  const stopWakeWord = useCallback(() => window.gnani?.wake?.stopWakeWord(), []);
-  const startVAD = useCallback(() => window.gnani?.vad?.startVAD(), []);
-  const stopVAD = useCallback(() => window.gnani?.vad?.stopVAD(), []);
-  const setVADAggressiveness = useCallback((level: number) => window.gnani?.vad?.setAggressiveness(level), []);
-  const startStream = useCallback((options?: any) => window.gnani?.stream?.startStream(options), []);
-  const stopStream = useCallback(() => window.gnani?.stream?.stopStream(), []);
-  const setStreamEndpoint = useCallback((cfg: any) => window.gnani?.stream?.setEndpoint(cfg), []);
-
-  return {
-    send,
-    invoke,
-    on,
-    startMic,
-    stopMic,
-    startWakeWord,
-    stopWakeWord,
-    startVAD,
-    stopVAD,
-    setVADAggressiveness,
-    startStream,
-    stopStream,
-    setStreamEndpoint,
+    setStatus('thinking');
   };
-};
 
-export default useIPC;
+  return { status, messages, isWakeWordReady, isVADReady, setStatus, setMessages, sendUserMessage };
+};

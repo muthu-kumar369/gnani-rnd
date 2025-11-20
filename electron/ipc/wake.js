@@ -8,12 +8,16 @@ function setupWakeIPC(wakeManager) {
   // --- Main to Renderer ---
   wakeManager.on('wake-triggered', () => {
     logger.info('Notifying renderer: wake:triggered');
-    global.mainWindow.webContents.send('wake:triggered');
+    if (global.mainWindow && !global.mainWindow.isDestroyed()) {
+      global.mainWindow.webContents.send('wake:triggered');
+    }
   });
 
   wakeManager.on('status-changed', (status) => {
     logger.info(`Notifying renderer of wake status change: ${status}`);
-    global.mainWindow.webContents.send('wake:status', { state: status });
+    if (global.mainWindow && !global.mainWindow.isDestroyed()) {
+      global.mainWindow.webContents.send('wake:status', { state: status });
+    }
   });
 
   // --- Renderer to Main ---

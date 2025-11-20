@@ -8,28 +8,28 @@ function setupStreamIPC(streamingClient, ttsPlayer) {
   // --- Main -> Renderer ---
   streamingClient.on('stream:connected', (payload) => {
     logger.debug('Sending stream:connected to renderer.');
-    if (global.mainWindow) {
+    if (global.mainWindow && !global.mainWindow.isDestroyed()) {
       global.mainWindow.webContents.send('stream:connected', payload);
     }
   });
 
   streamingClient.on('stream:disconnected', (payload) => {
     logger.debug('Sending stream:disconnected to renderer.');
-    if (global.mainWindow) {
+    if (global.mainWindow && !global.mainWindow.isDestroyed()) {
       global.mainWindow.webContents.send('stream:disconnected', payload);
     }
   });
 
   streamingClient.on('stream:partial', (payload) => {
     logger.debug('Sending stream:partial to renderer.', payload.text);
-    if (global.mainWindow) {
+    if (global.mainWindow && !global.mainWindow.isDestroyed()) {
       global.mainWindow.webContents.send('stream:partial', payload);
     }
   });
 
   streamingClient.on('stream:final', (payload) => {
     logger.debug('Sending stream:final to renderer.', payload.text);
-    if (global.mainWindow) {
+    if (global.mainWindow && !global.mainWindow.isDestroyed()) {
       global.mainWindow.webContents.send('stream:final', payload);
     }
   });
@@ -39,42 +39,42 @@ function setupStreamIPC(streamingClient, ttsPlayer) {
     // Pass to TTS Player for actual playback
     ttsPlayer.playTtsChunk(payload.segment_id, payload.pcm_base64, payload.sampleRate, payload.format);
     // Also forward to renderer if UI needs to know about TTS chunks directly
-    if (global.mainWindow) {
+    if (global.mainWindow && !global.mainWindow.isDestroyed()) {
       global.mainWindow.webContents.send('stream:tts_chunk', payload);
     }
   });
 
   streamingClient.on('stream:error', (payload) => {
     logger.error('Sending stream:error to renderer.', payload);
-    if (global.mainWindow) {
+    if (global.mainWindow && !global.mainWindow.isDestroyed()) {
       global.mainWindow.webContents.send('stream:error', payload);
     }
   });
 
   streamingClient.on('stream:metrics', (payload) => {
     // logger.debug('Sending stream:metrics to renderer.', payload); // Can be verbose
-    if (global.mainWindow) {
+    if (global.mainWindow && !global.mainWindow.isDestroyed()) {
       global.mainWindow.webContents.send('stream:metrics', payload);
     }
   });
 
   ttsPlayer.on('tts:started', (segmentId) => {
     logger.debug(`Sending tts:started for ${segmentId} to renderer.`);
-    if (global.mainWindow) {
+    if (global.mainWindow && !global.mainWindow.isDestroyed()) {
       global.mainWindow.webContents.send('tts:started', { segment_id: segmentId });
     }
   });
 
   ttsPlayer.on('tts:ended', (segmentId) => {
     logger.debug(`Sending tts:ended for ${segmentId} to renderer.`);
-    if (global.mainWindow) {
+    if (global.mainWindow && !global.mainWindow.isDestroyed()) {
       global.mainWindow.webContents.send('tts:ended', { segment_id: segmentId });
     }
   });
 
   ttsPlayer.on('tts:error', (payload) => {
     logger.error('Sending tts:error to renderer.', payload);
-    if (global.mainWindow) {
+    if (global.mainWindow && !global.mainWindow.isDestroyed()) {
       global.mainWindow.webContents.send('tts:error', payload);
     }
   });

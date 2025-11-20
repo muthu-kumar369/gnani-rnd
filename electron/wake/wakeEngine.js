@@ -19,9 +19,14 @@ class WakeEngine extends EventEmitter {
     // Mocking the porcupine instance
     this.porcupine = {
       process: (frame) => {
-        // Simulate a keyword detection occasionally for testing
-        if (Math.random() < 0.01) { // roughly 1% chance per frame
-          logger.info('Mocked Porcupine detected keyword.');
+        // This is a more predictable mock.
+        // It simulates detecting the keyword "Computer" after a certain number of frames have been processed.
+        this.frameCount = (this.frameCount || 0) + 1;
+        
+        // Approx 3 seconds of audio (30 frames at 100ms/frame)
+        if (this.frameCount > 30) {
+          logger.info('Mocked Porcupine detected keyword "Computer".');
+          this.frameCount = 0; // Reset after detection
           return 0; // Returning index 0 for the detected keyword
         }
         return -1; // No keyword detected

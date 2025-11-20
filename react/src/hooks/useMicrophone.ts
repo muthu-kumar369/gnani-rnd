@@ -1,6 +1,6 @@
 // /react/src/hooks/useMicrophone.ts
 // @ts-nocheck
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback } from "react";
 
 // Define the shape of the gnani API on the window object for TypeScript
 declare global {
@@ -17,28 +17,16 @@ const useMicrophone = () => {
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
-  const scriptProcessorRef = useRef<ScriptProcessorNode | null>(null);
-  const audioWorkletNodeRef = useRef<AudioWorkletNode | null>(null); // For AudioWorklet alternative
   const sourceNodeRef = useRef<MediaStreamAudioSourceNode | null>(null);
 
   const getAudioContext = useCallback(() => {
     if (!audioContextRef.current) {
-      audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
+      audioContextRef.current = new (window.AudioContext ||
+        window.webkitAudioContext)({ sampleRate: 16000 });
     }
     return audioContextRef.current;
   }, []);
-
-  const processAudio = useCallback((audioBuffer: Float32Array) => {
-    if (window.gnani && window.gnani.send) {
-      // Convert Float32Array to 16-bit PCM (Int16Array)
-      const pcm16 = new Int16Array(audioBuffer.length);
-      for (let i = 0; i < audioBuffer.length; i++) {
-        pcm16[i] = Math.max(-1, Math.min(1, audioBuffer[i])) * 0x7FFF; // Scale to +/-32767
-      }
-      window.gnani.send('mic:chunk', Buffer.from(pcm16.buffer));
-    }
-  }, []);
-
+  
   const startMic = useCallback(async () => {
     if (isMicActive) return;
 
@@ -46,7 +34,7 @@ const useMicrophone = () => {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       mediaStreamRef.current = stream;
       const audioContext = getAudioContext();
-      if (audioContext.state === 'suspended') {
+      if (audioContext.state === "suspended") {
         await audioContext.resume();
       }
 
@@ -54,75 +42,31 @@ const useMicrophone = () => {
       sourceNodeRef.current = source;
 
       const analyser = audioContext.createAnalyser();
-      analyser.fftSize = 256; // Smaller FFT for quicker level changes
+      analyser.fftSize = 256;
       analyserRef.current = analyser;
 
       source.connect(analyser);
+      // We connect the analyser to the destination to keep the audio graph running.
+      // AnalyserNode does not alter the audio, so this is safe.
+      analyser.connect(audioContext.destination);
 
-      if (audioContext.audioWorklet) {
-        try {
-          await audioContext.audioWorklet.addModule('audio-processor.js'); 
-          const audioWorkletNode = new AudioWorkletNode(audioContext, 'audio-processor');
-          audioWorkletNodeRef.current = audioWorkletNode;
-
-          analyser.connect(audioWorkletNode);
-          audioWorkletNode.connect(audioContext.destination);
-
-          audioWorkletNode.port.onmessage = (event: MessageEvent) => {
-            if (event.data.type === 'audioBuffer') {
-              processAudio(event.data.audioBuffer);
-            }
-          };
-          console.log('Using AudioWorkletNode for microphone processing.');
-        } catch (workletError) {
-          console.warn('AudioWorklet failed, falling back to ScriptProcessorNode:', workletError);
-          const scriptProcessor = audioContext.createScriptProcessor(4096, 1, 1);
-          scriptProcessorRef.current = scriptProcessor;
-
-          scriptProcessor.onaudioprocess = (event: AudioProcessingEvent) => {
-            processAudio(event.inputBuffer.getChannelData(0));
-            const array = new Uint8Array(analyser.frequencyBinCount);
-            analyser.getByteFrequencyData(array);
-            const average = array.reduce((acc, val) => acc + val, 0) / array.length;
-            setAudioLevel(average / 255);
-          };
-
-          analyser.connect(scriptProcessor);
-          scriptProcessor.connect(audioContext.destination);
-          console.log('Using ScriptProcessorNode for microphone processing.');
-        }
-      } else {
-        console.warn('AudioWorklet not available, falling back to ScriptProcessorNode.');
-        const scriptProcessor = audioContext.createScriptProcessor(4096, 1, 1);
-        scriptProcessorRef.current = scriptProcessor;
-
-        scriptProcessor.onaudioprocess = (event: AudioProcessingEvent) => {
-          processAudio(event.inputBuffer.getChannelData(0));
-          const array = new Uint8Array(analyser.frequencyBinCount);
-          analyser.getByteFrequencyData(array);
-          const average = array.reduce((acc, val) => acc + val, 0) / array.length;
-          setAudioLevel(average / 255);
-        };
-
-        analyser.connect(scriptProcessor);
-        scriptProcessor.connect(audioContext.destination);
-      }
+      // The renderer no longer processes or forwards audio, so no worklet or script processor is needed.
+      // This eliminates the ScriptProcessorNode deprecation warning.
 
       setIsMicActive(true);
-      window.gnani?.send('mic:start');
-      console.log('Microphone started.');
-
+      window.gnani?.send("mic:start");
+      console.log("Microphone started.");
     } catch (error) {
-      console.error('Error starting microphone:', error);
+      console.error("Error starting microphone:", error);
       setIsMicActive(false);
     }
-  }, [isMicActive, getAudioContext, processAudio]);
+  }, [isMicActive, getAudioContext]);
 
   const stopMic = useCallback(() => {
     if (!isMicActive) return;
 
     if (mediaStreamRef.current) {
-      mediaStreamRef.current.getTracks().forEach(track => track.stop());
+      mediaStreamRef.current.getTracks().forEach((track) => track.stop());
       mediaStreamRef.current = null;
     }
 
@@ -134,24 +78,17 @@ const useMicrophone = () => {
       analyserRef.current.disconnect();
       analyserRef.current = null;
     }
-    if (scriptProcessorRef.current) {
-      scriptProcessorRef.current.disconnect();
-      scriptProcessorRef.current = null;
-    }
-    if (audioWorkletNodeRef.current) {
-      audioWorkletNodeRef.current.port.onmessage = null;
-      audioWorkletNodeRef.current.disconnect();
-      audioWorkletNodeRef.current = null;
-    }
 
-    if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
-      audioContextRef.current.suspend().catch(e => console.error('Error suspending AudioContext:', e));
+    if (audioContextRef.current && audioContextRef.current.state !== "closed") {
+      audioContextRef.current
+        .suspend()
+        .catch((e) => console.error("Error suspending AudioContext:", e));
     }
 
     setIsMicActive(false);
     setAudioLevel(0);
-    window.gnani?.send('mic:stop');
-    console.log('Microphone stopped.');
+    window.gnani?.send("mic:stop");
+    console.log("Microphone stopped.");
   }, [isMicActive]);
 
   useEffect(() => {
@@ -160,7 +97,12 @@ const useMicrophone = () => {
     const audioContext = audioContextRef.current;
 
     const updateLevel = () => {
-      if (isMicActive && analyser && audioContext && audioContext.state === 'running' && !audioWorkletNodeRef.current) {
+      if (
+        isMicActive &&
+        analyser &&
+        audioContext &&
+        audioContext.state === "running"
+      ) {
         const array = new Uint8Array(analyser.frequencyBinCount);
         analyser.getByteFrequencyData(array);
         const average = array.reduce((acc, val) => acc + val, 0) / array.length;
@@ -169,7 +111,7 @@ const useMicrophone = () => {
       animationFrameId = requestAnimationFrame(updateLevel);
     };
 
-    if (isMicActive && !audioWorkletNodeRef.current) {
+    if (isMicActive) {
       animationFrameId = requestAnimationFrame(updateLevel);
     }
 
@@ -179,27 +121,6 @@ const useMicrophone = () => {
       }
     };
   }, [isMicActive]);
-
-  useEffect(() => {
-    const audioWorkletProcessorCode = `
-      class AudioProcessor extends AudioWorkletProcessor {
-        process(inputs, outputs, parameters) {
-          const input = inputs[0];
-          if (input.length > 0) {
-            this.port.postMessage({ type: 'audioBuffer', audioBuffer: input[0] });
-          }
-          return true;
-        }
-      }
-      registerProcessor('audio-processor', AudioProcessor);
-    `;
-    const blob = new Blob([audioWorkletProcessorCode], { type: 'application/javascript' });
-    const blobUrl = URL.createObjectURL(blob);
-
-    return () => {
-      URL.revokeObjectURL(blobUrl);
-    };
-  }, []);
 
   return { audioLevel, isMicActive, startMic, stopMic };
 };

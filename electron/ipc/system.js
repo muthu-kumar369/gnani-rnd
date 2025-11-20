@@ -22,7 +22,9 @@ function setupSystemIPC() {
   // Placeholder for llm:response
   ipcMain.on('send-llm-response', (event, data) => {
     logger.info(`Received LLM response to send to UI: ${data}`);
-    global.mainWindow.webContents.send('llm:response', data);
+    if (global.mainWindow && !global.mainWindow.isDestroyed()) {
+      global.mainWindow.webContents.send('llm:response', data);
+    }
   });
 }
 

@@ -8,28 +8,24 @@ function setupVadIPC(vadManager) {
   // Main -> Renderer
   vadManager.on('audio:listening', (isListening) => {
     logger.debug(`Sending audio:listening to renderer: ${isListening}`);
-    if (global.mainWindow) {
+    if (global.mainWindow && !global.mainWindow.isDestroyed()) {
       global.mainWindow.webContents.send('audio:listening', isListening);
     }
   });
 
-  vadManager.on('audio:chunk', (payload) => {
-    logger.debug(`Sending audio:chunk to renderer (ID: ${payload.id}, Duration: ${payload.durationMs}ms)`);
-    if (global.mainWindow) {
-      global.mainWindow.webContents.send('audio:chunk', payload);
-    }
-  });
+  // The audio:chunk listener is removed from here. The streamingClient in main.js
+  // is the sole listener for the VAD's audio:chunk event.
 
   vadManager.on('audio:ended', () => {
     logger.debug('Sending audio:ended to renderer.');
-    if (global.mainWindow) {
+    if (global.mainWindow && !global.mainWindow.isDestroyed()) {
       global.mainWindow.webContents.send('audio:ended');
     }
   });
 
   vadManager.on('vad:status', (status) => {
     logger.debug(`Sending vad:status to renderer: ${JSON.stringify(status)}`);
-    if (global.mainWindow) {
+    if (global.mainWindow && !global.mainWindow.isDestroyed()) {
       global.mainWindow.webContents.send('vad:status', status);
     }
   });
