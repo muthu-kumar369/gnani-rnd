@@ -15,8 +15,6 @@
 // import * as protoLoader from '@grpc/proto-loader';
 
 export class GrpcServiceClient {
-  private client: any; // TODO: Replace 'any' with actual gRPC client type
-
   constructor() {
     // TODO: Initialize gRPC client
     console.log('gRPC Service Client initialized (skeleton)');

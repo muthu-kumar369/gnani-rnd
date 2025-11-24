@@ -49,7 +49,7 @@ class VadManager extends EventEmitter {
    * Processes incoming audio frames from the microphone.
    * @param {Buffer} frame - Raw 16-bit PCM audio frame.
    */
-  _processMicFrame(frame) {
+  processAudioFrame(frame) {
     // Only process if VAD is not in 'idle' state
     if (this.state === "idle") {
       return;

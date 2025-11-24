@@ -1,27 +1,32 @@
 // /react/src/components/gnani/HUDBackground.tsx
 import React from 'react';
 import { motion } from 'framer-motion';
-import { GnaniAppStatus } from '../../hooks/useGnaniUIState';
+import type { Variants } from 'framer-motion';
+import type { GnaniAppStatus } from '../../hooks/useGnaniUIState';
 
 interface HUDBackgroundProps {
   status: GnaniAppStatus;
 }
 
-const radarVariants = {
+const radarVariants: Variants = {
   idle: { rotate: 360 },
   thinking: { rotate: 360 },
   responding: { rotate: 360 },
   error: { rotate: 0 },
+  wakeWordListening: { rotate: 0 },
+  micRecording: { rotate: 0 },
 };
 
-const radarTransition = {
+const radarTransition: { [key: string]: any; } = {
   idle: { duration: 25, repeat: Infinity, ease: 'linear' },
   thinking: { duration: 3, repeat: Infinity, ease: 'easeInOut' },
   responding: { duration: 1, repeat: Infinity, ease: 'easeOut' },
   error: { duration: 0.8, repeat: Infinity, ease: 'easeInOut' }, // Erratic pulse
+  wakeWordListening: { duration: 0, repeat: 0, ease: 'linear' },
+  micRecording: { duration: 0, repeat: 0, ease: 'linear' },
 };
 
-const spotlightVariants = {
+const spotlightVariants: Variants = {
     initial: {
         opacity: 0,
         backgroundImage: `

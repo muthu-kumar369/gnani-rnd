@@ -1,5 +1,6 @@
 // react/src/context/ToastContext.tsx
-import React, { createContext, useContext, useState, useCallback, ReactNode, useMemo } from 'react';
+import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from 'react';
+import type { ReactNode } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 
 export type ToastType = 'info' | 'success' | 'warning' | 'error';

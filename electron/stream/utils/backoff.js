@@ -37,6 +37,14 @@ class ExponentialBackoff {
   }
 
   /**
+   * Checks if another retry should be attempted.
+   * @returns {boolean} True if retries are not exhausted.
+   */
+  shouldRetry() {
+    return this.retries < this.maxRetries;
+  }
+
+  /**
    * Schedules a retry.
    * @param {Function} callback The function to call after the delay.
    * @returns {Promise<boolean>} Resolves true if scheduled, false if max retries reached.

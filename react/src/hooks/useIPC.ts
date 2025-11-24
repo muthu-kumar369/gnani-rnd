@@ -1,18 +1,6 @@
 // /react/src/hooks/useIPC.ts
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import errorLogger from '../utils/errorLogger'; // Import errorLogger
-
-declare global {
-  interface Window {
-    gnani?: {
-      send: (channel: string, data?: any) => void;
-      on: (channel: string, callback: (...args: any[]) => void) => () => void;
-      stream?: {
-        on: (event: string, callback: (...args: any[]) => void) => () => void;
-      };
-    };
-  }
-}
 
 // These types are now defined locally as useIPC is no longer managing messages directly
 export type IPCAppStatus = 'idle' | 'listening' | 'thinking' | 'speaking';
@@ -40,11 +28,11 @@ export const useIPC = () => {
     const unsubs: (() => void)[] = [];
 
     // System Status Listeners
-    unsubs.push(window.gnani.on('wake:status', ({ state }) => {
+    unsubs.push(window.gnani.on('wake:status', ({ state }: { state: string }) => {
       errorLogger.debug(`IPC: Wake word status: ${state}`, { context: 'useIPC' });
       setIsWakeWordReady(state === 'ready');
     }));
-    unsubs.push(window.gnani.on('vad:status', ({ state }) => {
+    unsubs.push(window.gnani.on('vad:status', ({ state }: { state: string }) => {
       errorLogger.debug(`IPC: VAD status: ${state}`, { context: 'useIPC' });
       setIsVADReady(state === 'ready');
     }));
@@ -57,7 +45,7 @@ export const useIPC = () => {
       setTimeout(() => setIsWakeWordTriggered(false), 100); 
     }));
     
-    unsubs.push(window.gnani.on('audio:listening', (isListening) => {
+    unsubs.push(window.gnani.on('audio:listening', (isListening: boolean) => {
       errorLogger.debug(`IPC: Audio listening: ${isListening}`, { context: 'useIPC' });
       setIsAudioListening(isListening);
     }));
@@ -78,7 +66,7 @@ export const useIPC = () => {
         errorLogger.debug('IPC: Stream disconnected', { context: 'useIPC' });
         setIsStreamConnected(false);
       }));
-      unsubs.push(window.gnani.stream.on('stream:error', (error) => {
+      unsubs.push(window.gnani.stream.on('stream:error', (error: Error) => {
         errorLogger.error('IPC: Stream error', error, { context: 'useIPC' });
         setStreamErrorMessage(error.message);
         setIsStreamConnected(false); // Assume error means disconnected
@@ -94,18 +82,18 @@ export const useIPC = () => {
       }));
 
       // Listeners for gRPC stream data
-      unsubs.push(window.gnani.stream.on('stream:partial', ({ text, segment_id }) => {
+      unsubs.push(window.gnani.stream.on('stream:partial', ({ text, segment_id }: { text: string, segment_id: string }) => {
         errorLogger.debug(`IPC: Partial STT: ${text}`, { context: 'useIPC' });
         setLatestPartialSTT(text);
         setLatestSTTSegmentId(segment_id);
       }));
-      unsubs.push(window.gnani.stream.on('stream:final', ({ text, segment_id }) => {
+      unsubs.push(window.gnani.stream.on('stream:final', ({ text, segment_id }: { text: string, segment_id: string }) => {
         errorLogger.debug(`IPC: Final STT: ${text}`, { context: 'useIPC' });
         setLatestFinalSTT(text);
         setLatestSTTSegmentId(segment_id);
         setLatestPartialSTT(null); // Clear partial when final arrives
       }));
-      unsubs.push(window.gnani.stream.on('stream:tts_chunk', ({ chunk }) => {
+      unsubs.push(window.gnani.stream.on('stream:tts_chunk', ({ chunk }: { chunk: any }) => {
         errorLogger.debug(`IPC: LLM Chunk: ${chunk}`, { context: 'useIPC' });
         setLatestLLMChunk(chunk);
       }));
@@ -116,8 +104,7 @@ export const useIPC = () => {
       unsubs.forEach(unsub => unsub());
     };
   }, []);
-
-  // Expose raw states and events for the UI state machine
+  
   return {
     isWakeWordReady,
     isVADReady,

@@ -1,6 +1,6 @@
 import React, { useRef, useEffect } from 'react';
 import { motion, useTime, useTransform } from 'framer-motion';
-import { GnaniAppStatus } from '../../hooks/useGnaniUIState';
+import type { GnaniAppStatus } from '../../hooks/useGnaniUIState';
 
 
 interface WaveformProps {
@@ -50,9 +50,9 @@ const Waveform: React.FC<WaveformProps> = ({ audioLevel, isMicActive, status }) 
               className="w-2 rounded-full"
               style={{
                 background: `linear-gradient(to top, rgba(0,255,255,0.8), rgba(100,255,255,1))`,
-                boxShadow: `0 0 5px rgba(0,255,255,1), 0 0 10px rgba(100,255,255,0.8)`
+                boxShadow: `0 0 5px rgba(0,255,255,1), 0 0 10px rgba(100,255,255,0.8)`,
+                height: sine
               }}
-              animate={{ height: sine }}
               transition={{ type: 'spring', stiffness: 250, damping: 20 }} // Adjusted stiffness/damping
             />
           );
@@ -72,9 +72,9 @@ const Waveform: React.FC<WaveformProps> = ({ audioLevel, isMicActive, status }) 
                 className="w-2 rounded-full"
                 style={{
                     background: `linear-gradient(to top, rgba(120, 200, 255, 0.7), rgba(170, 230, 255, 1))`,
-                    boxShadow: `0 0 3px rgba(120,200,255,0.8), 0 0 6px rgba(120,200,255,0.5)`
+                    boxShadow: `0 0 3px rgba(120,200,255,0.8), 0 0 6px rgba(120,200,255,0.5)`,
+                    height: pulse
                 }}
-                animate={{ height: pulse }}
                 transition={{ type: 'spring', stiffness: 220, damping: 25 }} // Adjusted stiffness/damping
               />
             );

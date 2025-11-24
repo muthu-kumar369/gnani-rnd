@@ -1,7 +1,7 @@
 // /react/src/components/gnani/AIAvatar.tsx
 import React from "react";
 import { motion, useAnimation } from "framer-motion";
-import { GnaniAppStatus } from '../../hooks/useGnaniUIState'; // Import the new status type
+import type { GnaniAppStatus } from '../../hooks/useGnaniUIState'; // Import the new status type
 
 interface AIAvatarProps {
   status: GnaniAppStatus; // Use the comprehensive status type

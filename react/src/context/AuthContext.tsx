@@ -1,6 +1,7 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
-import { refreshToken as callRefreshTokenAPI } from '../../api/authService';
-import errorLogger from '../../utils/errorLogger'; // Import errorLogger
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import type { ReactNode } from 'react';
+import { refreshToken as callRefreshTokenAPI } from '../api/authService';
+import errorLogger from '../utils/errorLogger'; // Import errorLogger
 
 /**
  * @file This file provides authentication context to the React application.
@@ -32,19 +33,7 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
-// Extend Window interface to include gnani API
-declare global {
-  interface Window {
-    gnani?: {
-      auth?: {
-        storeTokens: (accessToken: string, refreshToken: string) => Promise<boolean>;
-        getTokens: () => Promise<{ accessToken: string | null; refreshToken: string | null }>;
-        clearTokens: () => Promise<boolean>;
-        onForceLogout?: (callback: () => void) => () => void; // Added for force logout
-      };
-    };
-  }
-}
+
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);

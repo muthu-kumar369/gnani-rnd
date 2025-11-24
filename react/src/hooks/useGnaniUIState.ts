@@ -4,7 +4,6 @@ import { useAuth } from '../context/AuthContext';
 import { useIPC } from './useIPC';
 import useMicrophone from './useMicrophone';
 import errorLogger from '../utils/errorLogger';
-import { v4 as uuidv4 } from 'uuid'; // For generating unique message IDs
 
 // Define the comprehensive UI State interface
 export type GnaniAppStatus = 'idle' | 'wake-word-listening' | 'mic-recording' | 'streaming' | 'receiving-stt' | 'thinking' | 'responding' | 'error' | 'initializing';
@@ -60,8 +59,8 @@ type UIAction =
 
 
 export const useGnaniUIState = () => {
-  const { isAuthenticated, logout } = useAuth();
-  const { isMicActive, startMic, stopMic } = useMicrophone();
+  const { isAuthenticated } = useAuth();
+  const { isMicActive } = useMicrophone();
   const ipcStates = useIPC();
 
   const [uiState, setUiState] = useState<GnaniUIState>({

@@ -28,6 +28,7 @@ contextBridge.exposeInMainWorld("gnani", {
       "stream:stop",
       "stream:setEndpoint",
       "stream:audio-frame", // New channel for sending audio frames
+      "stream:start-file-test",
     ];
 
     if (validSendChannels.includes(channel)) {
@@ -171,6 +172,10 @@ contextBridge.exposeInMainWorld("gnani", {
     stopStream: () => {
       logger.info("Preload calling stream:stop", { context: 'Preload' });
       ipcRenderer.send("stream:stop");
+    },
+    startFileStream: () => {
+      logger.info("Preload calling stream:start-file-test", { context: 'Preload' });
+      ipcRenderer.send("stream:start-file-test");
     },
     setEndpoint: (cfg) => {
       logger.info("Preload calling stream:setEndpoint with config:", { context: 'Preload', extra: cfg });

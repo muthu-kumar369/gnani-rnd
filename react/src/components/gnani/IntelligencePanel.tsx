@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { GnaniAppStatus, useGnaniUIState } from '../../hooks/useGnaniUIState';
+import type { GnaniAppStatus } from '../../hooks/useGnaniUIState';
+import { useGnaniUIState } from '../../hooks/useGnaniUIState';
 import useMicrophone from '../../hooks/useMicrophone';
 
 interface IntelligencePanelProps {
@@ -8,7 +9,7 @@ interface IntelligencePanelProps {
 }
 
 const IntelligencePanel: React.FC<IntelligencePanelProps> = ({ isVisible }) => {
-  const { uiState } = useGnaniUIState();
+  const uiState = useGnaniUIState();
   const { audioLevel } = useMicrophone();
 
   const panelVariants = {

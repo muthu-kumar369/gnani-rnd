@@ -2,7 +2,10 @@
 const { ipcMain } = require('electron');
 const logger = require('../utils/logger');
 
-function setupStreamIPC(streamingClient, ttsPlayer) {
+let audioBufferQueue = [];
+let isStreamReadyForAudio = false;
+
+function setupStreamIPC(streamingClient, ttsPlayer, wakeManager, vadManager) {
   logger.info('Setting up Stream IPC channels.');
 
   // --- Main -> Renderer ---
@@ -80,17 +83,54 @@ function setupStreamIPC(streamingClient, ttsPlayer) {
   });
   
   // --- Renderer -> Main ---
-  ipcMain.on('stream:start', (event, options) => {
+  ipcMain.on('stream:start', async (event, options) => {
     logger.info('Received stream:start from renderer.', options);
+    isStreamReadyForAudio = false;
     streamingClient.init(options); // Re-init client with potentially new options
-    streamingClient.connect();
-    streamingClient.startAudioStreaming();
+    await streamingClient.startAudioStreaming();
+
+    if (!streamingClient.isStreamingAudio) {
+      logger.error('Failed to activate gRPC audio stream. Connection probably failed or dropped immediately.', { context: 'StreamIPC' });
+      if (global.mainWindow && !global.mainWindow.isDestroyed()) {
+        global.mainWindow.webContents.send('stream:error', { message: 'Failed to establish audio stream.' });
+      }
+      return;
+    }
+
+    isStreamReadyForAudio = true;
+    logger.info(`Stream is ready. Processing ${audioBufferQueue.length} queued audio frames.`);
+    audioBufferQueue.forEach(buffer => {
+        streamingClient.addAudioFrame(buffer);
+        if (wakeManager) wakeManager.processAudioFrame(buffer);
+        if (vadManager) vadManager.processAudioFrame(buffer);
+    });
+    audioBufferQueue = [];
+  });
+
+  ipcMain.on('stream:start-file-test', async () => {
+    logger.info('Received stream:start-file-test from renderer.');
+    if (streamingClient) {
+      streamingClient.startFileStreamTest();
+    }
   });
 
   ipcMain.on('stream:stop', () => {
     logger.info('Received stream:stop from renderer.');
+    isStreamReadyForAudio = false;
+    audioBufferQueue = [];
     streamingClient.stopAudioStreaming();
     streamingClient.disconnect();
+  });
+
+  ipcMain.on("stream:audio-frame", (event, pcmData) => {
+    const audioBuffer = Buffer.from(pcmData);
+    if (isStreamReadyForAudio) {
+      if (streamingClient) streamingClient.addAudioFrame(audioBuffer);
+      if (wakeManager) wakeManager.processAudioFrame(audioBuffer);
+      if (vadManager) vadManager.processAudioFrame(audioBuffer);
+    } else {
+      audioBufferQueue.push(audioBuffer);
+    }
   });
 
   ipcMain.handle('stream:getStatus', async () => {

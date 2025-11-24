@@ -1,7 +1,7 @@
 // /react/src/components/gnani/MicButton.tsx
 import React from "react";
 import { AnimatePresence, motion, useAnimation } from "framer-motion";
-import { GnaniAppStatus } from '../../hooks/useGnaniUIState';
+import type { GnaniAppStatus } from '../../hooks/useGnaniUIState';
 
 interface MicButtonProps {
   isMicActive: boolean;
@@ -70,7 +70,7 @@ const MicButton: React.FC<MicButtonProps> = ({
   const currentVariants = getButtonVariants(status);
 
   React.useEffect(() => {
-    controls.start(currentVariants.animate);
+    controls.start(currentVariants.animate as any);
   }, [status, controls, currentVariants.animate]);
 
   const handleToggle = () => {
@@ -102,7 +102,7 @@ const MicButton: React.FC<MicButtonProps> = ({
       onClick={handleToggle}
       whileTap={{ scale: 0.95 }}
       onHoverStart={() => controls.start(currentVariants.hover)}
-      onHoverEnd={() => controls.start(currentVariants.animate)}
+      onHoverEnd={() => controls.start(currentVariants.animate as any)}
     >
       {/* Outer pulsing rings for active state and wake-word */}
       <AnimatePresence>

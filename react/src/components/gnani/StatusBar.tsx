@@ -1,7 +1,7 @@
 // /react/src/components/gnani/StatusBar.tsx
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { GnaniAppStatus } from '../../hooks/useGnaniUIState'; // Import the new status type
+import type { GnaniAppStatus } from '../../hooks/useGnaniUIState'; // Import the new status type
 
 /**
  * @interface StatusBarProps

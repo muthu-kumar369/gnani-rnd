@@ -8,12 +8,7 @@ const WakeManager = require("./wake/wakeManager");
 const VadManager = require("./vad/vadManager");
 const StreamingClient = require("./stream/client");
 const TtsPlayer = require("./stream/ttsPlayer"); // New import for TTSPlayer
-
-const { setupAudioIPC } = require("./ipc/audio");
-const { setupSystemIPC } = require("./ipc/system");
-const { setupWakeIPC } = require("./ipc/wake");
-const { setupVadIPC } = require("./ipc/vad");
-const { setupStreamIPC } = require("./ipc/stream"); // New import
+const MockWebSocketServer = require('./stream/test/mockServer.js'); // This was present
 
 logger.info("Electron main process starting...", { context: 'MainProcess' });
 
@@ -36,7 +31,7 @@ let ttsPlayer; // Declare ttsPlayer
 let mockServer; // For dev mode
 
 // Initialize electron-store for persistent, secure storage of user data like tokens.
-const store = new Store();
+let store;
 
 // IPC Handlers for secure token storage
 ipcMain.handle('auth:store-tokens', (event, { accessToken, refreshToken }) => {
@@ -60,13 +55,22 @@ ipcMain.handle('auth:clear-tokens', () => {
   return true;
 });
 
+// This function would call the auth server to get a new access token
+async function callRefreshTokenApiFromMain(refreshToken) {
+  // In a real app, you'd use `net.request` or a library like `axios`
+  // to make an HTTP request to your auth server's refresh endpoint.
+  logger.warn('callRefreshTokenApiFromMain is not implemented. Returning null.', { context: 'MainProcess' });
+  return null; // Returning null will cause the client to log out.
+}
+
 async function main() {
+  store = new Store();
   // --- Development-only Mock Server ---
-  if (isDev) {
-    // Only start mock WebSocket server in development mode for testing.
-    mockServer = new MockWebSocketServer(8080);
-    mockServer.start();
-  }
+  // if (isDev) {
+  //   // Only start mock WebSocket server in development mode for testing.
+  //   // mockServer = new MockWebSocketServer(8080);
+  //   // mockServer.start();
+  // }
 
   // Create the main window
   createWindow();
@@ -77,19 +81,15 @@ async function main() {
   // VADManager requires micCapture instance to subscribe to audio frames.
   vadManager = new VadManager(micCapture);
   // StreamingClient now handles gRPC communication. It requires mainWindow for IPC.
-  streamingClient = new StreamingClient({ mainWindow: mainWindow });
+  streamingClient = new StreamingClient({
+    mainWindow: mainWindow,
+    store: store,
+    callRefreshTokenApiFromMain: callRefreshTokenApiFromMain,
+  });
   ttsPlayer = new TtsPlayer(); // Instantiate TtsPlayer
 
   await wakeManager.initialize();
   await vadManager.init(); // This will now correctly subscribe to micCapture
-  
-  if (isDev) {
-    // In development, force the client to use the local mock server
-    logger.info("Running in dev mode. Overriding stream endpoint to use mock server.", { context: 'MainProcess' });
-    streamingClient.init({ endpoint: 'ws://localhost:8080' });
-  } else {
-    streamingClient.init();
-  }
 
   // --- Audio Pipeline Wiring ---
   // The audio frames are now sent directly from the renderer process via IPC 'stream:audio-frame'.
@@ -100,7 +100,7 @@ async function main() {
   setupSystemIPC();
   setupWakeIPC(wakeManager);
   setupVadIPC(vadManager);
-  setupStreamIPC(streamingClient, ttsPlayer); // Pass ttsPlayer
+  setupStreamIPC(streamingClient, ttsPlayer, wakeManager, vadManager); // Pass ttsPlayer
 
   logger.info("All managers initialized and IPCs are set up.", { context: 'MainProcess' });
 }
@@ -200,25 +200,6 @@ ipcMain.on('mic:stop', () => {
   micCapture.stopMicrophone();
   wakeManager.stopProcessing(); // Stop wake word processing
   vadManager.stopProcessing(); // Stop VAD processing
-});
-
-ipcMain.on("stream:audio-frame", (event, pcmData) => {
-  const audioBuffer = Buffer.from(pcmData);
-  if (streamingClient) {
-    streamingClient.addAudioFrame(audioBuffer);
-  } else {
-    logger.warn('StreamingClient not initialized. Cannot add audio frame.', { context: 'MainProcess' });
-  }
-  if (wakeManager) {
-    wakeManager.processAudioFrame(audioBuffer);
-  } else {
-    logger.warn('WakeManager not initialized. Cannot process audio frame.', { context: 'MainProcess' });
-  }
-  if (vadManager) {
-    vadManager.processAudioFrame(audioBuffer);
-  } else {
-    logger.warn('VadManager not initialized. Cannot process audio frame.', { context: 'MainProcess' });
-  }
 });
 
 ipcMain.on("message", (event, channel, ...args) => {

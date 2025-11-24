@@ -1,18 +1,6 @@
 // /react/src/hooks/useMicrophone.ts
 import { useState, useRef, useEffect, useCallback } from "react";
-import errorLogger from '../../utils/errorLogger'; // Import errorLogger
-
-// Define the shape of the gnani API on the window object for TypeScript
-declare global {
-  interface Window {
-    gnani?: {
-      send: (channel: string, data?: any) => void;
-      stream?: {
-        sendAudioFrame: (pcmData: ArrayBuffer) => void;
-      };
-    };
-  }
-}
+import errorLogger from '../utils/errorLogger'; // Import errorLogger
 
 const useMicrophone = () => {
   const [isMicActive, setIsMicActive] = useState<boolean>(false);
@@ -27,7 +15,7 @@ const useMicrophone = () => {
   const getAudioContext = useCallback(() => {
     if (!audioContextRef.current || audioContextRef.current.state === 'closed') {
       audioContextRef.current = new (window.AudioContext ||
-        window.webkitAudioContext)({ sampleRate: 16000 });
+        (window as any).webkitAudioContext)({ sampleRate: 16000 });
     }
     return audioContextRef.current;
   }, []);
