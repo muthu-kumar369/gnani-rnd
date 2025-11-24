@@ -92,6 +92,12 @@ class TtsPlayer extends EventEmitter {
   getIsPlaying() {
     return this.isPlaying;
   }
+
+  cleanup() {
+    logger.info('TtsPlayer cleanup initiated. Stopping any active playback.', { context: 'TtsPlayer' });
+    this.stopPlayback();
+    // Any other resource cleanup for TtsPlayer would go here
+  }
 }
 
 module.exports = TtsPlayer;

@@ -2,56 +2,53 @@
 const { EventEmitter } = require('events');
 const logger = require('../utils/logger');
 
+/**
+ * @class MicCapture
+ * @extends EventEmitter
+ * @description Manages the microphone capture state in the main process.
+ *              This class acts as a state manager for the microphone and signals its status.
+ *              Actual audio data streaming is handled by the renderer process via IPC.
+ */
 class MicCapture extends EventEmitter {
   constructor() {
     super();
     this.isRecording = false;
-    this.intervalId = null;
-    this.wakeManager = null; // To be set from main.js
-    logger.info('MicCapture initialized.');
+    // No longer need intervalId as dummy audio generation is removed.
+    logger.info('MicCapture initialized.', { context: 'MicCapture' });
   }
 
+  /**
+   * Starts the microphone capture state.
+   * Emits a 'started' event.
+   */
   startMicrophone() {
     if (this.isRecording) {
-      logger.warn('Microphone is already recording.');
+      logger.warn('Microphone is already recording.', { context: 'MicCapture' });
       return;
     }
-    logger.info('Starting microphone capture (placeholder).');
+    logger.info('Starting microphone capture state.', { context: 'MicCapture' });
     this.isRecording = true;
-
-    // Simulate audio frames for Porcupine
-    this.intervalId = setInterval(() => {
-      if (this.isRecording) {
-        // Dummy 16-bit PCM audio frame (512 samples * 2 bytes/sample)
-        const dummyFrame = Buffer.alloc(1024, 0); 
-        
-        // Emit for general purpose audio processing (non-destructive tap)
-        this.emit('audio-frame', dummyFrame); 
-
-        // Pipe to wake word engine if it's attached
-        if (this.wakeManager) {
-          this.wakeManager.processAudioFrame(dummyFrame);
-        }
-      }
-    }, 100); // This interval isn't realistic for real-time audio, but it's fine for a mock.
-
     this.emit('started');
   }
 
+  /**
+   * Stops the microphone capture state.
+   * Emits a 'stopped' event.
+   */
   stopMicrophone() {
     if (!this.isRecording) {
-      logger.warn('Microphone is not recording.');
+      logger.warn('Microphone is not recording.', { context: 'MicCapture' });
       return;
     }
-    logger.info('Stopping microphone capture (placeholder).');
+    logger.info('Stopping microphone capture state.', { context: 'MicCapture' });
     this.isRecording = false;
-    if (this.intervalId) {
-      clearInterval(this.intervalId);
-      this.intervalId = null;
-    }
     this.emit('stopped');
   }
 
+  /**
+   * Returns the current recording status of the microphone.
+   * @returns {boolean} True if the microphone is in a recording state, false otherwise.
+   */
   getIsRecording() {
     return this.isRecording;
   }

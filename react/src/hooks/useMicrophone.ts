@@ -1,12 +1,15 @@
 // /react/src/hooks/useMicrophone.ts
-// @ts-nocheck
 import { useState, useRef, useEffect, useCallback } from "react";
+import errorLogger from '../../utils/errorLogger'; // Import errorLogger
 
 // Define the shape of the gnani API on the window object for TypeScript
 declare global {
   interface Window {
     gnani?: {
       send: (channel: string, data?: any) => void;
+      stream?: {
+        sendAudioFrame: (pcmData: ArrayBuffer) => void;
+      };
     };
   }
 }
@@ -18,9 +21,11 @@ const useMicrophone = () => {
   const analyserRef = useRef<AnalyserNode | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const sourceNodeRef = useRef<MediaStreamAudioSourceNode | null>(null);
+  const audioWorkletNodeRef = useRef<AudioWorkletNode | null>(null);
+  const micStateRef = useRef<'idle' | 'starting' | 'active' | 'stopping'>('idle'); // New ref for internal mic state
 
   const getAudioContext = useCallback(() => {
-    if (!audioContextRef.current) {
+    if (!audioContextRef.current || audioContextRef.current.state === 'closed') {
       audioContextRef.current = new (window.AudioContext ||
         window.webkitAudioContext)({ sampleRate: 16000 });
     }
@@ -28,16 +33,22 @@ const useMicrophone = () => {
   }, []);
   
   const startMic = useCallback(async () => {
-    if (isMicActive) return;
+    if (micStateRef.current !== 'idle') {
+      errorLogger.warn(`Mic is already in state: ${micStateRef.current}. Skipping startMic.`, { context: 'useMicrophone' });
+      return;
+    }
+    micStateRef.current = 'starting';
+    setIsMicActive(true); // Optimistically set to true for UI feedback
 
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      mediaStreamRef.current = stream;
       const audioContext = getAudioContext();
       if (audioContext.state === "suspended") {
         await audioContext.resume();
       }
 
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaStreamRef.current = stream;
+      
       const source = audioContext.createMediaStreamSource(stream);
       sourceNodeRef.current = source;
 
@@ -46,24 +57,43 @@ const useMicrophone = () => {
       analyserRef.current = analyser;
 
       source.connect(analyser);
-      // We connect the analyser to the destination to keep the audio graph running.
-      // AnalyserNode does not alter the audio, so this is safe.
       analyser.connect(audioContext.destination);
 
-      // The renderer no longer processes or forwards audio, so no worklet or script processor is needed.
-      // This eliminates the ScriptProcessorNode deprecation warning.
+      await audioContext.audioWorklet.addModule('/audio-processor.js');
+      const audioWorkletNode = new AudioWorkletNode(audioContext, 'audio-processor');
+      audioWorkletNodeRef.current = audioWorkletNode;
 
+      source.connect(audioWorkletNode);
+      audioWorkletNode.connect(audioContext.destination);
+
+      audioWorkletNode.port.onmessage = (event) => {
+        if (event.data.type === 'audioBuffer' && window.gnani?.stream?.sendAudioFrame) {
+          const float32Data = event.data.audioBuffer;
+          const int16Data = new Int16Array(float32Data.length);
+          for (let i = 0; i < float32Data.length; i++) {
+            int16Data[i] = Math.min(1, Math.max(-1, float32Data[i])) * 0x7FFF;
+          }
+          window.gnani.stream.sendAudioFrame(int16Data.buffer);
+        }
+      };
+
+      micStateRef.current = 'active';
       setIsMicActive(true);
       window.gnani?.send("mic:start");
-      console.log("Microphone started.");
+      errorLogger.info("Microphone started and streaming audio via AudioWorklet.", { context: 'useMicrophone' });
     } catch (error) {
-      console.error("Error starting microphone:", error);
+      errorLogger.error("Error starting microphone or AudioWorklet:", error, { context: 'useMicrophone' });
+      micStateRef.current = 'idle';
       setIsMicActive(false);
     }
-  }, [isMicActive, getAudioContext]);
+  }, [getAudioContext]);
 
   const stopMic = useCallback(() => {
-    if (!isMicActive) return;
+    if (micStateRef.current !== 'active' && micStateRef.current !== 'starting') {
+      errorLogger.warn(`Mic is not active or starting. Current state: ${micStateRef.current}. Skipping stopMic.`, { context: 'useMicrophone' });
+      return;
+    }
+    micStateRef.current = 'stopping';
 
     if (mediaStreamRef.current) {
       mediaStreamRef.current.getTracks().forEach((track) => track.stop());
@@ -78,18 +108,23 @@ const useMicrophone = () => {
       analyserRef.current.disconnect();
       analyserRef.current = null;
     }
+    if (audioWorkletNodeRef.current) {
+      audioWorkletNodeRef.current.disconnect();
+      audioWorkletNodeRef.current = null;
+    }
 
     if (audioContextRef.current && audioContextRef.current.state !== "closed") {
       audioContextRef.current
         .suspend()
-        .catch((e) => console.error("Error suspending AudioContext:", e));
+        .catch((e) => errorLogger.error("Error suspending AudioContext:", e, { context: 'useMicrophone' }));
     }
 
+    micStateRef.current = 'idle';
     setIsMicActive(false);
     setAudioLevel(0);
     window.gnani?.send("mic:stop");
-    console.log("Microphone stopped.");
-  }, [isMicActive]);
+    errorLogger.info("Microphone stopped.", { context: 'useMicrophone' });
+  }, []);
 
   useEffect(() => {
     let animationFrameId: number;
@@ -121,6 +156,17 @@ const useMicrophone = () => {
       }
     };
   }, [isMicActive]);
+
+  // Cleanup effect to stop mic and close AudioContext when component unmounts
+  useEffect(() => {
+    return () => {
+      errorLogger.info("Cleaning up useMicrophone hook.", { context: 'useMicrophone' });
+      stopMic(); // Ensure mic is stopped
+      if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
+        audioContextRef.current.close().catch(e => errorLogger.error("Error closing AudioContext on unmount:", e, { context: 'useMicrophone' }));
+      }
+    };
+  }, [stopMic]);
 
   return { audioLevel, isMicActive, startMic, stopMic };
 };

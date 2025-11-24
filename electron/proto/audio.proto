@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package gnani;
+
+service GnaniService {
+  rpc SendAudioStream(stream AudioRequest) returns (stream AudioResponse);
+}
+
+message AudioRequest {
+  bytes audio_chunk = 1;
+}
+
+message AudioResponse {
+  oneof event {
+    string partial_text = 1;
+    string llm_chunk = 2;
+    string final_text = 3;
+    string error_message = 4;
+  }
+}

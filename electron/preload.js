@@ -8,7 +8,7 @@ const logger = {
   error: (...args) => console.error("[PRELOAD]", ...args),
 };
 
-logger.info("Preload script loaded.");
+logger.info("Preload script loaded.", { context: 'Preload' });
 
 contextBridge.exposeInMainWorld("gnani", {
   // --- General IPC ---
@@ -27,13 +27,14 @@ contextBridge.exposeInMainWorld("gnani", {
       "stream:start",
       "stream:stop",
       "stream:setEndpoint",
+      "stream:audio-frame", // New channel for sending audio frames
     ];
 
     if (validSendChannels.includes(channel)) {
       ipcRenderer.send(channel, data);
-      logger.debug(`Sent to main process: ${channel}`);
+      logger.debug(`Sent to main process: ${channel}`, { context: 'Preload' });
     } else {
-      logger.warn(`Unknown IPC send channel: ${channel}`);
+      logger.warn(`Unknown IPC send channel: ${channel}`, { context: 'Preload' });
     }
   },
   on: (channel, callback) => {
@@ -67,29 +68,51 @@ contextBridge.exposeInMainWorld("gnani", {
     if (validReceiveChannels.includes(channel)) {
       const subscription = (event, ...args) => callback(...args);
       ipcRenderer.on(channel, subscription);
-      logger.debug(`Subscribed to main process channel: ${channel}`);
+      logger.debug(`Subscribed to main process channel: ${channel}`, { context: 'Preload' });
       return () => {
         ipcRenderer.removeListener(channel, subscription);
-        logger.debug(`Unsubscribed from main process channel: ${channel}`);
+        logger.debug(`Unsubscribed from main process channel: ${channel}`, { context: 'Preload' });
       };
     } else {
-      logger.warn(`Unknown IPC receive channel: ${channel}`);
+      logger.warn(`Unknown IPC receive channel: ${channel}`, { context: 'Preload' });
     }
   },
 
+  // --- Auth IPC ---
+  auth: {
+    storeTokens: (accessToken, refreshToken) => {
+      logger.info("Preload invoking auth:store-tokens", { context: 'Preload' });
+      return ipcRenderer.invoke('auth:store-tokens', { accessToken, refreshToken });
+    },
+    getTokens: () => {
+      logger.info("Preload invoking auth:get-tokens", { context: 'Preload' });
+      return ipcRenderer.invoke('auth:get-tokens');
+    },
+    clearTokens: () => {
+      logger.info("Preload invoking auth:clear-tokens", { context: 'Preload' });
+      return ipcRenderer.invoke('auth:clear-tokens');
+    },
+    onForceLogout: (callback) => { // New method for force logout
+      const subscription = (event, ...args) => callback(...args);
+      ipcRenderer.on('auth:force-logout', subscription);
+      return () => {
+        ipcRenderer.removeListener('auth:force-logout', subscription);
+      };
+    },
+  },
 
   // --- Wake Word ---
   wake: {
     startWakeWord: () => {
-      logger.info("Preload calling wake:start");
+      logger.info("Preload calling wake:start", { context: 'Preload' });
       ipcRenderer.send("wake:start");
     },
     stopWakeWord: () => {
-      logger.info("Preload calling wake:stop");
+      logger.info("Preload calling wake:stop", { context: 'Preload' });
       ipcRenderer.send("wake:stop");
     },
     getWakeStatus: () => {
-      logger.info("Preload invoking wake:getStatus");
+      logger.info("Preload invoking wake:getStatus", { context: 'Preload' });
       return ipcRenderer.invoke("wake:getStatus");
     },
     onWakeTriggered: (callback) => {
@@ -104,19 +127,19 @@ contextBridge.exposeInMainWorld("gnani", {
   // --- VAD ---
   vad: {
     startVAD: () => {
-      logger.info("Preload calling vad:start");
+      logger.info("Preload calling vad:start", { context: 'Preload' });
       ipcRenderer.send("vad:start");
     },
     stopVAD: () => {
-      logger.info("Preload calling vad:stop");
+      logger.info("Preload calling vad:stop", { context: 'Preload' });
       ipcRenderer.send("vad:stop");
     },
     getVADStatus: () => {
-      logger.info("Preload invoking vad:getStatus");
+      logger.info("Preload invoking vad:getStatus", { context: 'Preload' });
       return ipcRenderer.invoke("vad:getStatus");
     },
     setAggressiveness: (level) => {
-      logger.info(`Preload calling vad:setAggressiveness with level: ${level}`);
+      logger.info(`Preload calling vad:setAggressiveness with level: ${level}`, { context: 'Preload' });
       ipcRenderer.send("vad:setAggressiveness", level);
     },
     on: (event, callback) => {
@@ -134,7 +157,7 @@ contextBridge.exposeInMainWorld("gnani", {
           ipcRenderer.removeListener(event, subscription);
         };
       } else {
-        logger.warn(`Unknown VAD event channel for 'on': ${event}`);
+        logger.warn(`Unknown VAD event channel for 'on': ${event}`, { context: 'Preload' });
       }
     },
   },
@@ -142,20 +165,24 @@ contextBridge.exposeInMainWorld("gnani", {
   // --- Streaming ---
   stream: {
     startStream: (options) => {
-      logger.info("Preload calling stream:start with options:", options);
+      logger.info("Preload calling stream:start with options:", { context: 'Preload', extra: options });
       ipcRenderer.send("stream:start", options);
     },
     stopStream: () => {
-      logger.info("Preload calling stream:stop");
+      logger.info("Preload calling stream:stop", { context: 'Preload' });
       ipcRenderer.send("stream:stop");
     },
     setEndpoint: (cfg) => {
-      logger.info("Preload calling stream:setEndpoint with config:", cfg);
+      logger.info("Preload calling stream:setEndpoint with config:", { context: 'Preload', extra: cfg });
       ipcRenderer.send("stream:setEndpoint", cfg);
     },
     getStatus: () => {
-      logger.info("Preload invoking stream:getStatus");
+      logger.info("Preload invoking stream:getStatus", { context: 'Preload' });
       return ipcRenderer.invoke("stream:getStatus");
+    },
+    sendAudioFrame: (pcmData) => { // New function to send audio frames
+      // pcmData is an ArrayBuffer from AudioWorkletNode
+      ipcRenderer.send('stream:audio-frame', pcmData);
     },
     on: (event, callback) => {
       const validStreamEvents = [
@@ -179,7 +206,7 @@ contextBridge.exposeInMainWorld("gnani", {
           ipcRenderer.removeListener(event, subscription);
         };
       } else {
-        logger.warn(`Unknown Stream event channel for 'on': ${event}`);
+        logger.warn(`Unknown Stream event channel for 'on': ${event}`, { context: 'Preload' });
       }
     },
   },

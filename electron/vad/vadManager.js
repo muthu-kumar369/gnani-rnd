@@ -5,12 +5,19 @@ const logger = require("../utils/logger");
 const VadEngine = require("./vadEngine");
 const { concatPcmBuffers, getPcmDurationMs } = require("./utils/pcmUtils");
 
+/**
+ * @class VadManager
+ * @extends EventEmitter
+ * @description Manages Voice Activity Detection (VAD) for audio streams.
+ *              Subscribes to microphone audio frames, processes them for speech,
+ *              segments speech, and emits events for speech start, end, and audio chunks.
+ */
 class VadManager extends EventEmitter {
-  constructor(micCaptureInstance) {
+  constructor() {
     super();
-    this.micCapture = micCaptureInstance;
+    // micCaptureInstance is no longer needed as audio frames are routed directly from main.js
     this.vadEngine = new VadEngine();
-    this.state = "idle"; // idle, monitoring, speech_started
+    this.state = "idle"; // Possible states: 'idle', 'monitoring', 'speech_started'
     this.speechBuffer = [];
     this.nonSpeechFramesCount = 0;
     this.speechFramesCount = 0;
@@ -20,27 +27,31 @@ class VadManager extends EventEmitter {
     // Configurable parameters
     this.config = {
       sampleRate: 16000,
-      frameSize: 480, // 30ms at 16kHz
-      aggressiveness: 3, // For WebRTC VAD
-      speechStartThreshold: 3, // N consecutive speech frames to start
-      speechEndThreshold: 10 // M consecutive non-speech frames to end (hangover)
+      frameSize: 480, // 30ms at 16kHz for 16kHz sample rate (16000 * 0.030)
+      aggressiveness: 3, // For WebRTC VAD: 0-3, 3 is most aggressive
+      speechStartThreshold: 3, // N consecutive speech frames to transition from monitoring to speech_started
+      speechEndThreshold: 10 // M consecutive non-speech frames (hangover) to end a speech segment
     };
 
-    logger.info("VadManager initialized.");
+    logger.info("VadManager initialized.", { context: 'VadManager' });
   }
 
+  /**
+   * Initializes the VAD engine.
+   */
   async init() {
     await this.vadEngine.init(this.config);
-    this.micCapture.on("audio-frame", this._processMicFrame.bind(this));
-    logger.info("VadManager initialized and subscribed to mic frames.");
+    // Audio frames are now passed directly from main.js, no longer subscribed to micCapture
+    logger.info("VadManager initialized.", { context: 'VadManager' });
   }
 
+  /**
+   * Processes incoming audio frames from the microphone.
+   * @param {Buffer} frame - Raw 16-bit PCM audio frame.
+   */
   _processMicFrame(frame) {
-    // Ensure frame is 16k 16-bit PCM (micCapture is already providing this in our mock)
-    // In a real app, you might need pcmUtils.ensure16k(frame, actualMicSampleRate)
-
-    if (this.state === "idle" && !this.micCapture.getIsRecording()) {
-      // Don't process if VAD is stopped and mic is off
+    // Only process if VAD is not in 'idle' state
+    if (this.state === "idle") {
       return;
     }
 
@@ -62,10 +73,9 @@ class VadManager extends EventEmitter {
           ) {
             this._startSpeechSegment();
           } else if (this.state === "idle") {
-            // If mic is recording and VAD is active (not idle) and speech detected,
-            // transition to monitoring
+            // This case should ideally not be reached if state is strictly idle when mic is off
             this.setState("monitoring");
-            this.speechFramesCount = 1; // Start counting
+            this.speechFramesCount = 1; 
           }
         } else {
           // Not speech
@@ -76,24 +86,28 @@ class VadManager extends EventEmitter {
               this._endSpeechSegment();
             }
           }
-          // The 'monitoring' state should persist until explicitly stopped or until speech is found.
-          // The previous logic that caused it to revert to 'idle' is removed.
         }
       })
       .catch((error) => {
-        logger.error("Error processing audio frame with VAD engine:", error);
+        logger.error("Error processing audio frame with VAD engine:", error, { context: 'VadManager' });
       });
   }
 
+  /**
+   * Initiates a new speech segment.
+   */
   _startSpeechSegment() {
     this.setState("speech_started");
     this.segmentId = uuidv4();
     this.segmentStartTime = Date.now();
-    this.nonSpeechFramesCount = 0; // Reset hangover counter
+    this.nonSpeechFramesCount = 0;
     this.emit("audio:listening", true); // Notify renderer that speech has started
-    logger.info(`Speech segment started. ID: ${this.segmentId}`);
+    logger.info(`Speech segment started. ID: ${this.segmentId}`, { context: 'VadManager' });
   }
 
+  /**
+   * Finalizes the current speech segment and emits the collected audio chunk.
+   */
   _endSpeechSegment() {
     this.setState("monitoring"); // Go back to monitoring after speech ends
     this.nonSpeechFramesCount = 0;
@@ -114,11 +128,11 @@ class VadManager extends EventEmitter {
 
       this.emit("audio:chunk", payload); // Emit the complete speech segment
       logger.info(
-        `Speech segment ended. ID: ${this.segmentId}, Duration: ${durationMs}ms`
+        `Speech segment ended. ID: ${this.segmentId}, Duration: ${durationMs}ms`, { context: 'VadManager' }
       );
     } else {
       logger.warn(
-        `Speech segment ended but buffer was empty. ID: ${this.segmentId}`
+        `Speech segment ended but buffer was empty. ID: ${this.segmentId}`, { context: 'VadManager' }
       );
     }
 
@@ -129,65 +143,77 @@ class VadManager extends EventEmitter {
     this.emit("audio:ended"); // More specific event for speech end
   }
 
-  startVAD() {
+  /**
+   * Starts VAD processing, transitioning to 'monitoring' state.
+   */
+  startProcessing() {
     if (this.state !== "idle") {
-      logger.warn("VAD is already active or in a speech segment.");
+      logger.warn(`VAD is already active or in speech segment. Current state: ${this.state}.`, { context: 'VadManager' });
       return;
     }
-    logger.info("Starting VAD monitoring.");
+    logger.info("Starting VAD monitoring.", { context: 'VadManager' });
     this.setState("monitoring");
     this.speechBuffer = [];
     this.nonSpeechFramesCount = 0;
     this.speechFramesCount = 0;
-    // Ensure mic is recording if VAD is started
-    if (!this.micCapture.getIsRecording()) {
-      this.micCapture.startMicrophone();
-    }
+    this.emit("vad:status", { state: this.state }); // Emit initial status
   }
 
-  stopVAD() {
+  /**
+   * Stops VAD processing, transitioning to 'idle' state.
+   */
+  stopProcessing() {
     if (this.state === "idle") {
-      logger.warn("VAD is already stopped.");
+      logger.warn("VAD is already stopped.", { context: 'VadManager' });
       return;
     }
-    logger.info("Stopping VAD monitoring.");
-    // If a speech segment is active, complete it before stopping
+    logger.info("Stopping VAD monitoring.", { context: 'VadManager' });
     if (this.state === "speech_started") {
-      this._endSpeechSegment();
+      this._endSpeechSegment(); // Finalize any ongoing speech segment
     }
     this.setState("idle");
     this.speechBuffer = [];
     this.nonSpeechFramesCount = 0;
     this.speechFramesCount = 0;
-    // Optional: stop mic if VAD is the only consumer and no wake-word is active
-    // this.micCapture.stopMicrophone();
+    this.emit("vad:status", { state: this.state }); // Emit final status
   }
 
+  /**
+   * Updates the internal state of the VadManager.
+   * @param {string} newState - The new state to transition to.
+   */
   setState(newState) {
     if (this.state !== newState) {
-      logger.info(`VADManager state change: ${this.state} -> ${newState}`);
+      logger.info(`VADManager state change: ${this.state} -> ${newState}`, { context: 'VadManager' });
       this.state = newState;
-      this.emit("vad:status", { state: this.state }); // Notify renderer of state change
     }
   }
 
+  /**
+   * Sets the aggressiveness level for the VAD engine (if WebRTC backend is used).
+   * @param {number} level - The aggressiveness level (0-3).
+   */
   setAggressiveness(level) {
     if (this.vadEngine.getBackendName() === "webrtc") {
       this.config.aggressiveness = Math.max(0, Math.min(3, level));
       // Re-initialize VAD engine with new aggressiveness if already running
       if (this.state !== "idle") {
         logger.warn(
-          "Changing aggressiveness on the fly. Re-initializing VAD engine."
+          "Changing aggressiveness on the fly. Re-initializing VAD engine.", { context: 'VadManager' }
         );
         // This might interrupt current speech. For production, consider a more graceful restart.
         this.vadEngine.init(this.config);
       }
-      logger.info(`VAD aggressiveness set to: ${this.config.aggressiveness}`);
+      logger.info(`VAD aggressiveness set to: ${this.config.aggressiveness}`, { context: 'VadManager' });
     } else {
-      logger.warn("Aggressiveness setting only applies to WebRTC VAD backend.");
+      logger.warn("Aggressiveness setting only applies to WebRTC VAD backend.", { context: 'VadManager' });
     }
   }
 
+  /**
+   * Returns the current status and configuration of the VadManager.
+   * @returns {object} Current VAD state, backend, and configuration.
+   */
   getStatus() {
     return {
       state: this.state,
@@ -196,13 +222,13 @@ class VadManager extends EventEmitter {
     };
   }
 
+  /**
+   * Cleans up the VAD engine.
+   */
   cleanup() {
-    this.micCapture.removeListener(
-      "audio-frame",
-      this._processMicFrame.bind(this)
-    );
+    // micCapture.removeListener is no longer needed as VadManager does not subscribe to micCapture
     this.vadEngine.cleanup();
-    logger.info("VadManager cleaned up.");
+    logger.info("VadManager cleaned up.", { context: 'VadManager' });
   }
 }
 
