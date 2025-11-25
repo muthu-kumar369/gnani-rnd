@@ -1,14 +1,19 @@
 // electron/main.js
 const { app, BrowserWindow, ipcMain } = require("electron");
 const path = require("path");
-const Store = require('electron-store'); // Import electron-store
+const Store = require('electron-store');
 const logger = require("./utils/logger");
 const MicCapture = require("./mic/micCapture");
 const WakeManager = require("./wake/wakeManager");
 const VadManager = require("./vad/vadManager");
 const StreamingClient = require("./stream/client");
-const TtsPlayer = require("./stream/ttsPlayer"); // New import for TTSPlayer
-const MockWebSocketServer = require('./stream/test/mockServer.js'); // This was present
+const TtsPlayer = require("./stream/ttsPlayer");
+const { setupAudioIPC } = require("./ipc/audio");
+const { setupSystemIPC } = require("./ipc/system");
+const { setupWakeIPC } = require("./ipc/wake");
+const { setupVadIPC } = require("./ipc/vad");
+const { setupStreamIPC } = require("./ipc/stream");
+const MockWebSocketServer = require('./stream/test/mockServer.js');
 
 logger.info("Electron main process starting...", { context: 'MainProcess' });
 
@@ -26,14 +31,11 @@ let mainWindow;
 let micCapture;
 let wakeManager;
 let vadManager;
-let streamingClient; // New variable
-let ttsPlayer; // Declare ttsPlayer
-let mockServer; // For dev mode
-
-// Initialize electron-store for persistent, secure storage of user data like tokens.
+let streamingClient;
+let ttsPlayer;
+let mockServer;
 let store;
 
-// IPC Handlers for secure token storage
 ipcMain.handle('auth:store-tokens', (event, { accessToken, refreshToken }) => {
   store.set('accessToken', accessToken);
   store.set('refreshToken', refreshToken);
@@ -55,78 +57,67 @@ ipcMain.handle('auth:clear-tokens', () => {
   return true;
 });
 
-// This function would call the auth server to get a new access token
 async function callRefreshTokenApiFromMain(refreshToken) {
-  // In a real app, you'd use `net.request` or a library like `axios`
-  // to make an HTTP request to your auth server's refresh endpoint.
   logger.warn('callRefreshTokenApiFromMain is not implemented. Returning null.', { context: 'MainProcess' });
-  return null; // Returning null will cause the client to log out.
+  return null;
 }
 
 async function main() {
   store = new Store();
-  // --- Development-only Mock Server ---
-  // if (isDev) {
-  //   // Only start mock WebSocket server in development mode for testing.
-  //   // mockServer = new MockWebSocketServer(8080);
-  //   // mockServer.start();
-  // }
 
-  // Create the main window
   createWindow();
 
-  // Initialize all managers and engines after mainWindow is available
   micCapture = new MicCapture();
   wakeManager = new WakeManager();
-  // VADManager requires micCapture instance to subscribe to audio frames.
-  vadManager = new VadManager(micCapture);
-  // StreamingClient now handles gRPC communication. It requires mainWindow for IPC.
+  vadManager = new VadManager();
   streamingClient = new StreamingClient({
     mainWindow: mainWindow,
     store: store,
     callRefreshTokenApiFromMain: callRefreshTokenApiFromMain,
   });
-  ttsPlayer = new TtsPlayer(); // Instantiate TtsPlayer
+  ttsPlayer = new TtsPlayer();
 
   await wakeManager.initialize();
-  await vadManager.init(); // This will now correctly subscribe to micCapture
+  await vadManager.init();
 
-  // --- Audio Pipeline Wiring ---
-  // The audio frames are now sent directly from the renderer process via IPC 'stream:audio-frame'.
-  // These frames are then routed to the StreamingClient, WakeManager, and VadManager.
+  vadManager.on('speech:start', () => {
+    logger.info('VAD detected speech, starting audio stream.', { context: 'MainProcess' });
+    streamingClient.startAudioStreaming(true);
+  });
 
-  // Setup IPC handlers now that managers are ready
-  setupAudioIPC(micCapture);
+  vadManager.on('speech:end', () => {
+    logger.info('VAD detected silence, stopping audio stream.', { context: 'MainProcess' });
+    streamingClient.stopAudioStreaming();
+  });
+
+  vadManager.on('audio:frame', (frame) => {
+    streamingClient.addAudioFrame(frame);
+  });
+
+  setupAudioIPC(wakeManager, vadManager);
   setupSystemIPC();
   setupWakeIPC(wakeManager);
   setupVadIPC(vadManager);
-  setupStreamIPC(streamingClient, ttsPlayer, wakeManager, vadManager); // Pass ttsPlayer
+  setupStreamIPC(streamingClient, ttsPlayer);
 
   logger.info("All managers initialized and IPCs are set up.", { context: 'MainProcess' });
 }
 
-/**
- * Creates the main Electron browser window.
- */
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 800,
     height: 600,
     webPreferences: {
       preload: path.resolve(__dirname, "preload.js"),
-      contextIsolation: true, // Recommended for security
-      nodeIntegration: false, // Recommended for security
-      webSecurity: true, // Enable webSecurity
-      // Content Security Policy (CSP) configuration
-      // In development, 'unsafe-eval' and 'unsafe-inline' are needed for Vite's HMR.
-      // For production, these should be locked down further or removed if not strictly necessary.
+      contextIsolation: true,
+      nodeIntegration: false,
+      webSecurity: true,
       contentSecurityPolicy: isDev
         ? "default-src 'self' http://localhost:5173 ws://localhost:5173 data: blob:; script-src 'self' http://localhost:5173 'unsafe-inline' 'unsafe-eval'; style-src 'self' http://localhost:5173 'unsafe-inline';"
         : "default-src 'self' data: blob:; script-src 'self'; style-src 'self';"
     },
   });
 
-  // Expose mainWindow globally for debugging or specific IPC needs (use with caution).
   global.mainWindow = mainWindow;
 
   if (isDev) {
@@ -134,7 +125,6 @@ function createWindow() {
       "Running in development mode. Loading Vite server at http://localhost:5173", { context: 'MainProcess' }
     );
     mainWindow.loadURL("http://localhost:5173");
-    // Open DevTools in development for easier debugging.
     mainWindow.webContents.openDevTools();
   } else {
     logger.info("Running in production mode. Loading built React app.", { context: 'MainProcess' });
@@ -162,10 +152,9 @@ app.on("window-all-closed", () => {
     vadManager.cleanup();
   }
   if (streamingClient) {
-    // Cleanup StreamingClient
     streamingClient.cleanup();
   }
-  if (ttsPlayer) { // Cleanup TtsPlayer
+  if (ttsPlayer) {
     ttsPlayer.cleanup();
   }
   if (micCapture) {
@@ -182,24 +171,16 @@ app.on("activate", () => {
   }
 });
 
-ipcMain.on("audio:thinking", (event, data) => {
-  logger.info(`Renderer is thinking: ${data}`, { context: 'MainProcess' });
-});
-
-// IPC Handler for mic:start
-ipcMain.on('mic:start', () => {
-  logger.info('Received mic:start IPC from renderer. Starting microphone and managers...', { context: 'MainProcess' });
+ipcMain.on('mic:start', async () => {
+  logger.info('Received mic:start IPC from renderer. Starting microphone and VAD...', { context: 'MainProcess' });
   micCapture.startMicrophone();
-  wakeManager.startProcessing(); // Start wake word processing
-  vadManager.startProcessing(); // Start VAD processing
+  vadManager.startProcessing();
 });
 
-// IPC Handler for mic:stop
 ipcMain.on('mic:stop', () => {
-  logger.info('Received mic:stop IPC from renderer. Stopping microphone and managers...', { context: 'MainProcess' });
+  logger.info('Received mic:stop IPC from renderer. Stopping microphone and VAD...', { context: 'MainProcess' });
   micCapture.stopMicrophone();
-  wakeManager.stopProcessing(); // Stop wake word processing
-  vadManager.stopProcessing(); // Stop VAD processing
+  vadManager.stopProcessing();
 });
 
 ipcMain.on("message", (event, channel, ...args) => {

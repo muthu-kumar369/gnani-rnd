@@ -174,21 +174,52 @@ export const useGnaniUIState = () => {
   }, []);
 
   // Sync raw IPC states into the unified UI state
+  const {
+    isWakeWordReady,
+    isVADReady,
+    isWakeWordTriggered,
+    isAudioListening,
+    isAudioEnded,
+    isStreamConnected,
+    streamErrorMessage,
+    isTtsStarted,
+    isTtsEnded,
+    latestPartialSTT,
+    latestFinalSTT,
+    latestLLMChunk,
+    latestSTTSegmentId,
+  } = ipcStates;
+
   useEffect(() => {
-    dispatch({ type: 'SET_WAKE_WORD_READY', payload: ipcStates.isWakeWordReady });
-    dispatch({ type: 'SET_VAD_READY', payload: ipcStates.isVADReady });
-    dispatch({ type: 'SET_WAKE_WORD_TRIGGERED', payload: ipcStates.isWakeWordTriggered });
-    dispatch({ type: 'SET_AUDIO_LISTENING', payload: ipcStates.isAudioListening });
-    dispatch({ type: 'SET_AUDIO_ENDED', payload: ipcStates.isAudioEnded });
-    dispatch({ type: 'SET_STREAM_CONNECTED', payload: ipcStates.isStreamConnected });
-    dispatch({ type: 'SET_STREAM_ERROR', payload: ipcStates.streamErrorMessage });
-    dispatch({ type: 'SET_TTS_STARTED', payload: ipcStates.isTtsStarted });
-    dispatch({ type: 'SET_TTS_ENDED', payload: ipcStates.isTtsEnded });
-    dispatch({ type: 'SET_LATEST_PARTIAL_STT', payload: ipcStates.latestPartialSTT });
-    dispatch({ type: 'SET_LATEST_FINAL_STT', payload: ipcStates.latestFinalSTT });
-    dispatch({ type: 'SET_LATEST_LLM_CHUNK', payload: ipcStates.latestLLMChunk });
-    dispatch({ type: 'SET_LATEST_STT_SEGMENT_ID', payload: ipcStates.latestSTTSegmentId });
-  }, [ipcStates, dispatch]);
+    dispatch({ type: 'SET_WAKE_WORD_READY', payload: isWakeWordReady });
+    dispatch({ type: 'SET_VAD_READY', payload: isVADReady });
+    dispatch({ type: 'SET_WAKE_WORD_TRIGGERED', payload: isWakeWordTriggered });
+    dispatch({ type: 'SET_AUDIO_LISTENING', payload: isAudioListening });
+    dispatch({ type: 'SET_AUDIO_ENDED', payload: isAudioEnded });
+    dispatch({ type: 'SET_STREAM_CONNECTED', payload: isStreamConnected });
+    dispatch({ type: 'SET_STREAM_ERROR', payload: streamErrorMessage });
+    dispatch({ type: 'SET_TTS_STARTED', payload: isTtsStarted });
+    dispatch({ type: 'SET_TTS_ENDED', payload: isTtsEnded });
+    dispatch({ type: 'SET_LATEST_PARTIAL_STT', payload: latestPartialSTT });
+    dispatch({ type: 'SET_LATEST_FINAL_STT', payload: latestFinalSTT });
+    dispatch({ type: 'SET_LATEST_LLM_CHUNK', payload: latestLLMChunk });
+    dispatch({ type: 'SET_LATEST_STT_SEGMENT_ID', payload: latestSTTSegmentId });
+  }, [
+    isWakeWordReady,
+    isVADReady,
+    isWakeWordTriggered,
+    isAudioListening,
+    isAudioEnded,
+    isStreamConnected,
+    streamErrorMessage,
+    isTtsStarted,
+    isTtsEnded,
+    latestPartialSTT,
+    latestFinalSTT,
+    latestLLMChunk,
+    latestSTTSegmentId,
+    dispatch,
+  ]);
 
   // Sync mic active state
   useEffect(() => {
@@ -203,36 +234,42 @@ export const useGnaniUIState = () => {
       return;
     }
 
-    // Prioritize error state
-    if (uiState.streamErrorMessage) {
+    const {
+      isMicActive: micActive,
+      isStreamConnected: streamConnected,
+      isWakeWordReady: wakeWordReady,
+      isWakeWordTriggered: wakeWordTriggered,
+      isAudioListening: audioListening,
+      isTtsStarted: ttsStarted,
+      isTtsEnded: ttsEnded,
+      streamErrorMessage: streamError,
+      latestFinalSTT: finalSTT,
+      latestLLMChunk: llmChunk,
+      latestPartialSTT: partialSTT,
+    } = uiState;
+
+    if (streamError) {
       dispatch({ type: 'SET_APP_STATUS', payload: 'error' });
     }
-    // Prioritize responding state (TTS is active)
-    else if (uiState.isTtsStarted && !uiState.isTtsEnded) {
+    else if (ttsStarted && !ttsEnded) {
       dispatch({ type: 'SET_APP_STATUS', payload: 'responding' });
     }
-    // Prioritize thinking state (STT is final, but no TTS started and no LLM chunk yet)
-    else if (uiState.latestFinalSTT && !uiState.isTtsStarted && !uiState.latestLLMChunk) {
+    else if (finalSTT && !ttsStarted && !llmChunk) {
       dispatch({ type: 'SET_APP_STATUS', payload: 'thinking' });
     }
-    // Prioritize receiving STT (either partial or final STT is coming in)
-    else if (uiState.latestPartialSTT || uiState.latestFinalSTT) {
+    else if (partialSTT || finalSTT) {
       dispatch({ type: 'SET_APP_STATUS', payload: 'receiving-stt' });
     }
-    // Prioritize streaming (mic active and stream connected, not TTS)
-    else if (uiState.isMicActive && uiState.isStreamConnected && !uiState.isTtsStarted) {
+    else if (micActive && streamConnected && !ttsStarted) {
       dispatch({ type: 'SET_APP_STATUS', payload: 'streaming' });
     }
-    // Prioritize mic recording (mic active but stream not connected, e.g., during wake word detection)
-    else if (uiState.isMicActive && !uiState.isStreamConnected) {
+    else if (micActive && !streamConnected) {
       dispatch({ type: 'SET_APP_STATUS', payload: 'mic-recording' });
     }
-    // Prioritize wake-word listening (if wake word is ready and triggered, or just ready)
-    else if (uiState.isWakeWordReady && (uiState.isWakeWordTriggered || uiState.isAudioListening)) {
+    else if (wakeWordReady && (wakeWordTriggered || audioListening)) {
         dispatch({ type: 'SET_APP_STATUS', payload: 'wake-word-listening' });
     }
-    // Default to idle if no other specific state is active
-    else if (!uiState.isMicActive && !uiState.isStreamConnected && !uiState.isTtsStarted) {
+    else if (!micActive && !streamConnected && !ttsStarted) {
       dispatch({ type: 'SET_APP_STATUS', payload: 'idle' });
     }
   }, [
@@ -240,10 +277,8 @@ export const useGnaniUIState = () => {
     uiState.isMicActive,
     uiState.isStreamConnected,
     uiState.isWakeWordReady,
-    uiState.isVADReady,
     uiState.isWakeWordTriggered,
     uiState.isAudioListening,
-    uiState.isAudioEnded,
     uiState.isTtsStarted,
     uiState.isTtsEnded,
     uiState.streamErrorMessage,
@@ -255,66 +290,58 @@ export const useGnaniUIState = () => {
   
   // --- Conversation Message Management ---
   useEffect(() => {
-    // Handle new STT segments (user input)
-    if (ipcStates.latestSTTSegmentId && ipcStates.latestSTTSegmentId !== uiState.latestSTTSegmentId) {
+    if (latestSTTSegmentId && latestSTTSegmentId !== uiState.latestSTTSegmentId) {
         dispatch({ type: 'ADD_MESSAGE', payload: {
-            id: ipcStates.latestSTTSegmentId,
+            id: latestSTTSegmentId,
             sender: 'user',
-            text: ipcStates.latestPartialSTT || '',
+            text: latestPartialSTT || '',
             isFinal: false,
             type: 'partial_text',
-            segmentId: ipcStates.latestSTTSegmentId,
+            segmentId: latestSTTSegmentId,
         }});
-    } else if (ipcStates.latestSTTSegmentId && ipcStates.latestPartialSTT) {
-        // Update existing partial STT
+    } else if (latestSTTSegmentId && latestPartialSTT) {
         dispatch({ type: 'ADD_MESSAGE', payload: {
-            id: ipcStates.latestSTTSegmentId,
+            id: latestSTTSegmentId,
             sender: 'user',
-            text: ipcStates.latestPartialSTT,
+            text: latestPartialSTT,
             isFinal: false,
             type: 'partial_text',
-            segmentId: ipcStates.latestSTTSegmentId,
+            segmentId: latestSTTSegmentId,
         }});
     }
 
-    // Finalize STT (user input)
-    if (ipcStates.latestFinalSTT && ipcStates.latestSTTSegmentId) {
+    if (latestFinalSTT && latestSTTSegmentId) {
         dispatch({ type: 'ADD_MESSAGE', payload: {
-            id: ipcStates.latestSTTSegmentId,
+            id: latestSTTSegmentId,
             sender: 'user',
-            text: ipcStates.latestFinalSTT,
+            text: latestFinalSTT,
             isFinal: true,
             type: 'final_text',
-            segmentId: ipcStates.latestSTTSegmentId,
+            segmentId: latestSTTSegmentId,
         }});
-        // Clear partial STT once final is received and processed
         dispatch({ type: 'SET_LATEST_PARTIAL_STT', payload: null });
     }
 
-    // Handle LLM chunks (Gnani response)
-    if (ipcStates.latestLLMChunk && ipcStates.latestSTTSegmentId) {
-        const gnaniMessageId = `gnani-${ipcStates.latestSTTSegmentId}`;
+    if (latestLLMChunk && latestSTTSegmentId) {
+        const gnaniMessageId = `gnani-${latestSTTSegmentId}`;
         const existingGnaniMessage = uiState.conversationMessages.find(
             (msg) => msg.id === gnaniMessageId && msg.sender === 'gnani'
         );
 
-        let newText = existingGnaniMessage ? existingGnaniMessage.text + ipcStates.latestLLMChunk : ipcStates.latestLLMChunk;
+        let newText = existingGnaniMessage ? existingGnaniMessage.text + latestLLMChunk : latestLLMChunk;
         
         dispatch({ type: 'ADD_MESSAGE', payload: {
             id: gnaniMessageId,
             sender: 'gnani',
             text: newText,
-            isFinal: false, // LLM chunks are usually not final until TTS ends
+            isFinal: false,
             type: 'llm_chunk',
-            segmentId: ipcStates.latestSTTSegmentId,
+            segmentId: latestSTTSegmentId,
         }});
-        // Clear LLM chunk after processing to prevent re-adding
-        dispatch({ type: 'SET_LATEST_LLM_CHUNK', payload: null });
     }
 
-    // Finalize Gnani response when TTS ends
-    if (ipcStates.isTtsEnded && ipcStates.latestSTTSegmentId) {
-        const gnaniMessageId = `gnani-${ipcStates.latestSTTSegmentId}`;
+    if (isTtsEnded && latestSTTSegmentId) {
+        const gnaniMessageId = `gnani-${latestSTTSegmentId}`;
         const existingGnaniMessage = uiState.conversationMessages.find(
             (msg) => msg.id === gnaniMessageId && msg.sender === 'gnani'
         );
@@ -327,13 +354,13 @@ export const useGnaniUIState = () => {
         }
     }
   }, [
-    ipcStates.latestPartialSTT,
-    ipcStates.latestFinalSTT,
-    ipcStates.latestLLMChunk,
-    ipcStates.latestSTTSegmentId,
-    ipcStates.isTtsEnded,
-    uiState.latestSTTSegmentId, // Need uiState's own segment ID to detect changes
-    uiState.conversationMessages, // Needed to find existing messages
+    latestPartialSTT,
+    latestFinalSTT,
+    latestLLMChunk,
+    latestSTTSegmentId,
+    isTtsEnded,
+    uiState.latestSTTSegmentId,
+    uiState.conversationMessages,
     dispatch,
   ]);
 

@@ -2,10 +2,7 @@
 const { ipcMain } = require('electron');
 const logger = require('../utils/logger');
 
-let audioBufferQueue = [];
-let isStreamReadyForAudio = false;
-
-function setupStreamIPC(streamingClient, ttsPlayer, wakeManager, vadManager) {
+function setupStreamIPC(streamingClient, ttsPlayer) {
   logger.info('Setting up Stream IPC channels.');
 
   // --- Main -> Renderer ---
@@ -39,9 +36,7 @@ function setupStreamIPC(streamingClient, ttsPlayer, wakeManager, vadManager) {
 
   streamingClient.on('stream:tts_chunk', (payload) => {
     logger.debug(`Received stream:tts_chunk from client for segment ${payload.segment_id}. Passing to TTS Player.`);
-    // Pass to TTS Player for actual playback
     ttsPlayer.playTtsChunk(payload.segment_id, payload.pcm_base64, payload.sampleRate, payload.format);
-    // Also forward to renderer if UI needs to know about TTS chunks directly
     if (global.mainWindow && !global.mainWindow.isDestroyed()) {
       global.mainWindow.webContents.send('stream:tts_chunk', payload);
     }
@@ -55,7 +50,6 @@ function setupStreamIPC(streamingClient, ttsPlayer, wakeManager, vadManager) {
   });
 
   streamingClient.on('stream:metrics', (payload) => {
-    // logger.debug('Sending stream:metrics to renderer.', payload); // Can be verbose
     if (global.mainWindow && !global.mainWindow.isDestroyed()) {
       global.mainWindow.webContents.send('stream:metrics', payload);
     }
@@ -85,26 +79,8 @@ function setupStreamIPC(streamingClient, ttsPlayer, wakeManager, vadManager) {
   // --- Renderer -> Main ---
   ipcMain.on('stream:start', async (event, options) => {
     logger.info('Received stream:start from renderer.', options);
-    isStreamReadyForAudio = false;
-    streamingClient.init(options); // Re-init client with potentially new options
+    streamingClient.init(options);
     await streamingClient.startAudioStreaming();
-
-    if (!streamingClient.isStreamingAudio) {
-      logger.error('Failed to activate gRPC audio stream. Connection probably failed or dropped immediately.', { context: 'StreamIPC' });
-      if (global.mainWindow && !global.mainWindow.isDestroyed()) {
-        global.mainWindow.webContents.send('stream:error', { message: 'Failed to establish audio stream.' });
-      }
-      return;
-    }
-
-    isStreamReadyForAudio = true;
-    logger.info(`Stream is ready. Processing ${audioBufferQueue.length} queued audio frames.`);
-    audioBufferQueue.forEach(buffer => {
-        streamingClient.addAudioFrame(buffer);
-        if (wakeManager) wakeManager.processAudioFrame(buffer);
-        if (vadManager) vadManager.processAudioFrame(buffer);
-    });
-    audioBufferQueue = [];
   });
 
   ipcMain.on('stream:start-file-test', async () => {
@@ -116,21 +92,8 @@ function setupStreamIPC(streamingClient, ttsPlayer, wakeManager, vadManager) {
 
   ipcMain.on('stream:stop', () => {
     logger.info('Received stream:stop from renderer.');
-    isStreamReadyForAudio = false;
-    audioBufferQueue = [];
     streamingClient.stopAudioStreaming();
     streamingClient.disconnect();
-  });
-
-  ipcMain.on("stream:audio-frame", (event, pcmData) => {
-    const audioBuffer = Buffer.from(pcmData);
-    if (isStreamReadyForAudio) {
-      if (streamingClient) streamingClient.addAudioFrame(audioBuffer);
-      if (wakeManager) wakeManager.processAudioFrame(audioBuffer);
-      if (vadManager) vadManager.processAudioFrame(audioBuffer);
-    } else {
-      audioBufferQueue.push(audioBuffer);
-    }
   });
 
   ipcMain.handle('stream:getStatus', async () => {

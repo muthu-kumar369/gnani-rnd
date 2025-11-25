@@ -45,14 +45,12 @@ const useMicrophone = () => {
       analyserRef.current = analyser;
 
       source.connect(analyser);
-      analyser.connect(audioContext.destination);
 
       await audioContext.audioWorklet.addModule('/audio-processor.js');
       const audioWorkletNode = new AudioWorkletNode(audioContext, 'audio-processor');
       audioWorkletNodeRef.current = audioWorkletNode;
 
       source.connect(audioWorkletNode);
-      audioWorkletNode.connect(audioContext.destination);
 
       audioWorkletNode.port.onmessage = (event) => {
         if (event.data.type === 'audioBuffer' && window.gnani?.stream?.sendAudioFrame) {

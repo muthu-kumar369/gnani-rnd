@@ -129,8 +129,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   useEffect(() => {
     if (!loading && window.gnani?.auth && accessToken && refreshToken) {
       window.gnani.auth.storeTokens(accessToken, refreshToken).catch((err) => errorLogger.error('Failed to store tokens securely:', err, { context: 'AuthContext' }));
-    } else if (!loading && window.gnani?.auth && (!accessToken || !refreshToken)) {
-      window.gnani.auth.clearTokens().catch((err) => errorLogger.error('Failed to clear tokens securely:', err, { context: 'AuthContext' }));
     }
   }, [accessToken, refreshToken, loading]);
 

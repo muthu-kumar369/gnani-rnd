@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { useGnaniUIState } from "../../hooks/useGnaniUIState";
 import useMicrophone from "../../hooks/useMicrophone";
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
+import { useIPC } from "../../hooks/useIPC";
+import { speakText } from "../../utils/tts";
 import errorLogger from "../../utils/errorLogger";
 
 import HUDBackground from "./HUDBackground";
@@ -19,8 +21,11 @@ const GnaniCore: React.FC = () => {
   const { audioLevel, isMicActive, startMic, stopMic } = useMicrophone();
   const { logout } = useAuth();
   const { addToast } = useToast();
+  const { latestFinalSTT, latestLLMChunk } = useIPC();
 
   const [showIntelligencePanel, setShowIntelligencePanel] = useState(false);
+  const [accumulatedLLMResponse, setAccumulatedLLMResponse] = useState("");
+  const responseEndTimer = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (window.gnani?.auth?.onForceLogout) {
@@ -39,15 +44,46 @@ const GnaniCore: React.FC = () => {
     }
   }, [logout, addToast]);
 
+  useEffect(() => {
+    if (latestFinalSTT) {
+      console.log(`[GnaniCore] Final text received: "${latestFinalSTT}"`);
+      // We don't speak the user's final text.
+    }
+  }, [latestFinalSTT]);
+
+  useEffect(() => {
+    if (responseEndTimer.current) {
+      clearTimeout(responseEndTimer.current);
+    }
+
+    if (latestLLMChunk) {
+      console.log(`[GnaniCore] LLM chunk received:`, latestLLMChunk);
+      setAccumulatedLLMResponse((prev) => prev + latestLLMChunk);
+
+      responseEndTimer.current = setTimeout(() => {
+        if (accumulatedLLMResponse) {
+          speakText(accumulatedLLMResponse + latestLLMChunk);
+          setAccumulatedLLMResponse("");
+        }
+      }, 300);
+    } else if (accumulatedLLMResponse) {
+      speakText(accumulatedLLMResponse);
+      setAccumulatedLLMResponse("");
+    }
+
+    return () => {
+      if (responseEndTimer.current) {
+        clearTimeout(responseEndTimer.current);
+      }
+    };
+  }, [latestLLMChunk]);
+
   const handleStartRecording = () => {
     startMic();
-    // Assuming no specific options are needed for now, can be enhanced later
-    window.gnani?.stream?.startStream({});
   };
 
   const handleStopRecording = () => {
     stopMic();
-    window.gnani?.stream?.stopStream();
   };
 
   const currentStatus = uiState.streamErrorMessage

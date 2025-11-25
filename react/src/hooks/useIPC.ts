@@ -83,17 +83,20 @@ export const useIPC = () => {
 
       // Listeners for gRPC stream data
       unsubs.push(window.gnani.stream.on('stream:partial', ({ text, segment_id }: { text: string, segment_id: string }) => {
+        console.log(`[IPC] Received partial STT for segment ${segment_id}: "${text}"`);
         errorLogger.debug(`IPC: Partial STT: ${text}`, { context: 'useIPC' });
         setLatestPartialSTT(text);
         setLatestSTTSegmentId(segment_id);
       }));
       unsubs.push(window.gnani.stream.on('stream:final', ({ text, segment_id }: { text: string, segment_id: string }) => {
+        console.log(`[IPC] Received final STT for segment ${segment_id}: "${text}"`);
         errorLogger.debug(`IPC: Final STT: ${text}`, { context: 'useIPC' });
         setLatestFinalSTT(text);
         setLatestSTTSegmentId(segment_id);
         setLatestPartialSTT(null); // Clear partial when final arrives
       }));
       unsubs.push(window.gnani.stream.on('stream:tts_chunk', ({ chunk }: { chunk: any }) => {
+        console.log('[IPC] Received TTS chunk:', chunk);
         errorLogger.debug(`IPC: LLM Chunk: ${chunk}`, { context: 'useIPC' });
         setLatestLLMChunk(chunk);
       }));
