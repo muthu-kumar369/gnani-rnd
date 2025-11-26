@@ -4,5 +4,10 @@ import tailwindcss from "@tailwindcss/vite";
 
 export default defineConfig({
   base: "./",
-  plugins: [react(), tailwindcss()]
+  plugins: [react(), tailwindcss()],
+  resolve: {
+    alias: {
+      events: 'events/events.js',
+    },
+  },
 });

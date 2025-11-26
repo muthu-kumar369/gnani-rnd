@@ -11,6 +11,7 @@ interface LogOptions {
   context?: string; // Additional context for the log message
   tags?: { [key: string]: string }; // Key-value tags for filtering/analysis
   extra?: any; // Any extra data to attach to the log
+  [key: string]: any; // Allow any additional properties
 }
 
 const defaultOptions: LogOptions = {

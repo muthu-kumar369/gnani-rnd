@@ -1,6 +1,6 @@
 // /react/src/hooks/useMicrophone.ts
 import { useState, useRef, useEffect, useCallback } from "react";
-import errorLogger from '../utils/errorLogger'; // Import errorLogger
+import errorLogger from '../utils/errorLogger';
 
 const useMicrophone = () => {
   const [isMicActive, setIsMicActive] = useState<boolean>(false);
@@ -10,7 +10,7 @@ const useMicrophone = () => {
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const sourceNodeRef = useRef<MediaStreamAudioSourceNode | null>(null);
   const audioWorkletNodeRef = useRef<AudioWorkletNode | null>(null);
-  const micStateRef = useRef<'idle' | 'starting' | 'active' | 'stopping'>('idle'); // New ref for internal mic state
+  const micStateRef = useRef<'idle' | 'starting' | 'active' | 'stopping'>('idle');
 
   const getAudioContext = useCallback(() => {
     if (!audioContextRef.current || audioContextRef.current.state === 'closed') {
@@ -19,7 +19,7 @@ const useMicrophone = () => {
     }
     return audioContextRef.current;
   }, []);
-  
+
   const startMic = useCallback(async () => {
     if (micStateRef.current !== 'idle') {
       errorLogger.warn(`Mic is already in state: ${micStateRef.current}. Skipping startMic.`, { context: 'useMicrophone' });
@@ -34,9 +34,32 @@ const useMicrophone = () => {
         await audioContext.resume();
       }
 
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      // Audio preprocessing constraints for better quality
+      const audioConstraints: MediaTrackConstraints = {
+        sampleRate: 16000,
+        channelCount: 1,
+        echoCancellation: true,      // Enable echo cancellation
+        noiseSuppression: true,       // Enable noise suppression
+        autoGainControl: true,        // Enable automatic gain control
+      };
+
+      errorLogger.info('Requesting microphone with preprocessing', {
+        context: 'useMicrophone',
+      });
+
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: audioConstraints });
       mediaStreamRef.current = stream;
-      
+
+      // Log actual applied settings
+      const audioTrack = stream.getAudioTracks()[0];
+      const settings = audioTrack.getSettings();
+      errorLogger.info('Microphone settings applied', {
+        context: 'useMicrophone',
+        echoCancellation: settings.echoCancellation,
+        noiseSuppression: settings.noiseSuppression,
+        autoGainControl: settings.autoGainControl,
+      });
+
       const source = audioContext.createMediaStreamSource(stream);
       sourceNodeRef.current = source;
 

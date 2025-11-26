@@ -16,15 +16,16 @@ class VadManager extends EventEmitter {
       sampleRate: 16000,
       frameSize: 480,
       aggressiveness: 3,
-      speechStartThreshold: 3,
-      speechEndThreshold: 10,
+      speechStartThreshold: 3, // Frames of speech needed to start
+      speechEndThreshold: 15, // Frames of silence needed to end (increased from 10 for better stability)
+      hysteresisMargin: 2, // Additional frames needed to change state (prevents flapping)
     };
     logger.info("VadManager initialized.", { context: 'VadManager' });
   }
 
   async init() {
     await this.vadEngine.init(this.config);
-    logger.info("VadManager initialized.", { context: 'VadManager' });
+    logger.info("VadManager initialized with config:", this.config, { context: 'VadManager' });
   }
 
   processAudioFrame(frame) {
@@ -35,6 +36,7 @@ class VadManager extends EventEmitter {
     this.vadEngine
       .processAudioFrame(frame)
       .then(({ speech }) => {
+        // Emit frame if we're in speech segment
         if (this.state === "speech_started") {
           this.emit("audio:frame", frame);
         }
@@ -42,20 +44,32 @@ class VadManager extends EventEmitter {
         if (speech) {
           this.nonSpeechFramesCount = 0;
           this.speechFramesCount++;
+
+          // Start speech segment with hysteresis
           if (
             this.state === "monitoring" &&
-            this.speechFramesCount >= this.config.speechStartThreshold
+            this.speechFramesCount >= (this.config.speechStartThreshold + this.config.hysteresisMargin)
           ) {
             this._startSpeechSegment();
           }
         } else {
           this.speechFramesCount = 0;
+
+          // End speech segment with hysteresis
           if (this.state === "speech_started") {
             this.nonSpeechFramesCount++;
-            if (this.nonSpeechFramesCount >= this.config.speechEndThreshold) {
+            if (this.nonSpeechFramesCount >= (this.config.speechEndThreshold + this.config.hysteresisMargin)) {
               this._endSpeechSegment();
             }
           }
+        }
+
+        // Log state transitions for debugging
+        if (this.speechFramesCount > 0 || this.nonSpeechFramesCount > 0) {
+          logger.debug(
+            `VAD state: ${this.state}, speech frames: ${this.speechFramesCount}, non-speech frames: ${this.nonSpeechFramesCount}`,
+            { context: 'VadManager' }
+          );
         }
       })
       .catch((error) => {
@@ -67,6 +81,7 @@ class VadManager extends EventEmitter {
     this.setState("speech_started");
     this.segmentId = uuidv4();
     this.nonSpeechFramesCount = 0;
+    this.speechFramesCount = 0; // Reset after starting
     this.emit("audio:listening", true);
     this.emit("speech:start");
     logger.info(`Speech segment started. ID: ${this.segmentId}`, { context: 'VadManager' });
@@ -131,11 +146,26 @@ class VadManager extends EventEmitter {
     }
   }
 
+  /**
+   * Update VAD configuration thresholds
+   * @param {Object} newConfig - Configuration object with optional properties:
+   *   - speechStartThreshold: frames of speech needed to start
+   *   - speechEndThreshold: frames of silence needed to end
+   *   - hysteresisMargin: additional frames for state change
+   */
+  updateConfig(newConfig) {
+    const oldConfig = { ...this.config };
+    this.config = { ...this.config, ...newConfig };
+    logger.info(`VAD config updated from ${JSON.stringify(oldConfig)} to ${JSON.stringify(this.config)}`, { context: 'VadManager' });
+  }
+
   getStatus() {
     return {
       state: this.state,
       backend: this.vadEngine.getBackendName(),
       config: this.config,
+      speechFramesCount: this.speechFramesCount,
+      nonSpeechFramesCount: this.nonSpeechFramesCount,
     };
   }
 

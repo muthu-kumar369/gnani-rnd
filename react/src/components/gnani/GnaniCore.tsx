@@ -5,7 +5,10 @@ import useMicrophone from "../../hooks/useMicrophone";
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
 import { useIPC } from "../../hooks/useIPC";
-import { speakText } from "../../utils/tts";
+import useGnaniState from "../../hooks/useGnaniState";
+import useBargeIn from "../../hooks/useBargeIn";
+import useSpokenText from "../../hooks/useSpokenText";
+import StreamingTTS from "../../utils/streamingTTS";
 import errorLogger from "../../utils/errorLogger";
 
 import HUDBackground from "./HUDBackground";
@@ -15,18 +18,66 @@ import Waveform from "./Waveform";
 import StatusBar from "./StatusBar";
 import ResponseConsole from "./ResponseConsole";
 import IntelligencePanel from "./IntelligencePanel";
+import SpokenTextDisplay from "./SpokenTextDisplay";
 
 const GnaniCore: React.FC = () => {
   const uiState = useGnaniUIState();
   const { audioLevel, isMicActive, startMic, stopMic } = useMicrophone();
   const { logout } = useAuth();
   const { addToast } = useToast();
-  const { latestFinalSTT, latestLLMChunk } = useIPC();
+  const { latestFinalSTT, latestLLMChunk, isTtsStarted } = useIPC();
+
+  // State machine - single source of truth
+  const { state, transition, isIdle, isListening, isThinking, isSpeaking } = useGnaniState();
+
+  // Spoken text display
+  const spokenText = useSpokenText();
+
+  // Streaming TTS
+  const streamingTTSRef = useRef<StreamingTTS | null>(null);
 
   const [showIntelligencePanel, setShowIntelligencePanel] = useState(false);
-  const [accumulatedLLMResponse, setAccumulatedLLMResponse] = useState("");
-  const responseEndTimer = useRef<NodeJS.Timeout | null>(null);
 
+  // Barge-in handler
+  const handleBargeIn = () => {
+    errorLogger.info('Barge-in triggered', { context: 'GnaniCore', currentState: state });
+
+    // Stop TTS immediately
+    if (streamingTTSRef.current) {
+      streamingTTSRef.current.stop();
+    }
+
+    // Clear spoken text
+    spokenText.clearText();
+    spokenText.stopPlayback();
+
+    // Transition to listening state
+    transition('barge-in');
+
+    // Start microphone if not already active
+    if (!isMicActive) {
+      startMic();
+    }
+  };
+
+  // Barge-in hook
+  const bargeIn = useBargeIn(state, handleBargeIn);
+
+  // Initialize StreamingTTS on mount
+  useEffect(() => {
+    streamingTTSRef.current = new StreamingTTS();
+    errorLogger.info('StreamingTTS instance created', { context: 'GnaniCore' });
+
+    return () => {
+      if (streamingTTSRef.current) {
+        streamingTTSRef.current.cleanup();
+        streamingTTSRef.current = null;
+        errorLogger.info('StreamingTTS instance cleaned up', { context: 'GnaniCore' });
+      }
+    };
+  }, []);
+
+  // Handle auth logout
   useEffect(() => {
     if (window.gnani?.auth?.onForceLogout) {
       const handleForceLogout = () => {
@@ -44,57 +95,101 @@ const GnaniCore: React.FC = () => {
     }
   }, [logout, addToast]);
 
+  // Handle wake-word detection
+  useEffect(() => {
+    if (uiState.isWakeWordTriggered && isIdle) {
+      errorLogger.info('Wake-word detected, transitioning to listening', { context: 'GnaniCore' });
+      transition('wake-word-detected');
+      startMic();
+    }
+  }, [uiState.isWakeWordTriggered, isIdle, transition, startMic]);
+
+  // Handle VAD end of speech
+  useEffect(() => {
+    if (uiState.isAudioEnded && isListening) {
+      errorLogger.info('VAD detected end of speech, transitioning to thinking', { context: 'GnaniCore' });
+      transition('vad-end');
+      stopMic();
+    }
+  }, [uiState.isAudioEnded, isListening, transition, stopMic]);
+
+  // Handle final STT
   useEffect(() => {
     if (latestFinalSTT) {
-      console.log(`[GnaniCore] Final text received: "${latestFinalSTT}"`);
-      // We don't speak the user's final text.
+      errorLogger.info(`Final STT received: "${latestFinalSTT}"`, { context: 'GnaniCore' });
+      // User's text is already in conversation history
     }
   }, [latestFinalSTT]);
 
+  // Handle LLM streaming chunks
   useEffect(() => {
-    if (responseEndTimer.current) {
-      clearTimeout(responseEndTimer.current);
+    if (latestLLMChunk && streamingTTSRef.current) {
+      errorLogger.debug(`LLM chunk received: "${latestLLMChunk}"`, { context: 'GnaniCore' });
+
+      // Add to TTS
+      streamingTTSRef.current.addTextChunk(latestLLMChunk);
+
+      // Add to spoken text display
+      spokenText.addTextChunk(latestLLMChunk);
     }
+  }, [latestLLMChunk, spokenText]);
 
-    if (latestLLMChunk) {
-      console.log(`[GnaniCore] LLM chunk received:`, latestLLMChunk);
-      setAccumulatedLLMResponse((prev) => prev + latestLLMChunk);
-
-      responseEndTimer.current = setTimeout(() => {
-        if (accumulatedLLMResponse) {
-          speakText(accumulatedLLMResponse + latestLLMChunk);
-          setAccumulatedLLMResponse("");
-        }
-      }, 300);
-    } else if (accumulatedLLMResponse) {
-      speakText(accumulatedLLMResponse);
-      setAccumulatedLLMResponse("");
+  // Handle TTS start
+  useEffect(() => {
+    if (isTtsStarted && isThinking) {
+      errorLogger.info('TTS started, transitioning to speaking', { context: 'GnaniCore' });
+      transition('tts-start');
+      spokenText.startPlayback();
     }
+  }, [isTtsStarted, isThinking, transition, spokenText]);
 
-    return () => {
-      if (responseEndTimer.current) {
-        clearTimeout(responseEndTimer.current);
-      }
-    };
-  }, [latestLLMChunk]);
-
+  // Manual start recording
   const handleStartRecording = () => {
-    startMic();
+    if (isIdle) {
+      errorLogger.info('Manual start, transitioning to listening', { context: 'GnaniCore' });
+      transition('manual-start');
+      startMic();
+    } else if (isSpeaking || isThinking) {
+      // Manual barge-in
+      bargeIn.handleManualBargeIn();
+    }
   };
 
+  // Manual stop recording
   const handleStopRecording = () => {
-    stopMic();
+    if (isListening) {
+      errorLogger.info('Manual stop, transitioning to thinking', { context: 'GnaniCore' });
+      transition('manual-stop');
+      stopMic();
+    }
   };
 
+  // Map canonical state to UI status for existing components
+  const getUIStatus = () => {
+    switch (state) {
+      case 'idle':
+        return 'idle';
+      case 'listening':
+        return isMicActive ? 'mic-recording' : 'wake-word-listening';
+      case 'thinking':
+        return 'thinking';
+      case 'speaking':
+        return 'responding';
+      default:
+        return 'idle';
+    }
+  };
+
+  const currentUIStatus = getUIStatus();
   const currentStatus = uiState.streamErrorMessage
     ? `ERROR: ${uiState.streamErrorMessage}`
     : uiState.isStreamConnected
-    ? "STREAMING"
-    : "IDLE";
+      ? "STREAMING"
+      : "IDLE";
 
   return (
     <div className="relative w-screen h-screen overflow-hidden font-sans text-white">
-      <HUDBackground status={uiState.appStatus} />
+      <HUDBackground status={currentUIStatus} />
 
       <motion.div
         className="relative z-10 flex flex-col h-full p-4 md:p-8"
@@ -111,6 +206,9 @@ const GnaniCore: React.FC = () => {
               GNANI
             </h1>
             <p className="text-sm text-cyan-400">v2.0 HUD Interface</p>
+            <p className="text-xs text-cyan-300/70 mt-1">
+              State: {state.toUpperCase()}
+            </p>
           </div>
           <div className="text-right">
             <p className="text-sm text-cyan-400">
@@ -130,12 +228,19 @@ const GnaniCore: React.FC = () => {
         </header>
 
         <main className="flex-1 flex flex-col items-center justify-center gap-8 py-4">
-          <AIAvatar status={uiState.appStatus} />
+          <AIAvatar status={currentUIStatus} />
+
+          {/* Spoken Text Display - shows what Gnani is currently saying */}
+          <SpokenTextDisplay
+            words={spokenText.words}
+            isVisible={isSpeaking && spokenText.words.length > 0}
+          />
+
           <div className="w-full max-w-2xl">
             <Waveform
               audioLevel={audioLevel}
               isMicActive={isMicActive}
-              status={uiState.appStatus}
+              status={currentUIStatus}
             />
           </div>
           <div className="w-full max-w-4xl">
@@ -144,7 +249,7 @@ const GnaniCore: React.FC = () => {
         </main>
 
         <footer className="w-full absolute bottom-0 left-0 p-4 md:p-8">
-          <StatusBar status={uiState.appStatus} />
+          <StatusBar status={currentUIStatus} />
         </footer>
       </motion.div>
 
@@ -153,7 +258,7 @@ const GnaniCore: React.FC = () => {
           isMicActive={isMicActive}
           onStart={handleStartRecording}
           onStop={handleStopRecording}
-          status={uiState.appStatus}
+          status={currentUIStatus}
         />
       </div>
 
