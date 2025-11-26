@@ -59,7 +59,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     if (newState.error !== undefined) setError(newState.error);
 
     if (window.gnani?.auth && newState.accessToken && newState.refreshToken) {
-      await window.gnani.auth.storeTokens(newState.accessToken, newState.refreshToken);
+      const userId = newState.user?.id || newState.user?.userId;
+      await window.gnani.auth.storeTokens(newState.accessToken, newState.refreshToken, userId);
     }
   }, []);
 
@@ -128,7 +129,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   useEffect(() => {
     if (!loading && window.gnani?.auth && accessToken && refreshToken) {
-      window.gnani.auth.storeTokens(accessToken, refreshToken).catch((err) => errorLogger.error('Failed to store tokens securely:', err, { context: 'AuthContext' }));
+      const userId = user?.id || user?.userId;
+      window.gnani.auth.storeTokens(accessToken, refreshToken, userId).catch((err) => errorLogger.error('Failed to store tokens securely:', err, { context: 'AuthContext' }));
     }
   }, [accessToken, refreshToken, loading]);
 

@@ -21,7 +21,8 @@ const isDev = process.env.NODE_ENV !== "production";
 
 if (isDev) {
   try {
-    require("electron-reloader")(module);
+    // require("electron-reloader")(module);
+    logger.info("Electron reloader disabled for stability.", { context: 'MainProcess' });
   } catch (err) {
     logger.error("Failed to load electron-reloader:", err, { context: 'MainProcess' });
   }
@@ -36,10 +37,13 @@ let ttsPlayer;
 let mockServer;
 let store;
 
-ipcMain.handle('auth:store-tokens', (event, { accessToken, refreshToken }) => {
+ipcMain.handle('auth:store-tokens', (event, { accessToken, refreshToken, userId }) => {
   store.set('accessToken', accessToken);
   store.set('refreshToken', refreshToken);
-  logger.info('Tokens stored securely.', { context: 'MainProcess' });
+  if (userId) {
+    store.set('userId', userId);
+  }
+  logger.info('Tokens and User ID stored securely.', { context: 'MainProcess' });
   return true;
 });
 
@@ -99,6 +103,17 @@ async function main() {
   setupWakeIPC(wakeManager);
   setupVadIPC(vadManager);
   setupStreamIPC(streamingClient, ttsPlayer);
+
+  // When stream disconnects, we DO NOT want to stop TTS playback immediately.
+  // The frontend might still have text buffered that needs to be spoken.
+  // The frontend handles stream:disconnected by flushing its buffer.
+  streamingClient.on('stream:disconnected', () => {
+    logger.info('Stream disconnected. Letting frontend handle TTS completion.', { context: 'MainProcess' });
+  });
+
+  // Echo Cancellation: Pause VAD when TTS is playing (Controlled by Renderer)
+  // We removed the ttsPlayer.on('tts:started') listener because it could fire for partial chunks
+  // that don't result in immediate playback, causing VAD to get stuck in 'stopped' state.
 
   logger.info("All managers initialized and IPCs are set up.", { context: 'MainProcess' });
 }
@@ -181,6 +196,22 @@ ipcMain.on('mic:stop', () => {
   logger.info('Received mic:stop IPC from renderer. Stopping microphone and VAD...', { context: 'MainProcess' });
   micCapture.stopMicrophone();
   vadManager.stopProcessing();
+});
+
+ipcMain.on('tts:started', () => {
+  logger.info('Received tts:started IPC from renderer. Pausing VAD.', { context: 'MainProcess' });
+  vadManager.stopProcessing();
+});
+
+ipcMain.on('tts:ended', () => {
+  logger.info('Received tts:ended IPC from renderer. Resuming VAD.', { context: 'MainProcess' });
+  vadManager.startProcessing();
+});
+
+ipcMain.on('log', (event, { level, message, context, extra }) => {
+  // Map frontend log levels to backend logger
+  const logFn = logger[level] || logger.info;
+  logFn(`[Frontend] ${message}`, { context: context || 'Frontend', extra });
 });
 
 ipcMain.on("message", (event, channel, ...args) => {

@@ -34,6 +34,8 @@ class StreamingClient extends EventEmitter {
     this.backoff = new ExponentialBackoff(this.options.reconnect);
     this.metrics = new Metrics();
     this.isRefreshingToken = false;
+    this.pendingAudioBuffer = [];
+    this.isConnecting = false;
     this.init();
   }
 
@@ -66,9 +68,10 @@ class StreamingClient extends EventEmitter {
   }
 
   async startSession(metadata) {
+    const userId = this.store.get('userId') || "electron-user";
     return new Promise((resolve, reject) => {
       this.grpcClient.StartSession(
-        { user_id: "electron-user" },
+        { user_id: userId },
         metadata,
         (error, response) => {
           if (error) {
@@ -119,6 +122,7 @@ class StreamingClient extends EventEmitter {
     });
   }
 
+
   async connect(isTest = false) {
     if (!this.grpcClient) {
       logger.error("gRPC client not initialized. Cannot connect.", {
@@ -168,13 +172,26 @@ class StreamingClient extends EventEmitter {
     );
 
     this.call.on("data", (response) => {
-      if (response.partial_text) {
+      logger.info('[gRPC] Received data:', response, { context: 'StreamingClient' }); // DEBUG LOG
+      if (response.partial_text && response.partial_text.trim() !== '') {
         this.emit("stream:partial", { text: response.partial_text });
-      } else if (response.llm_chunk) {
-        this.emit("stream:tts_chunk", { chunk: response.llm_chunk });
-      } else if (response.final_text) {
+      }
+      
+      // Handle LLM text chunks
+      if (response.llm_chunk) {
+        console.log(`[StreamingClient] Received LLM chunk: "${response.llm_chunk}"`);
+        if (response.llm_chunk.trim() !== '') {
+          this.emit("stream:tts_chunk", { chunk: response.llm_chunk });
+        } else {
+          console.log('[StreamingClient] Ignored empty LLM chunk');
+        }
+      }
+      
+      if (response.final_text && response.final_text.trim() !== '') {
         this.emit("stream:final", { text: response.final_text });
-      } else if (response.error_message) {
+      }
+      
+      if (response.error_message && response.error_message.trim() !== '') {
         this.emit("stream:error", { message: response.error_message });
       }
     });
@@ -293,7 +310,60 @@ class StreamingClient extends EventEmitter {
     this.handleDisconnect(false);
   }
 
+  async startAudioStreaming(isTest = false) {
+    this.isConnecting = true; // Set connecting flag
+    this.pendingAudioBuffer = []; // Initialize buffer
+    
+    if (!this.isConnected) {
+      await this.connect(isTest);
+    }
+    
+    this.isConnecting = false; // Clear connecting flag
+
+    if (this.isConnected) { // Check if connection was successful
+        this.isStreamingAudio = true;
+        logger.info("Started gRPC audio streaming.", {
+          context: "StreamingClient",
+        });
+        
+        // Flush buffered frames
+        if (this.pendingAudioBuffer.length > 0) {
+          logger.info(`Flushing ${this.pendingAudioBuffer.length} buffered audio frames.`, { context: "StreamingClient" });
+          for (const frame of this.pendingAudioBuffer) {
+            this.addAudioFrame(frame);
+          }
+          this.pendingAudioBuffer = [];
+        }
+    } else {
+        logger.error("Failed to start audio streaming because connection failed.", {
+          context: "StreamingClient",
+        });
+        this.emit("stream:error", { message: "Connection to server failed." });
+        this.pendingAudioBuffer = []; // Clear buffer on failure
+    }
+  }
+
+  stopAudioStreaming() {
+    if (this.isStreamingAudio && this.call) {
+      this.addAudioFrame(Buffer.alloc(0), true);
+      this.isStreamingAudio = false;
+      logger.info("Stopped gRPC audio streaming.", {
+        context: "StreamingClient",
+      });
+    }
+    this.isConnecting = false;
+    this.pendingAudioBuffer = [];
+  }
+
   addAudioFrame(pcmFrame, isLast = false) {
+    // If connecting, buffer the frame
+    if (this.isConnecting) {
+        if (this.pendingAudioBuffer) {
+            this.pendingAudioBuffer.push(pcmFrame);
+        }
+        return;
+    }
+
     if (!this.call || !this.isStreamingAudio) {
       logger.warn(
         "Attempted to send audio frame but gRPC stream is not active.",
@@ -305,45 +375,32 @@ class StreamingClient extends EventEmitter {
       return;
     }
 
+    // Log every 100th frame
+    this.framesSent = (this.framesSent || 0) + 1;
+    if (this.framesSent % 100 === 0) {
+      logger.debug(`Sent ${this.framesSent} audio frames for session ${this.currentSessionId}`, { context: 'StreamingClient' });
+    }
+
     try {
+      // Send the raw PCM frame as 'audio_chunk'
+      // The backend (WhisperService) handles the binary framing for the Python runner.
       this.call.write({
         session_id: this.currentSessionId,
         audio_chunk: pcmFrame,
         end_of_stream: isLast,
       });
+      
       this.metrics.recordBytesSent(pcmFrame.length);
+      
+      if (isLast) {
+          logger.info(`Sent LAST chunk for session ${this.currentSessionId}`, { context: "StreamingClient" });
+      }
+
     } catch (error) {
       logger.error("Error sending audio chunk:", error, {
         context: "StreamingClient",
       });
       this.emit("stream:error", { message: "Failed to send audio data." });
-    }
-  }
-
-  async startAudioStreaming(isTest = false) {
-    if (!this.isConnected) {
-      await this.connect(isTest);
-    }
-    if (this.isConnected) { // Check if connection was successful
-        this.isStreamingAudio = true;
-        logger.info("Started gRPC audio streaming.", {
-        context: "StreamingClient",
-        });
-    } else {
-        logger.error("Failed to start audio streaming because connection failed.", {
-        context: "StreamingClient",
-        });
-        this.emit("stream:error", { message: "Connection to server failed." });
-    }
-  }
-
-  stopAudioStreaming() {
-    if (this.isStreamingAudio && this.call) {
-      this.addAudioFrame(Buffer.alloc(0), true);
-      this.isStreamingAudio = false;
-      logger.info("Stopped gRPC audio streaming.", {
-        context: "StreamingClient",
-      });
     }
   }
 

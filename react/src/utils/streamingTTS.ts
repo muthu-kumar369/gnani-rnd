@@ -17,13 +17,20 @@ class StreamingTTS {
     private utteranceQueue: SpeechSynthesisUtterance[] = [];
     private isPlaying: boolean = false;
     private isStopped: boolean = false;
+    private isStreamActive: boolean = false;
+    private bufferingTimeout: NodeJS.Timeout | null = null;
+    private watchdogTimer: NodeJS.Timeout | null = null;
 
     // Configuration
-    private readonly sentenceBoundaryRegex = /([.!?]+)(\s+|$)/g;
-    private readonly minChunkLength = 10; // Minimum characters before attempting to detect sentence
+    private readonly BUFFERING_TIMEOUT_MS = 1000; // Reduced to 1s for debugging
 
     constructor() {
         errorLogger.info('StreamingTTS initialized', { context: 'StreamingTTS' });
+    }
+
+    public setStreamActive(active: boolean): void {
+        this.isStreamActive = active;
+        errorLogger.debug(`Stream active state set to: ${active}`, { context: 'StreamingTTS' });
     }
 
     /**
@@ -36,85 +43,142 @@ class StreamingTTS {
             return;
         }
 
-        // Add to buffer
-        this.textBuffer += text;
-        errorLogger.debug(`Added text chunk: "${text}". Buffer now: "${this.textBuffer}"`, { context: 'StreamingTTS' });
+        errorLogger.debug(`addTextChunk (raw): "${text}"`, { context: 'StreamingTTS' });
+        
+        // Clean text: remove markdown bold/italic markers (*, _), headers (#), and code blocks (`)
+        // We keep punctuation and spaces
+        const cleanText = text.replace(/[*_#`]/g, '');
+        
+        errorLogger.debug(`addTextChunk (clean): "${cleanText}"`, { context: 'StreamingTTS' });
 
-        // Try to extract complete sentences
+        // CRITICAL: Skip empty chunks to prevent infinite timeout reset
+        if (cleanText.length === 0) {
+            errorLogger.debug('Skipping empty chunk (prevents timeout reset)', { context: 'StreamingTTS' });
+            return;
+        }
+
+        // Add to buffer
+        this.textBuffer += cleanText;
+        
+        // Implicitly active if receiving data
+        this.isStreamActive = true;
+        
         this.processBuffer();
+        this.resetBufferingTimeout();
+    }
+
+    private resetBufferingTimeout() {
+        if (this.bufferingTimeout) {
+            // errorLogger.debug('Clearing existing buffering timeout', { context: 'StreamingTTS' });
+            clearTimeout(this.bufferingTimeout);
+        }
+
+        const bufferContent = this.textBuffer.trim();
+        if (bufferContent.length > 0) {
+            errorLogger.debug(`Setting buffering timeout (buffer="${bufferContent}")`, { context: 'StreamingTTS' });
+            this.bufferingTimeout = setTimeout(() => {
+                errorLogger.info('Buffering timeout reached, forcing flush of buffer', { context: 'StreamingTTS' });
+                this.flushBuffer();
+            }, this.BUFFERING_TIMEOUT_MS);
+        } else {
+            errorLogger.debug('Buffer empty (trimmed), not setting timeout', { context: 'StreamingTTS' });
+        }
+    }
+
+    /**
+     * Flushes the current buffer as a sentence, but keeps stream active
+     */
+    private flushBuffer() {
+        if (this.textBuffer.trim().length > 0) {
+            errorLogger.info(`Force flushing buffer: "${this.textBuffer}"`, { context: 'StreamingTTS' });
+            this.queueUtterance(this.textBuffer.trim());
+            this.textBuffer = '';
+        }
     }
 
     /**
      * Process the text buffer to extract and queue complete sentences
      */
     private processBuffer(): void {
-        // Only process if buffer has minimum length
-        if (this.textBuffer.length < this.minChunkLength) {
+        // Special case: if buffer starts with punctuation, it's orphaned from a previous sentence
+        // This happens when punctuation arrives as a standalone chunk after sentence was already queued
+        // Just discard it to prevent it from being prepended to the next sentence
+        if (this.textBuffer.length > 0 && /^[.?!]+\s*$/.test(this.textBuffer)) {
+            errorLogger.debug(`Discarding orphaned punctuation: "${this.textBuffer}"`, { context: 'StreamingTTS' });
+            this.textBuffer = '';
             return;
         }
 
-        const result = this.detectSentenceBoundary(this.textBuffer);
-
-        // Queue each complete sentence
-        result.complete.forEach(sentence => {
-            if (sentence.trim().length > 0) {
-                this.queueUtterance(sentence.trim());
-            }
-        });
-
-        // Keep the partial sentence in buffer
-        this.textBuffer = result.partial;
-    }
-
-    /**
-     * Detect sentence boundaries in text
-     * Returns complete sentences and remaining partial text
-     */
-    private detectSentenceBoundary(text: string): { complete: string[], partial: string } {
-        const complete: string[] = [];
+        // Match complete sentences: text followed by punctuation
+        // This regex finds: (any characters) followed by (one or more punctuation marks)
+        const sentenceRegex = /(.+?)([.?!]+)/g;
+        let match;
         let lastIndex = 0;
-        let match: RegExpExecArray | null;
 
-        // Reset regex state
-        this.sentenceBoundaryRegex.lastIndex = 0;
-
-        while ((match = this.sentenceBoundaryRegex.exec(text)) !== null) {
-            // Extract sentence including the punctuation
-            const sentence = text.substring(lastIndex, match.index + match[1].length);
-            complete.push(sentence);
-            lastIndex = match.index + match[0].length;
+        // Find all complete sentences in the buffer
+        while ((match = sentenceRegex.exec(this.textBuffer)) !== null) {
+            const fullSentence = match[1] + match[2]; // text + punctuation
+            errorLogger.debug(`Queueing sentence: "${fullSentence}"`, { context: 'StreamingTTS' });
+            this.queueUtterance(fullSentence.trim());
+            lastIndex = sentenceRegex.lastIndex;
         }
 
-        // Remaining text is partial
-        const partial = text.substring(lastIndex);
-
-        return { complete, partial };
+        // Keep any remaining text (incomplete sentence) in the buffer
+        if (lastIndex > 0) {
+            this.textBuffer = this.textBuffer.substring(lastIndex).trim();
+            errorLogger.debug(`Remaining buffer: "${this.textBuffer}"`, { context: 'StreamingTTS' });
+        }
     }
 
     /**
      * Queue an utterance for playback
      */
     private queueUtterance(text: string): void {
+        // CRITICAL: Skip utterances that are only punctuation/whitespace
+        // This prevents queueing hundreds of individual "." characters
+        const textWithoutPunctuation = text.replace(/[.!?,\s]/g, '');
+        if (textWithoutPunctuation.length === 0) {
+            errorLogger.debug(`Skipping punctuation-only utterance: "${text}"`, { context: 'StreamingTTS' });
+            return;
+        }
+
         const utterance = new SpeechSynthesisUtterance(text);
 
-        // Configure utterance
-        utterance.rate = 1.0;
+        // Configure utterance - reduced rate for more natural speech
+        utterance.rate = 0.9; // Slightly slower than default (1.0)
         utterance.pitch = 1.0;
         utterance.volume = 1.0;
 
         // Set up event handlers
         utterance.onstart = () => {
-            errorLogger.debug(`Started speaking: "${text}"`, { context: 'StreamingTTS' });
+            errorLogger.info(`TTS onstart: "${text}", queue length: ${this.utteranceQueue.length}`, { context: 'StreamingTTS' });
+            // Only send tts:started if this is the first utterance (transitioning from idle to playing)
+            // Don't send it for every utterance in the queue
         };
 
         utterance.onend = () => {
-            errorLogger.debug(`Finished speaking: "${text}"`, { context: 'StreamingTTS' });
+            errorLogger.info(`TTS onend: "${text}", queue length before playNext: ${this.utteranceQueue.length}`, { context: 'StreamingTTS' });
             this.playNextUtterance();
+            // Notify main process that ALL playback has ended (queue is empty)
+            errorLogger.debug(`After playNext - queue: ${this.utteranceQueue.length}, isPlaying: ${this.isPlaying}, isStreamActive: ${this.isStreamActive}`, { context: 'StreamingTTS' });
+            
+            // Only send tts:ended if queue is empty AND stream is NOT active (meaning no more chunks are coming)
+            if (this.utteranceQueue.length === 0 && !this.isPlaying && !this.isStreamActive && window.gnani) {
+                errorLogger.info('All TTS playback finished and stream ended, sending tts:ended', { context: 'StreamingTTS' });
+                window.gnani.send('tts:ended', { text });
+            } else if (this.utteranceQueue.length === 0 && !this.isPlaying && this.isStreamActive) {
+                errorLogger.info('Queue empty but stream active, waiting for more chunks...', { context: 'StreamingTTS' });
+            }
         };
 
         utterance.onerror = (event) => {
             errorLogger.error(`TTS error for text "${text}":`, event.error, { context: 'StreamingTTS' });
             this.playNextUtterance();
+            // Send tts:ended on error to prevent VAD from getting stuck
+            if (this.utteranceQueue.length === 0 && !this.isPlaying && !this.isStreamActive && window.gnani) {
+                errorLogger.warn('TTS error and queue empty, sending tts:ended', { context: 'StreamingTTS' });
+                window.gnani.send('tts:ended', { text });
+            }
         };
 
         // Add to queue
@@ -136,6 +200,12 @@ class StreamingTTS {
             return;
         }
 
+        // Clear existing watchdog
+        if (this.watchdogTimer) {
+            clearTimeout(this.watchdogTimer);
+            this.watchdogTimer = null;
+        }
+
         if (this.utteranceQueue.length === 0) {
             this.isPlaying = false;
             errorLogger.debug('Utterance queue empty, playback finished', { context: 'StreamingTTS' });
@@ -144,7 +214,14 @@ class StreamingTTS {
 
         const utterance = this.utteranceQueue.shift();
         if (utterance) {
+            // Send tts:started only when transitioning from idle to playing
+            const wasPlaying = this.isPlaying;
             this.isPlaying = true;
+            
+            if (!wasPlaying && window.gnani) {
+                errorLogger.info('Starting TTS playback, sending tts:started', { context: 'StreamingTTS' });
+                window.gnani.send('tts:started');
+            }
 
             // Check if speech synthesis is available
             if (!window.speechSynthesis) {
@@ -152,9 +229,34 @@ class StreamingTTS {
                 return;
             }
 
+            // Set watchdog: Estimate duration based on word count (approx 300ms per word) + 3s buffer
+            // Minimum 3s
+            const wordCount = utterance.text.split(/\s+/).length;
+            const estimatedDurationMs = Math.max(3000, (wordCount * 300) + 3000);
+            
+            this.watchdogTimer = setTimeout(() => {
+                errorLogger.warn(`TTS Watchdog triggered for: "${utterance.text.substring(0, 20)}..."`, { context: 'StreamingTTS' });
+                window.speechSynthesis.cancel(); // Force cancel current
+                // Manually trigger onend logic
+                if (utterance.onend) {
+                    // @ts-ignore - Constructing a fake event for fallback
+                    utterance.onend(new Event('end'));
+                }
+            }, estimatedDurationMs);
+
             // Speak the utterance
-            window.speechSynthesis.speak(utterance);
-            errorLogger.debug(`Playing utterance. Remaining in queue: ${this.utteranceQueue.length}`, { context: 'StreamingTTS' });
+            // If starting from silence, add a small delay to allow VAD threshold to update (prevent self-interruption)
+            if (!wasPlaying) {
+                setTimeout(() => {
+                    if (!this.isStopped) {
+                        window.speechSynthesis.speak(utterance);
+                        errorLogger.debug(`Playing first utterance (delayed). Remaining in queue: ${this.utteranceQueue.length}`, { context: 'StreamingTTS' });
+                    }
+                }, 200);
+            } else {
+                window.speechSynthesis.speak(utterance);
+                errorLogger.debug(`Playing utterance. Remaining in queue: ${this.utteranceQueue.length}`, { context: 'StreamingTTS' });
+            }
         }
     }
 
@@ -168,10 +270,20 @@ class StreamingTTS {
             return;
         }
 
+        this.isStreamActive = false; // Stream ended
+        errorLogger.info('Stream ended (flush called), setting isStreamActive to false', { context: 'StreamingTTS' });
+
         if (this.textBuffer.trim().length > 0) {
             errorLogger.info(`Flushing remaining text: "${this.textBuffer}"`, { context: 'StreamingTTS' });
             this.queueUtterance(this.textBuffer.trim());
             this.textBuffer = '';
+        } else {
+             // If buffer is empty, we might need to trigger tts:ended if queue is also empty
+             // This handles the case where the last chunk was a complete sentence and queue emptied before flush
+             if (this.utteranceQueue.length === 0 && !this.isPlaying && window.gnani) {
+                errorLogger.info('Flush called with empty buffer and queue, sending tts:ended', { context: 'StreamingTTS' });
+                window.gnani.send('tts:ended', { text: '' });
+             }
         }
     }
 
@@ -181,8 +293,19 @@ class StreamingTTS {
     public stop(): void {
         errorLogger.info('Stopping StreamingTTS', { context: 'StreamingTTS' });
 
+        if (this.bufferingTimeout) {
+            clearTimeout(this.bufferingTimeout);
+            this.bufferingTimeout = null;
+        }
+
+        if (this.watchdogTimer) {
+            clearTimeout(this.watchdogTimer);
+            this.watchdogTimer = null;
+        }
+
         this.isStopped = true;
         this.isPlaying = false;
+        this.isStreamActive = false;
         this.textBuffer = '';
         this.utteranceQueue = [];
 

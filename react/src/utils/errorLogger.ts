@@ -31,27 +31,28 @@ const errorLogger = {
   log: (message: string, options?: LogOptions) => {
     const opts = { ...defaultOptions, ...options };
     console.log(formatMessage('info', message, opts), opts.extra || '');
-    // TODO: Integrate with external logging service for info messages
+    if (window.gnani) window.gnani.send('log', { level: 'info', message, context: opts.context, extra: opts.extra });
   },
   info: (message: string, options?: LogOptions) => {
     const opts = { ...defaultOptions, ...options };
     console.info(formatMessage('info', message, opts), opts.extra || '');
-    // TODO: Integrate with external logging service for info messages
+    if (window.gnani) window.gnani.send('log', { level: 'info', message, context: opts.context, extra: opts.extra });
   },
   warn: (message: string, options?: LogOptions) => {
     const opts = { ...defaultOptions, ...options };
     console.warn(formatMessage('warn', message, opts), opts.extra || '');
-    // TODO: Integrate with external logging service for warnings
+    if (window.gnani) window.gnani.send('log', { level: 'warn', message, context: opts.context, extra: opts.extra });
   },
   error: (message: string, error?: Error | any, options?: LogOptions) => {
     const opts = { ...defaultOptions, ...options };
     console.error(formatMessage('error', message, opts), error, opts.extra || '');
-    // TODO: Integrate with external logging service for errors (e.g., Sentry.captureException(error))
+    if (window.gnani) window.gnani.send('log', { level: 'error', message, context: opts.context, extra: { ...opts.extra, error: error?.message || error } });
   },
   debug: (message: string, options?: LogOptions) => {
     if (process.env.NODE_ENV === 'development') {
       const opts = { ...defaultOptions, ...options };
       console.debug(formatMessage('debug', message, opts), opts.extra || '');
+      if (window.gnani) window.gnani.send('log', { level: 'debug', message, context: opts.context, extra: opts.extra });
     }
   },
 };

@@ -17,7 +17,7 @@ class VadManager extends EventEmitter {
       frameSize: 480,
       aggressiveness: 3,
       speechStartThreshold: 3, // Frames of speech needed to start
-      speechEndThreshold: 15, // Frames of silence needed to end (increased from 10 for better stability)
+      speechEndThreshold: 45, // Frames of silence needed to end (increased to ~1.35s for natural pauses)
       hysteresisMargin: 2, // Additional frames needed to change state (prevents flapping)
     };
     logger.info("VadManager initialized.", { context: 'VadManager' });

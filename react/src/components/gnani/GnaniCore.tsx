@@ -24,7 +24,7 @@ import SettingsModal from "../settings/SettingsModal";
 const GnaniCore: React.FC = () => {
   const uiState = useGnaniUIState();
   const { audioLevel, isMicActive, startMic, stopMic } = useMicrophone();
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
   const { addToast } = useToast();
   const { latestFinalSTT, latestLLMChunk, isTtsStarted } = useIPC();
 
@@ -39,6 +39,31 @@ const GnaniCore: React.FC = () => {
 
   const [showIntelligencePanel, setShowIntelligencePanel] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+
+  // Initialize StreamingTTS
+  useEffect(() => {
+    streamingTTSRef.current = new StreamingTTS();
+    return () => {
+      streamingTTSRef.current?.cleanup();
+    };
+  }, []);
+
+  // Initialize Gnani
+  useEffect(() => {
+    if (!user) return;
+
+    const init = async () => {
+      // Small delay to ensure audio context is ready and prevent startup crashes
+      setTimeout(() => {
+        startMic();
+        if (window.gnani?.wake?.startWakeWord) {
+          window.gnani.wake.startWakeWord();
+        }
+      }, 500);
+    };
+
+    init();
+  }, [user, startMic]);
 
   // Barge-in handler
   const handleBargeIn = () => {
@@ -65,19 +90,19 @@ const GnaniCore: React.FC = () => {
   // Barge-in hook
   const bargeIn = useBargeIn(state, handleBargeIn);
 
-  // Initialize StreamingTTS on mount
+  // Dynamically adjust barge-in sensitivity
+  // When speaking, increase threshold to prevent self-interruption (echo)
   useEffect(() => {
-    streamingTTSRef.current = new StreamingTTS();
-    errorLogger.info('StreamingTTS instance created', { context: 'GnaniCore' });
-
-    return () => {
-      if (streamingTTSRef.current) {
-        streamingTTSRef.current.cleanup();
-        streamingTTSRef.current = null;
-        errorLogger.info('StreamingTTS instance cleaned up', { context: 'GnaniCore' });
-      }
-    };
-  }, []);
+    if (isSpeaking) {
+      bargeIn.updateConfig({ vadThreshold: 20 }); // Very low sensitivity (approx 600ms)
+      console.log('[GnaniCore] Increased barge-in threshold to 20 (Speaking)');
+      errorLogger.debug('Increased barge-in threshold to 20 (Speaking)', { context: 'GnaniCore' });
+    } else {
+      bargeIn.updateConfig({ vadThreshold: 3 }); // Default sensitivity (approx 90ms)
+      console.log('[GnaniCore] Reset barge-in threshold to 3 (Not Speaking)');
+      errorLogger.debug('Reset barge-in threshold to 3 (Not Speaking)', { context: 'GnaniCore' });
+    }
+  }, [isSpeaking, bargeIn]);
 
   // Handle auth logout
   useEffect(() => {
@@ -125,16 +150,33 @@ const GnaniCore: React.FC = () => {
 
   // Handle LLM streaming chunks
   useEffect(() => {
-    if (latestLLMChunk && streamingTTSRef.current) {
-      errorLogger.debug(`LLM chunk received: "${latestLLMChunk}"`, { context: 'GnaniCore' });
+    if (latestLLMChunk) {
+      console.log('[GnaniCore] latestLLMChunk updated:', latestLLMChunk); // DEBUG LOG
+      if (streamingTTSRef.current) {
+        errorLogger.debug(`LLM chunk received: "${latestLLMChunk}"`, { context: 'GnaniCore' });
 
-      // Add to TTS
-      streamingTTSRef.current.addTextChunk(latestLLMChunk);
+        // Add to TTS
+        streamingTTSRef.current.addTextChunk(latestLLMChunk);
 
-      // Add to spoken text display
-      spokenText.addTextChunk(latestLLMChunk);
+        // Add to spoken text display
+        spokenText.addTextChunk(latestLLMChunk);
+      } else {
+        console.error('[GnaniCore] streamingTTSRef.current is NULL!'); // DEBUG LOG
+      }
     }
   }, [latestLLMChunk, spokenText]);
+
+  // Handle stream disconnection to flush TTS
+  useEffect(() => {
+    if (!uiState.isStreamConnected && streamingTTSRef.current) {
+      console.log("[GnaniCore] Stream disconnected, flushing TTS");
+      streamingTTSRef.current.flush();
+    } else if (uiState.isStreamConnected && streamingTTSRef.current) {
+      console.log("[GnaniCore] Stream connected, setting active state");
+      streamingTTSRef.current.setStreamActive(true);
+      streamingTTSRef.current.resume();
+    }
+  }, [uiState.isStreamConnected]);
 
   // Handle TTS start
   useEffect(() => {

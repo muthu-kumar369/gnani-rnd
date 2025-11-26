@@ -23,12 +23,12 @@ function setupWakeIPC(wakeManager) {
   // --- Renderer to Main ---
   ipcMain.on('wake:start', () => {
     logger.info('Received wake:start from renderer.');
-    wakeManager.onStart();
+    wakeManager.startProcessing();
   });
 
   ipcMain.on('wake:stop', () => {
     logger.info('Received wake:stop from renderer.');
-    wakeManager.onStop();
+    wakeManager.stopProcessing();
   });
 
   ipcMain.handle('wake:getStatus', async () => {

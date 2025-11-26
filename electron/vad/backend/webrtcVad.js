@@ -16,21 +16,26 @@ class WebRTCVadBackend {
   }
 
   process(frame) {
-    // This is a more realistic mock. It will simulate a block of speech
-    // for a certain number of frames, then a block of silence.
-    // This allows the VadManager's state machine to work correctly.
+    // Simple Energy-Based VAD Implementation
+    // Frame is expected to be a Buffer of 16-bit integers (PCM)
     
-    this.speechCounter++;
+    let sumSquares = 0;
+    const numSamples = frame.length / 2; // 2 bytes per sample
 
-    // Every 20 frames (approx 2 seconds), toggle between speech and silence
-    if (this.speechCounter % 20 === 0) {
-      this.isCurrentlySpeech = !this.isCurrentlySpeech;
-      logger.debug(`WebRTCVAD Mock: Toggling speech state to ${this.isCurrentlySpeech}`);
+    for (let i = 0; i < frame.length; i += 2) {
+      const sample = frame.readInt16LE(i);
+      sumSquares += sample * sample;
     }
 
-    if (this.speechCounter > 1000) { // Reset periodically
-        this.speechCounter = 0;
-    }
+    const rms = Math.sqrt(sumSquares / numSamples);
+    
+    // Threshold for speech detection
+    // Adjust this value based on microphone sensitivity and background noise
+    const THRESHOLD = 500; 
+
+    this.isCurrentlySpeech = rms > THRESHOLD;
+    
+    // logger.debug(`VAD Energy: ${rms.toFixed(2)}, Speech: ${this.isCurrentlySpeech}`);
     
     return { speech: this.isCurrentlySpeech };
   }

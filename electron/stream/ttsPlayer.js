@@ -29,6 +29,15 @@ class TtsPlayer extends EventEmitter {
       return;
     }
 
+    // Emit tts:started only when transitioning from not playing to playing
+    const wasPlaying = this.isPlaying;
+    this.isPlaying = true;
+    
+    if (!wasPlaying) {
+      logger.info(`TTS playback started for segment ${segmentId}`, { context: 'TtsPlayer' });
+      this.emit('tts:started', segmentId);
+    }
+
     // Always prefer sending to renderer for Web Audio API playback
     // The renderer will handle buffering and playing multiple chunks
     global.mainWindow.webContents.send('stream:tts_chunk', {
@@ -38,8 +47,6 @@ class TtsPlayer extends EventEmitter {
       format: format,
     });
     logger.debug(`Sent TTS chunk for segment ${segmentId} to renderer.`);
-    this.isPlaying = true; // Assume renderer will play it
-    this.emit('tts:started', segmentId);
 
     // --- Native playback fallback (conceptual) ---
     /*

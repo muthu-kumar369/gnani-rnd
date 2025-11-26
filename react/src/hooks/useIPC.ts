@@ -96,15 +96,27 @@ export const useIPC = () => {
         setLatestPartialSTT(null); // Clear partial when final arrives
       }));
       unsubs.push(window.gnani.stream.on('stream:tts_chunk', ({ chunk }: { chunk: any }) => {
-        console.log('[IPC] Received TTS chunk:', chunk);
+        console.log('[IPC] RAW stream:tts_chunk received:', chunk); // DEBUG LOG
         errorLogger.debug(`IPC: LLM Chunk: ${chunk}`, { context: 'useIPC' });
         setLatestLLMChunk(chunk);
+      }));
+      
+      // Also listen for 'stream:llm_chunk' explicitly if the backend uses that name
+      unsubs.push(window.gnani.stream.on('stream:llm_chunk', (data: any) => {
+          console.log('[IPC] RAW stream:llm_chunk received:', data); // DEBUG LOG
+          // Handle both object format { text: "..." } and direct string
+          const text = typeof data === 'object' && data.text ? data.text : data;
+          setLatestLLMChunk(text);
       }));
     }
 
     // Cleanup on unmount
     return () => {
-      unsubs.forEach(unsub => unsub());
+      unsubs.forEach(unsub => {
+        if (typeof unsub === 'function') {
+            unsub();
+        }
+      });
     };
   }, []);
   

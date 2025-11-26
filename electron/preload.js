@@ -29,11 +29,17 @@ contextBridge.exposeInMainWorld("gnani", {
       "stream:setEndpoint",
       "stream:audio-frame", // New channel for sending audio frames
       "stream:start-file-test",
+      "tts:started", // Allow renderer to signal TTS start
+      "tts:ended", // Allow renderer to signal TTS end
+      "log", // Allow renderer to send logs to main process
     ];
 
     if (validSendChannels.includes(channel)) {
       ipcRenderer.send(channel, data);
-      logger.debug(`Sent to main process: ${channel}`, { context: 'Preload' });
+      // Don't log "log" calls to avoid recursion/spam in devtools
+      if (channel !== 'log') {
+        logger.debug(`Sent to main process: ${channel}`, { context: 'Preload' });
+      }
     } else {
       logger.warn(`Unknown IPC send channel: ${channel}`, { context: 'Preload' });
     }
@@ -81,9 +87,9 @@ contextBridge.exposeInMainWorld("gnani", {
 
   // --- Auth IPC ---
   auth: {
-    storeTokens: (accessToken, refreshToken) => {
+    storeTokens: (accessToken, refreshToken, userId) => {
       logger.info("Preload invoking auth:store-tokens", { context: 'Preload' });
-      return ipcRenderer.invoke('auth:store-tokens', { accessToken, refreshToken });
+      return ipcRenderer.invoke('auth:store-tokens', { accessToken, refreshToken, userId });
     },
     getTokens: () => {
       logger.info("Preload invoking auth:get-tokens", { context: 'Preload' });

@@ -12,10 +12,18 @@ declare global {
 
       // Authentication-related methods
       auth?: {
-        storeTokens: (accessToken: string, refreshToken: string) => Promise<boolean>;
+        storeTokens: (accessToken: string, refreshToken: string, userId?: string) => Promise<boolean>;
         getTokens: () => Promise<{ accessToken: string | null; refreshToken: string | null }>;
         clearTokens: () => Promise<boolean>;
         onForceLogout?: (callback: () => void) => () => void;
+      };
+
+      // Wake word methods
+      wake?: {
+        startWakeWord: () => void;
+        stopWakeWord: () => void;
+        getWakeStatus: () => Promise<any>;
+        onWakeTriggered: (callback: () => void) => () => void;
       };
 
       // Methods for handling the gRPC audio stream

@@ -104,7 +104,12 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }, []);
 
     useEffect(() => {
-        refreshUser();
+        const token = localStorage.getItem('token');
+        if (token) {
+            refreshUser();
+        } else {
+            setLoading(false);
+        }
     }, [refreshUser]);
 
     const updateSettings = useCallback(async (newSettings: Partial<ISettings>) => {

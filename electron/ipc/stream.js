@@ -35,8 +35,8 @@ function setupStreamIPC(streamingClient, ttsPlayer) {
   });
 
   streamingClient.on('stream:tts_chunk', (payload) => {
-    logger.debug(`Received stream:tts_chunk from client for segment ${payload.segment_id}. Passing to TTS Player.`);
-    ttsPlayer.playTtsChunk(payload.segment_id, payload.pcm_base64, payload.sampleRate, payload.format);
+    logger.debug(`Received stream:tts_chunk from client. Passing to renderer.`);
+    // ttsPlayer.playTtsChunk is for audio chunks. For text chunks, we just forward to renderer.
     if (global.mainWindow && !global.mainWindow.isDestroyed()) {
       global.mainWindow.webContents.send('stream:tts_chunk', payload);
     }
