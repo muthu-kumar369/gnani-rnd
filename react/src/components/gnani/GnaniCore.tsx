@@ -19,6 +19,7 @@ import StatusBar from "./StatusBar";
 import ResponseConsole from "./ResponseConsole";
 import IntelligencePanel from "./IntelligencePanel";
 import SpokenTextDisplay from "./SpokenTextDisplay";
+import SettingsModal from "../settings/SettingsModal";
 
 const GnaniCore: React.FC = () => {
   const uiState = useGnaniUIState();
@@ -37,6 +38,7 @@ const GnaniCore: React.FC = () => {
   const streamingTTSRef = useRef<StreamingTTS | null>(null);
 
   const [showIntelligencePanel, setShowIntelligencePanel] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
 
   // Barge-in handler
   const handleBargeIn = () => {
@@ -224,6 +226,12 @@ const GnaniCore: React.FC = () => {
             >
               {showIntelligencePanel ? "Hide Debug" : "Show Debug"}
             </button>
+            <button
+              onClick={() => setShowSettings(true)}
+              className="mt-2 ml-2 px-3 py-1 text-xs bg-cyan-800 hover:bg-cyan-700 rounded-full transition-colors"
+            >
+              Settings
+            </button>
           </div>
         </header>
 
@@ -263,6 +271,8 @@ const GnaniCore: React.FC = () => {
       </div>
 
       <IntelligencePanel isVisible={showIntelligencePanel} />
+
+      <SettingsModal isOpen={showSettings} onClose={() => setShowSettings(false)} />
     </div>
   );
 };

@@ -6,6 +6,7 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import { useAuth } from './context/AuthContext';
 import { ToastProvider } from './context/ToastContext'; // Import ToastProvider
+import { UserProvider } from './context/UserContext';
 
 // Simple Loading Spinner Component
 const LoadingSpinner: React.FC = () => (
@@ -24,16 +25,18 @@ function App() {
   return (
     <div className="bg-black">
       <ToastProvider> {/* Wrap with ToastProvider */}
-        <Routes>
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
-          <Route
-            path="/"
-            element={isAuthenticated ? <GnaniCore /> : <Navigate to="/login" replace />}
-          />
-          {/* Add other protected routes here */}
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+        <UserProvider>
+          <Routes>
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
+            <Route
+              path="/"
+              element={isAuthenticated ? <GnaniCore /> : <Navigate to="/login" replace />}
+            />
+            {/* Add other protected routes here */}
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </UserProvider>
       </ToastProvider>
     </div>
   );
