@@ -22,7 +22,7 @@ class StreamingTTS {
     private watchdogTimer: NodeJS.Timeout | null = null;
 
     // Configuration
-    private readonly BUFFERING_TIMEOUT_MS = 1000; // Reduced to 1s for debugging
+    private readonly BUFFERING_TIMEOUT_MS = 200; // 200ms for real-time speech like Google Assistant
 
     constructor() {
         errorLogger.info('StreamingTTS initialized', { context: 'StreamingTTS' });
@@ -38,22 +38,25 @@ class StreamingTTS {
      * Automatically detects sentence boundaries and queues complete sentences
      */
     public addTextChunk(text: string): void {
+        // Auto-resume if we receive new chunks (fixes case where it was stopped but not resumed)
         if (this.isStopped) {
-            errorLogger.warn('StreamingTTS is stopped, ignoring text chunk', { context: 'StreamingTTS' });
-            return;
+            errorLogger.info('Auto-resuming StreamingTTS on new chunk', { context: 'StreamingTTS' });
+            this.isStopped = false;
         }
 
         errorLogger.debug(`addTextChunk (raw): "${text}"`, { context: 'StreamingTTS' });
         
         // Clean text: remove markdown bold/italic markers (*, _), headers (#), and code blocks (`)
-        // We keep punctuation and spaces
+        // We keep punctuation and spaces. 
+        // FIX: Don't be too aggressive with cleaning to avoid stripping valid text if regex is wrong
+        // Just remove the specific markdown chars we know are issues for TTS
         const cleanText = text.replace(/[*_#`]/g, '');
         
         errorLogger.debug(`addTextChunk (clean): "${cleanText}"`, { context: 'StreamingTTS' });
 
         // CRITICAL: Skip empty chunks to prevent infinite timeout reset
-        if (cleanText.length === 0) {
-            errorLogger.debug('Skipping empty chunk (prevents timeout reset)', { context: 'StreamingTTS' });
+        if (cleanText.trim().length === 0) {
+            // errorLogger.debug('Skipping empty/whitespace chunk', { context: 'StreamingTTS' });
             return;
         }
 
@@ -148,6 +151,22 @@ class StreamingTTS {
         utterance.rate = 0.9; // Slightly slower than default (1.0)
         utterance.pitch = 1.0;
         utterance.volume = 1.0;
+
+        // Select Female Voice
+        const voices = window.speechSynthesis.getVoices();
+        // Prefer Google US English Female, or Microsoft Zira, or any female voice
+        const femaleVoice = voices.find(v => 
+            v.name.includes('Google US English') || 
+            v.name.includes('Zira') || 
+            v.name.includes('Female')
+        );
+        
+        if (femaleVoice) {
+            utterance.voice = femaleVoice;
+            errorLogger.debug(`Selected voice: ${femaleVoice.name}`, { context: 'StreamingTTS' });
+        } else {
+            errorLogger.warn('No female voice found, using default', { context: 'StreamingTTS' });
+        }
 
         // Set up event handlers
         utterance.onstart = () => {
@@ -306,13 +325,31 @@ class StreamingTTS {
         this.isStopped = true;
         this.isPlaying = false;
         this.isStreamActive = false;
-        this.textBuffer = '';
+        this.textBuffer = ''; // CRITICAL: Clear buffer to prevent repetition
         this.utteranceQueue = [];
 
         // Cancel any ongoing speech
         if (window.speechSynthesis) {
             window.speechSynthesis.cancel();
         }
+    }
+
+    /**
+     * Reset internal state (buffer, queue, flags) without stopping playback engine if not needed
+     * Useful for starting a fresh turn
+     */
+    public reset(): void {
+        errorLogger.info('Resetting StreamingTTS state', { context: 'StreamingTTS' });
+        this.textBuffer = '';
+        this.utteranceQueue = [];
+        this.isStopped = false;
+        this.isStreamActive = false;
+        // Don't necessarily cancel speech here if we just want to clear future buffer
+        // But for a full reset, we probably should:
+        if (window.speechSynthesis) {
+            window.speechSynthesis.cancel();
+        }
+        this.isPlaying = false;
     }
 
     /**

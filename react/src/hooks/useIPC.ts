@@ -19,7 +19,7 @@ export const useIPC = () => {
   // New states for gRPC stream data
   const [latestPartialSTT, setLatestPartialSTT] = useState<string | null>(null);
   const [latestFinalSTT, setLatestFinalSTT] = useState<string | null>(null);
-  const [latestLLMChunk, setLatestLLMChunk] = useState<string | null>(null);
+  const [latestLLMChunk, setLatestLLMChunk] = useState<any>(null);
   const [latestSTTSegmentId, setLatestSTTSegmentId] = useState<string | null>(null); // To help combine partials
 
   useEffect(() => {
@@ -104,9 +104,8 @@ export const useIPC = () => {
       // Also listen for 'stream:llm_chunk' explicitly if the backend uses that name
       unsubs.push(window.gnani.stream.on('stream:llm_chunk', (data: any) => {
           console.log('[IPC] RAW stream:llm_chunk received:', data); // DEBUG LOG
-          // Handle both object format { text: "..." } and direct string
-          const text = typeof data === 'object' && data.text ? data.text : data;
-          setLatestLLMChunk(text);
+          // Pass the full data object (which might be { type: 'partial', text: '...' })
+          setLatestLLMChunk(data);
       }));
     }
 

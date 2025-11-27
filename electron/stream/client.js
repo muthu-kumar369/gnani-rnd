@@ -181,7 +181,7 @@ class StreamingClient extends EventEmitter {
       if (response.llm_chunk) {
         console.log(`[StreamingClient] Received LLM chunk: "${response.llm_chunk}"`);
         if (response.llm_chunk.trim() !== '') {
-          this.emit("stream:tts_chunk", { chunk: response.llm_chunk });
+          this.emit("stream:llm_chunk", { chunk: response.llm_chunk });
         } else {
           console.log('[StreamingClient] Ignored empty LLM chunk');
         }

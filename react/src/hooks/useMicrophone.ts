@@ -30,7 +30,10 @@ const useMicrophone = () => {
 
     try {
       const audioContext = getAudioContext();
+      
+      // Ensure AudioContext is running
       if (audioContext.state === "suspended") {
+        errorLogger.info('AudioContext is suspended, resuming...', { context: 'useMicrophone' });
         await audioContext.resume();
       }
 

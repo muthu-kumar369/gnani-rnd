@@ -202,6 +202,7 @@ contextBridge.exposeInMainWorld("gnani", {
         "stream:partial",
         "stream:final",
         "stream:tts_chunk",
+        "stream:llm_chunk",
         "stream:error",
         "stream:metrics",
         "stream:backpressure",

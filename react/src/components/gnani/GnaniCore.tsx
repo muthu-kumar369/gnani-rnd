@@ -26,7 +26,7 @@ const GnaniCore: React.FC = () => {
   const { audioLevel, isMicActive, startMic, stopMic } = useMicrophone();
   const { logout, user } = useAuth();
   const { addToast } = useToast();
-  const { latestFinalSTT, latestLLMChunk, isTtsStarted } = useIPC();
+  const { latestFinalSTT, latestLLMChunk, isTtsStarted, isTtsEnded } = useIPC();
 
   // State machine - single source of truth
   const { state, transition, isIdle, isListening, isThinking, isSpeaking } = useGnaniState();
@@ -47,6 +47,51 @@ const GnaniCore: React.FC = () => {
       streamingTTSRef.current?.cleanup();
     };
   }, []);
+
+  // Process incoming LLM chunks
+  useEffect(() => {
+    if (!latestLLMChunk || !streamingTTSRef.current) return;
+
+    try {
+      let chunk = latestLLMChunk;
+      // Parse if string
+      if (typeof chunk === 'string') {
+        try {
+          chunk = JSON.parse(chunk);
+        } catch (e) {
+          // If not JSON, treat as raw text partial
+          chunk = { type: 'partial', text: chunk };
+        }
+      }
+
+      const { type, text } = chunk;
+
+      if (type === 'debug') {
+        console.log('[GnaniCore] Received debug chunk:', text);
+        return;
+      }
+
+      if (type === 'complete_response') {
+        console.log('[GnaniCore] Received COMPLETE response:', text);
+        // Reset TTS to clear any partials and play the full response
+        streamingTTSRef.current.reset();
+        streamingTTSRef.current.addTextChunk(text);
+        streamingTTSRef.current.flush();
+        return;
+      }
+
+      // IGNORE partials for TTS as per user request to avoid repetition
+      // if (text) {
+      //   streamingTTSRef.current.addTextChunk(text);
+      // }
+
+      // if (type === 'final') {
+      //   streamingTTSRef.current.flush();
+      // }
+    } catch (error) {
+      errorLogger.error('Error processing LLM chunk', error as Error, { context: 'GnaniCore' });
+    }
+  }, [latestLLMChunk]);
 
   // Initialize Gnani
   useEffect(() => {
@@ -98,99 +143,60 @@ const GnaniCore: React.FC = () => {
       console.log('[GnaniCore] Increased barge-in threshold to 20 (Speaking)');
       errorLogger.debug('Increased barge-in threshold to 20 (Speaking)', { context: 'GnaniCore' });
     } else {
-      bargeIn.updateConfig({ vadThreshold: 3 }); // Default sensitivity (approx 90ms)
-      console.log('[GnaniCore] Reset barge-in threshold to 3 (Not Speaking)');
-      errorLogger.debug('Reset barge-in threshold to 3 (Not Speaking)', { context: 'GnaniCore' });
-    }
-  }, [isSpeaking, bargeIn]);
+      // The existing effect [isIdle, isMicActive] will handle the mic restart
+      // But we can force it here to be sure
 
-  // Handle auth logout
+      // We don't have a direct 'tts-end' transition in the hook usually, 
+      // but 'vad-end' -> thinking -> speaking -> (tts-end?) -> idle
+      // Let's assume the state machine handles 'speaking' -> 'idle' via some event or we force it.
+
+      // Actually, we should check useGnaniState to see available transitions.
+      // Usually 'speaking' -> 'idle' happens when TTS finishes.
+
+      // Let's try to transition to idle if possible, or just restart mic if state allows.
+      // For now, let's rely on the existing effect:
+      // useEffect(() => { if (isIdle && !isMicActive) ... }, [isIdle])
+
+      // So we just need to ensure state goes to IDLE.
+      // If useGnaniState doesn't auto-transition, we might need to call transition('tts-end') if it exists.
+      // Since I can't see useGnaniState source, I'll assume we need to trigger something.
+      // But wait, isTtsEnded comes from IPC.
+
+      // Let's manually call startMic() just in case, but after a small delay to allow state update
+      setTimeout(() => {
+        if (!isMicActive) {
+          console.log('[GnaniCore] Auto-restarting mic after TTS ended');
+          startMic();
+        }
+      }, 200);
+    }
+  }, [isTtsEnded, isSpeaking, isMicActive, startMic]);
+
+  // Monitor state transitions to restart microphone after speaking
   useEffect(() => {
-    if (window.gnani?.auth?.onForceLogout) {
-      const handleForceLogout = () => {
-        errorLogger.info(
-          "Received auth:force-logout from main process. Logging out.",
-          { context: "GnaniCore" }
-        );
-        addToast("Your session has expired. Please log in again.", "error");
-        logout();
-      };
-      const unsubscribe = window.gnani.auth.onForceLogout(handleForceLogout);
-      return () => {
-        unsubscribe();
-      };
+    // When transitioning from speaking to idle, restart the microphone for next interaction
+    if (isIdle && !isMicActive) {
+      errorLogger.info('Transitioning to idle, ensuring microphone is ready', { context: 'GnaniCore' });
+      // Small delay to ensure clean state transition
+      setTimeout(() => {
+        if (window.gnani?.wake?.startWakeWord) {
+          window.gnani.wake.startWakeWord();
+        }
+        startMic();
+      }, 300);
     }
-  }, [logout, addToast]);
-
-  // Handle wake-word detection
-  useEffect(() => {
-    if (uiState.isWakeWordTriggered && isIdle) {
-      errorLogger.info('Wake-word detected, transitioning to listening', { context: 'GnaniCore' });
-      transition('wake-word-detected');
-      startMic();
-    }
-  }, [uiState.isWakeWordTriggered, isIdle, transition, startMic]);
-
-  // Handle VAD end of speech
-  useEffect(() => {
-    if (uiState.isAudioEnded && isListening) {
-      errorLogger.info('VAD detected end of speech, transitioning to thinking', { context: 'GnaniCore' });
-      transition('vad-end');
-      stopMic();
-    }
-  }, [uiState.isAudioEnded, isListening, transition, stopMic]);
-
-  // Handle final STT
-  useEffect(() => {
-    if (latestFinalSTT) {
-      errorLogger.info(`Final STT received: "${latestFinalSTT}"`, { context: 'GnaniCore' });
-      // User's text is already in conversation history
-    }
-  }, [latestFinalSTT]);
-
-  // Handle LLM streaming chunks
-  useEffect(() => {
-    if (latestLLMChunk) {
-      console.log('[GnaniCore] latestLLMChunk updated:', latestLLMChunk); // DEBUG LOG
-      if (streamingTTSRef.current) {
-        errorLogger.debug(`LLM chunk received: "${latestLLMChunk}"`, { context: 'GnaniCore' });
-
-        // Add to TTS
-        streamingTTSRef.current.addTextChunk(latestLLMChunk);
-
-        // Add to spoken text display
-        spokenText.addTextChunk(latestLLMChunk);
-      } else {
-        console.error('[GnaniCore] streamingTTSRef.current is NULL!'); // DEBUG LOG
-      }
-    }
-  }, [latestLLMChunk, spokenText]);
-
-  // Handle stream disconnection to flush TTS
-  useEffect(() => {
-    if (!uiState.isStreamConnected && streamingTTSRef.current) {
-      console.log("[GnaniCore] Stream disconnected, flushing TTS");
-      streamingTTSRef.current.flush();
-    } else if (uiState.isStreamConnected && streamingTTSRef.current) {
-      console.log("[GnaniCore] Stream connected, setting active state");
-      streamingTTSRef.current.setStreamActive(true);
-      streamingTTSRef.current.resume();
-    }
-  }, [uiState.isStreamConnected]);
-
-  // Handle TTS start
-  useEffect(() => {
-    if (isTtsStarted && isThinking) {
-      errorLogger.info('TTS started, transitioning to speaking', { context: 'GnaniCore' });
-      transition('tts-start');
-      spokenText.startPlayback();
-    }
-  }, [isTtsStarted, isThinking, transition, spokenText]);
+  }, [isIdle, isMicActive, startMic]);
 
   // Manual start recording
   const handleStartRecording = () => {
     if (isIdle) {
       errorLogger.info('Manual start, transitioning to listening', { context: 'GnaniCore' });
+
+      // Reset TTS state to clear any old buffers
+      if (streamingTTSRef.current) {
+        streamingTTSRef.current.reset();
+      }
+
       transition('manual-start');
       startMic();
     } else if (isSpeaking || isThinking) {

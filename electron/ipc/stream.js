@@ -42,6 +42,13 @@ function setupStreamIPC(streamingClient, ttsPlayer) {
     }
   });
 
+  streamingClient.on('stream:llm_chunk', (payload) => {
+    logger.debug(`Received stream:llm_chunk from client. Passing to renderer.`);
+    if (global.mainWindow && !global.mainWindow.isDestroyed()) {
+      global.mainWindow.webContents.send('stream:llm_chunk', payload.chunk);
+    }
+  });
+
   streamingClient.on('stream:error', (payload) => {
     logger.error('Sending stream:error to renderer.', payload);
     if (global.mainWindow && !global.mainWindow.isDestroyed()) {

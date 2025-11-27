@@ -24,34 +24,58 @@ export function useSpokenText() {
     const [currentWordIndex, setCurrentWordIndex] = useState<number>(-1);
     const [isPlaying, setIsPlaying] = useState<boolean>(false);
 
+    const [stableText, setStableText] = useState<string>('');
+    const [partialText, setPartialText] = useState<string>('');
+
     const startTime = useRef<number>(0);
     const wordsPerSecond = useRef<number>(3); // Average speaking rate
     const animationFrameId = useRef<number | null>(null);
 
+    // Reconstruct fullText from stable + partial
+    useEffect(() => {
+        setFullText(stableText + partialText);
+    }, [stableText, partialText]);
+
     /**
      * Add text chunk from LLM stream
      */
-    const addTextChunk = useCallback((chunk: string) => {
-        setFullText((prev) => {
-            const newText = prev + chunk;
+    const addTextChunk = useCallback((chunk: string | { type: 'partial' | 'final', text: string }) => {
+        let text = '';
+        let type = 'final';
 
-            // Split into words
-            const wordArray = newText.split(/\s+/).filter((w) => w.length > 0);
-            const wordObjects: SpokenWord[] = wordArray.map((text, index) => ({
-                text,
-                index,
-                isCurrent: false,
-            }));
+        if (typeof chunk === 'object') {
+            text = chunk.text;
+            type = chunk.type;
+        } else {
+            text = chunk;
+        }
 
-            setWords(wordObjects);
-
-            errorLogger.debug(`Added text chunk, total words: ${wordObjects.length}`, {
-                context: 'useSpokenText',
-            });
-
-            return newText;
-        });
+        if (type === 'final') {
+            setStableText(prev => prev + text);
+            setPartialText('');
+            
+            // For word highlighting, we only care about stable text updates or significant partials
+            // But since we reconstruct fullText, the effect below will handle word splitting
+        } else {
+            setPartialText(text);
+        }
     }, []);
+
+    // Effect to update words when fullText changes
+    useEffect(() => {
+        const wordArray = fullText.split(/\s+/).filter((w) => w.length > 0);
+        const wordObjects: SpokenWord[] = wordArray.map((text, index) => ({
+            text,
+            index,
+            isCurrent: false,
+        }));
+
+        setWords(wordObjects);
+
+        errorLogger.debug(`Updated text, total words: ${wordObjects.length}`, {
+            context: 'useSpokenText',
+        });
+    }, [fullText]);
 
     /**
      * Clear all text
