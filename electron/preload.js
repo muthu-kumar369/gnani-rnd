@@ -106,6 +106,10 @@ contextBridge.exposeInMainWorld("gnani", {
         ipcRenderer.removeListener('auth:force-logout', subscription);
       };
     },
+    startOAuth: (provider) => {
+      logger.info(`Preload invoking auth:start-oauth for ${provider}`, { context: 'Preload' });
+      return ipcRenderer.invoke('auth:start-oauth', provider);
+    },
   },
 
   // --- Wake Word ---

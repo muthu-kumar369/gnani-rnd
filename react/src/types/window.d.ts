@@ -16,6 +16,7 @@ declare global {
         getTokens: () => Promise<{ accessToken: string | null; refreshToken: string | null }>;
         clearTokens: () => Promise<boolean>;
         onForceLogout?: (callback: () => void) => () => void;
+        startOAuth: (provider: string) => Promise<any>;
       };
 
       // Wake word methods

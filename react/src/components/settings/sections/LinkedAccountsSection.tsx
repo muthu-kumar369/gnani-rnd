@@ -1,16 +1,21 @@
 import React, { useState } from 'react';
 import { useUser } from '../../../context/UserContext';
-import { useToast } from '../../../context/ToastContext';
+import { useOAuth } from '../../../hooks/useOAuth';
 import SectionHeader from '../SectionHeader';
-import { Link as LinkIcon, Github, Mail, Globe } from 'lucide-react';
+import { Link as LinkIcon, Github, Mail, Globe, Loader2 } from 'lucide-react';
 import Loader from '../../ui/Loader';
+import { motion } from 'framer-motion';
 
 const LinkedAccountsSection: React.FC = () => {
     const { user, loading, unlinkOAuthProvider } = useUser();
-    const { addToast } = useToast();
+    const { linkProvider, isAuthenticating } = useOAuth();
     const [unlinkingProvider, setUnlinkingProvider] = useState<string | null>(null);
 
     if (loading || !user) return <div className="flex justify-center p-8"><Loader text="Loading linked accounts..." /></div>;
+
+    const handleLink = async (provider: string) => {
+        await linkProvider(provider);
+    };
 
     const handleUnlink = async (provider: string) => {
         if (!confirm(`Are you sure you want to unlink your ${provider} account?`)) return;
@@ -18,10 +23,8 @@ const LinkedAccountsSection: React.FC = () => {
         setUnlinkingProvider(provider);
         try {
             await unlinkOAuthProvider(provider);
-            addToast('Account unlinked successfully', 'success');
         } catch (error) {
             console.error('Failed to unlink provider:', error);
-            addToast('Failed to unlink account', 'error');
         } finally {
             setUnlinkingProvider(null);
         }
@@ -43,6 +46,11 @@ const LinkedAccountsSection: React.FC = () => {
         });
     };
 
+    const supportedProviders = [
+        { id: 'google', name: 'Google', description: 'Connect your Google account' },
+        { id: 'github', name: 'GitHub', description: 'Connect your GitHub account' }
+    ];
+
     return (
         <div>
             <SectionHeader
@@ -51,39 +59,65 @@ const LinkedAccountsSection: React.FC = () => {
             />
 
             <div className="space-y-4">
-                {user.oauthProviders.map((provider) => (
-                    <div
-                        key={provider.provider}
-                        className="flex items-center justify-between bg-cyan-900/10 border border-cyan-500/20 rounded-xl p-4"
-                    >
-                        <div className="flex items-center gap-4">
-                            <div className="p-3 bg-cyan-500/10 rounded-lg text-cyan-400">
-                                {getProviderIcon(provider.provider)}
-                            </div>
-                            <div>
-                                <h4 className="text-cyan-100 font-medium capitalize">
-                                    {provider.provider}
-                                </h4>
-                                <p className="text-xs text-cyan-400/60">
-                                    Linked on {formatDate(provider.linkedAt)}
-                                </p>
-                            </div>
-                        </div>
-                        <button
-                            onClick={() => handleUnlink(provider.provider)}
-                            disabled={unlinkingProvider === provider.provider}
-                            className="px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-300 rounded-lg text-sm font-medium transition-colors border border-red-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            Unlink
-                        </button>
-                    </div>
-                ))}
+                {supportedProviders.map((provider) => {
+                    const linkedAccount = user.oauthProviders.find(p => p.provider.toLowerCase() === provider.id);
+                    const isAccountLinked = !!linkedAccount;
+                    const isProcessing = isAuthenticating || unlinkingProvider === provider.id;
 
-                {/* Add New Link Placeholder */}
-                <button className="w-full py-4 border-2 border-dashed border-cyan-500/20 rounded-xl text-cyan-400/60 hover:text-cyan-300 hover:border-cyan-500/40 hover:bg-cyan-500/5 transition-all flex items-center justify-center gap-2">
-                    <LinkIcon size={18} />
-                    Connect another account
-                </button>
+                    return (
+                        <motion.div
+                            key={provider.id}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className={`flex items-center justify-between border rounded-xl p-4 transition-colors ${isAccountLinked
+                                ? 'bg-cyan-900/10 border-cyan-500/30'
+                                : 'bg-gray-800/30 border-gray-700 hover:border-cyan-500/30'
+                                }`}
+                        >
+                            <div className="flex items-center gap-4">
+                                <div className={`p-3 rounded-lg ${isAccountLinked ? 'bg-cyan-500/10 text-cyan-400' : 'bg-gray-700/50 text-gray-400'
+                                    }`}>
+                                    {getProviderIcon(provider.id)}
+                                </div>
+                                <div>
+                                    <h4 className={`font-medium capitalize ${isAccountLinked ? 'text-cyan-100' : 'text-gray-300'
+                                        }`}>
+                                        {provider.name}
+                                    </h4>
+                                    <p className="text-xs text-cyan-400/60">
+                                        {isAccountLinked
+                                            ? `Linked on ${formatDate(linkedAccount!.linkedAt)}`
+                                            : provider.description}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div>
+                                {isProcessing ? (
+                                    <div className="px-4 py-2 flex items-center gap-2 text-cyan-400/60">
+                                        <Loader2 size={16} className="animate-spin" />
+                                        <span className="text-sm">Processing...</span>
+                                    </div>
+                                ) : isAccountLinked ? (
+                                    <button
+                                        onClick={() => handleUnlink(provider.id)}
+                                        className="px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-300 rounded-lg text-sm font-medium transition-colors border border-red-500/30"
+                                    >
+                                        Unlink
+                                    </button>
+                                ) : (
+                                    <button
+                                        onClick={() => handleLink(provider.id)}
+                                        className="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg text-sm font-medium transition-colors shadow-[0_0_10px_rgba(6,182,212,0.2)] hover:shadow-[0_0_15px_rgba(6,182,212,0.4)] flex items-center gap-2"
+                                    >
+                                        <LinkIcon size={14} />
+                                        Link Account
+                                    </button>
+                                )}
+                            </div>
+                        </motion.div>
+                    );
+                })}
             </div>
         </div>
     );

@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { userService } from '../api/userService';
+import { oauthService } from '../api/oauthService';
 import type { User, IProfile, ISettings, ISecurity } from '../types/user';
 import errorLogger from '../utils/errorLogger';
 import { useAuth } from './AuthContext';
@@ -13,6 +14,7 @@ interface UserContextType {
     updateSettings: (data: Partial<ISettings>) => Promise<void>;
     removeDevice: (deviceId: string) => Promise<void>;
     updateSecurity: (data: Partial<ISecurity>) => Promise<void>;
+    linkOAuthProvider: (provider: string) => Promise<void>;
     unlinkOAuthProvider: (provider: string) => Promise<void>;
     clearHistory: () => Promise<void>;
     deleteHistoryItem: (id: string) => Promise<void>;
@@ -210,6 +212,24 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
     }, [user]);
 
+    const linkOAuthProvider = useCallback(async (provider: string) => {
+        if (!user) return;
+
+        // We don't do optimistic updates for linking because it involves an external flow
+        // and we need the result to know what to add.
+        // The refreshUser() call after successful linking will update the state.
+
+        try {
+            // Static import usage
+            await oauthService.initiateOAuth(provider);
+            await refreshUser();
+            errorLogger.info('OAuth provider linked', { context: 'UserContext', provider });
+        } catch (err) {
+            errorLogger.error('Failed to link OAuth provider', err, { context: 'UserContext' });
+            throw err;
+        }
+    }, [user, refreshUser]);
+
     const unlinkOAuthProvider = useCallback(async (provider: string) => {
         if (!user) return;
 
@@ -340,6 +360,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
             refreshUser,
             removeDevice,
             updateSecurity,
+            linkOAuthProvider,
             unlinkOAuthProvider,
             deleteHistoryItem,
             clearHistory,

@@ -61,6 +61,150 @@ ipcMain.handle('auth:clear-tokens', () => {
   return true;
 });
 
+ipcMain.handle('auth:start-oauth', async (event, provider) => {
+  logger.info(`Starting OAuth flow for provider: ${provider}`, { context: 'MainProcess' });
+
+  // Base URL configuration
+  const baseUrl = isDev ? 'http://localhost:3000' : 'https://api.gnani.ai';
+  const startEndpoint = `${baseUrl}/api/auth/oauth/${provider}/start?platform=desktop`;
+
+  let authUrl;
+  try {
+    // Fetch the actual OAuth URL from the backend
+    logger.info(`Fetching OAuth URL from: ${startEndpoint}`, { context: 'MainProcess' });
+    const response = await fetch(startEndpoint);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch OAuth URL: ${response.statusText}`);
+    }
+    const data = await response.json();
+    if (!data.authUrl) {
+      throw new Error('Backend did not return an authUrl');
+    }
+    authUrl = data.authUrl;
+    logger.info(`Got OAuth URL: ${authUrl}`, { context: 'MainProcess' });
+  } catch (error) {
+    logger.error('Failed to initiate OAuth flow', error, { context: 'MainProcess' });
+    throw error;
+  }
+
+  return new Promise((resolve, reject) => {
+    const authWindow = new BrowserWindow({
+      width: 600,
+      height: 700,
+      show: true,
+      parent: mainWindow,
+      modal: true,
+      webPreferences: {
+        nodeIntegration: false,
+        contextIsolation: true,
+        webSecurity: true,
+      },
+    });
+
+    // Handle window close by user
+    let isResolved = false;
+    authWindow.on('closed', () => {
+      if (!isResolved) {
+        logger.info('OAuth window closed by user', { context: 'MainProcess' });
+        reject(new Error('OAuth cancelled by user'));
+      }
+    });
+
+    // Intercept navigation to capture the callback
+    const filter = {
+      urls: ['http://localhost:3000/auth/oauth/callback*'] // Adjust if your backend URL is different
+    };
+
+    // We can also check the title or page content if the backend returns a specific success page
+    // Assuming the backend redirects to a page that displays the token or sends it via postMessage
+    // For this implementation, we'll assume the backend returns a JSON response on the callback URL
+    // or redirects to a success page with tokens in the URL hash/query.
+
+    // Better approach for Electron:
+    // The backend should ideally redirect to a custom protocol (e.g. gnani://auth/callback)
+    // OR we can inject a script to extract tokens if the backend renders a page.
+    
+    // Let's assume the backend returns JSON on the callback endpoint.
+    // We can intercept the response.
+    
+    // NOTE: Since we can't easily read the response body of a navigation request in Electron without
+    // complex debugger attachment, a common pattern is:
+    // 1. Backend redirects to a success page (e.g. /auth/success?token=...)
+    // 2. We detect that URL.
+    
+    // Let's try to detect the callback URL and extract params.
+    authWindow.webContents.on('will-redirect', (event, url) => {
+      handleCallbackUrl(url);
+    });
+    
+    authWindow.webContents.on('will-navigate', (event, url) => {
+      handleCallbackUrl(url);
+    });
+
+    function handleCallbackUrl(url) {
+      if (url.includes('/auth/oauth/callback')) {
+        logger.info('Detected OAuth callback URL', { context: 'MainProcess', url });
+        // If the backend returns JSON directly, Electron might download it or show it as text.
+        // We need to parse it.
+        
+        // Strategy: Inject code to read the document body if it's a JSON response displayed in browser
+        // OR check URL params if tokens are there.
+        
+        // Let's assume the backend returns the tokens in the URL query parameters for simplicity in this "desktop app" flow
+        // If your backend sets cookies, we can grab session.
+        
+        // If the backend returns a JSON body, we can wait for 'did-finish-load' and execute JS.
+      }
+    }
+
+    authWindow.webContents.on('did-finish-load', async () => {
+      const url = authWindow.webContents.getURL();
+      if (url.includes('/auth/oauth/callback')) {
+        try {
+          // Attempt to read the content of the page (assuming it's the JSON response)
+          const pageContent = await authWindow.webContents.executeJavaScript('document.body.innerText');
+          logger.info('OAuth callback page loaded', { context: 'MainProcess' });
+          
+          try {
+            const data = JSON.parse(pageContent);
+            if (data.token || data.accessToken) {
+              const accessToken = data.token || data.accessToken;
+              const refreshToken = data.refreshToken;
+              const userId = data.user?.id || data.userId;
+              
+              // Store tokens
+              store.set('accessToken', accessToken);
+              if (refreshToken) store.set('refreshToken', refreshToken);
+              if (userId) store.set('userId', userId);
+              
+              isResolved = true;
+              authWindow.close();
+              resolve({ 
+                success: true, 
+                user: data.user, 
+                accessToken, 
+                refreshToken 
+              });
+            } else if (data.error) {
+               isResolved = true;
+               authWindow.close();
+               reject(new Error(data.error));
+            }
+          } catch (e) {
+            // Not JSON, maybe just a redirect page?
+            logger.warn('Could not parse OAuth response as JSON', { context: 'MainProcess' });
+          }
+        } catch (err) {
+          logger.error('Error executing JS in auth window', err, { context: 'MainProcess' });
+        }
+      }
+    });
+
+    // Load the fetched auth URL
+    authWindow.loadURL(authUrl);
+  });
+});
+
 async function callRefreshTokenApiFromMain(refreshToken) {
   logger.warn('callRefreshTokenApiFromMain is not implemented. Returning null.', { context: 'MainProcess' });
   return null;

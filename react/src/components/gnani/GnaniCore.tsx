@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
+import { Terminal } from "lucide-react";
 import { useGnaniUIState } from "../../hooks/useGnaniUIState";
 import useMicrophone from "../../hooks/useMicrophone";
 import { useAuth } from "../../context/AuthContext";
@@ -7,6 +8,7 @@ import { useIPC } from "../../hooks/useIPC";
 import { useGnaniStateContext } from "../../context/GnaniStateContext";
 import useBargeIn from "../../hooks/useBargeIn";
 import useSpokenText from "../../hooks/useSpokenText";
+import useConversationSync from "../../hooks/useConversationSync";
 import StreamingTTS from "../../utils/streamingTTS";
 import errorLogger from "../../utils/errorLogger";
 
@@ -17,6 +19,7 @@ import SpokenTextDisplay from "./SpokenTextDisplay";
 import SettingsModal from "../settings/SettingsModal";
 import AnimationWrapper from "./animations/AnimationWrapper";
 import StatusDisplay from "./StatusDisplay";
+import TerminalPanel from "../terminal/TerminalPanel";
 
 const GnaniCore: React.FC = () => {
   const uiState = useGnaniUIState();
@@ -26,9 +29,11 @@ const GnaniCore: React.FC = () => {
 
   const { state, transition, isIdle, isListening, isThinking, isSpeaking } = useGnaniStateContext();
   const spokenText = useSpokenText();
+  useConversationSync();
   const streamingTTSRef = useRef<StreamingTTS | null>(null);
 
   const [showIntelligencePanel, setShowIntelligencePanel] = useState(false);
+  const [showTerminal, setShowTerminal] = useState(true);
   const [showSettings, setShowSettings] = useState(false);
   const lastProcessedFinalSTT = useRef<string | null>(null);
 
@@ -236,6 +241,16 @@ const GnaniCore: React.FC = () => {
           </div>
           <div className="text-right flex gap-2">
             <button
+              onClick={() => setShowTerminal(!showTerminal)}
+              className={`px-3 py-1 text-xs border rounded-full transition-colors flex items-center gap-2 ${showTerminal
+                  ? "bg-cyan-800 border-cyan-400 text-cyan-100 shadow-[0_0_10px_rgba(6,182,212,0.3)]"
+                  : "bg-cyan-900/50 hover:bg-cyan-800 border-cyan-500/30 text-cyan-300"
+                }`}
+            >
+              <Terminal size={12} />
+              Terminal
+            </button>
+            <button
               onClick={() => setShowIntelligencePanel(!showIntelligencePanel)}
               className="px-3 py-1 text-xs bg-cyan-900/50 hover:bg-cyan-800 border border-cyan-500/30 rounded-full transition-colors text-cyan-300"
             >
@@ -283,6 +298,8 @@ const GnaniCore: React.FC = () => {
           </div>
         </div>
       </div>
+
+      <TerminalPanel isVisible={showTerminal} onToggle={() => setShowTerminal(!showTerminal)} />
 
       <IntelligencePanel isVisible={showIntelligencePanel} />
 
