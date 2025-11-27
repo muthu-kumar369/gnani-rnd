@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X } from 'lucide-react';
+import { X, LogIn } from 'lucide-react';
 import SettingsSidebar, { type SettingsTab } from './SettingsSidebar';
 import ProfileSection from './sections/ProfileSection';
 import AssistantSettingsSection from './sections/AssistantSettingsSection';
@@ -10,6 +10,9 @@ import LinkedAccountsSection from './sections/LinkedAccountsSection';
 import ActivityHistorySection from './sections/ActivityHistorySection';
 import PreferencesSection from './sections/PreferencesSection';
 import AboutSection from './sections/AboutSection';
+import { useUser } from '../../context/UserContext';
+import { useAuth } from '../../context/AuthContext';
+import Loader from '../ui/Loader';
 
 interface SettingsModalProps {
     isOpen: boolean;
@@ -18,6 +21,15 @@ interface SettingsModalProps {
 
 const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
     const [activeTab, setActiveTab] = useState<SettingsTab>('profile');
+    const { user, loading } = useUser();
+    const { logout } = useAuth();
+
+    // Reset tab when modal opens
+    useEffect(() => {
+        if (isOpen) {
+            setActiveTab('profile');
+        }
+    }, [isOpen]);
 
     const renderContent = () => {
         switch (activeTab) {
@@ -62,22 +74,59 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                             <X size={24} />
                         </button>
 
-                        {/* Sidebar */}
-                        <SettingsSidebar activeTab={activeTab} onTabChange={setActiveTab} />
-
-                        {/* Main Content Area */}
-                        <div className="flex-1 h-full overflow-hidden flex flex-col bg-black/20">
-                            <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
-                                <motion.div
-                                    key={activeTab}
-                                    initial={{ opacity: 0, x: 20 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    transition={{ duration: 0.2 }}
-                                >
-                                    {renderContent()}
-                                </motion.div>
+                        {loading ? (
+                            <div className="w-full h-full flex items-center justify-center">
+                                <Loader size="lg" text="Loading settings..." />
                             </div>
-                        </div>
+                        ) : !user ? (
+                            <div className="w-full h-full flex flex-col items-center justify-center gap-4 text-center p-8">
+                                <div className="w-16 h-16 rounded-full bg-cyan-500/10 flex items-center justify-center mb-4">
+                                    <LogIn className="w-8 h-8 text-cyan-400" />
+                                </div>
+                                <h3 className="text-xl font-semibold text-cyan-100">Authentication Required</h3>
+                                <p className="text-cyan-400/60 max-w-md">
+                                    You need to be logged in to access settings. Please sign in to your account.
+                                </p>
+                                <div className="flex gap-4">
+                                    <button
+                                        onClick={onClose}
+                                        className="px-6 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
+                                    >
+                                        Close
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            logout();
+                                            onClose();
+                                            window.location.href = '/login';
+                                        }}
+                                        className="px-6 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg transition-colors flex items-center gap-2"
+                                    >
+                                        <LogIn size={18} />
+                                        Login
+                                    </button>
+                                </div>
+                            </div>
+                        ) : (
+                            <>
+                                {/* Sidebar */}
+                                <SettingsSidebar activeTab={activeTab} onTabChange={setActiveTab} />
+
+                                {/* Main Content Area */}
+                                <div className="flex-1 h-full overflow-hidden flex flex-col bg-black/20">
+                                    <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
+                                        <motion.div
+                                            key={activeTab}
+                                            initial={{ opacity: 0, x: 20 }}
+                                            animate={{ opacity: 1, x: 0 }}
+                                            transition={{ duration: 0.2 }}
+                                        >
+                                            {renderContent()}
+                                        </motion.div>
+                                    </div>
+                                </div>
+                            </>
+                        )}
                     </motion.div>
                 </div>
             )}

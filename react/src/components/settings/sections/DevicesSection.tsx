@@ -1,13 +1,16 @@
 import React, { useState } from 'react';
 import { useUser } from '../../../context/UserContext';
+import { useToast } from '../../../context/ToastContext';
 import SectionHeader from '../SectionHeader';
 import { Smartphone, Laptop, Monitor, Speaker, Trash2, CheckCircle } from 'lucide-react';
+import Loader from '../../ui/Loader';
 
 const DevicesSection: React.FC = () => {
     const { user, loading, removeDevice } = useUser();
+    const { addToast } = useToast();
     const [removingDeviceId, setRemovingDeviceId] = useState<string | null>(null);
 
-    if (loading || !user) return <div className="text-cyan-400">Loading devices...</div>;
+    if (loading || !user) return <div className="flex justify-center p-8"><Loader text="Loading devices..." /></div>;
 
     const getDeviceIcon = (type: string) => {
         switch (type) {
@@ -35,9 +38,10 @@ const DevicesSection: React.FC = () => {
         setRemovingDeviceId(deviceId);
         try {
             await removeDevice(deviceId);
+            addToast('Device removed successfully', 'success');
         } catch (error) {
             console.error('Failed to remove device:', error);
-            alert('Failed to remove device. Please try again.');
+            addToast('Failed to remove device', 'error');
         } finally {
             setRemovingDeviceId(null);
         }

@@ -27,7 +27,9 @@ class ApiClient {
                 error: errorData
             });
 
-            throw new Error(errorData.message || `HTTP ${response.status}`);
+            const error = new Error(errorData.message || `HTTP ${response.status}`);
+            (error as any).status = response.status;
+            throw error;
         }
 
         return response.json();
@@ -40,7 +42,7 @@ class ApiClient {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
-                ...(token && { 'Authorization': `Bearer ${token}` })
+                ...(token && { 'x-auth-token': token })
             }
         });
 
@@ -54,7 +56,7 @@ class ApiClient {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                ...(token && { 'Authorization': `Bearer ${token}` })
+                ...(token && { 'x-auth-token': token })
             },
             body: data ? JSON.stringify(data) : undefined
         });
@@ -69,7 +71,7 @@ class ApiClient {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
-                ...(token && { 'Authorization': `Bearer ${token}` })
+                ...(token && { 'x-auth-token': token })
             },
             body: JSON.stringify(data)
         });
@@ -84,7 +86,7 @@ class ApiClient {
             method: 'DELETE',
             headers: {
                 'Content-Type': 'application/json',
-                ...(token && { 'Authorization': `Bearer ${token}` })
+                ...(token && { 'x-auth-token': token })
             }
         });
 

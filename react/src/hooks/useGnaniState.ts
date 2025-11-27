@@ -18,27 +18,33 @@ export function useGnaniState() {
 
     // Initialize state machine on mount
     useEffect(() => {
+        // Create state machine if it doesn't exist
         if (!stateMachineRef.current) {
+            console.log('[useGnaniState] Initializing state machine');
             stateMachineRef.current = new GnaniStateMachine();
-
-            // Subscribe to state changes
-            const handleStateChange = (event: StateChangeEvent) => {
-                setCurrentState(event.to);
-                setPreviousState(event.from);
-                errorLogger.debug(`State changed: ${event.from} -> ${event.to}`, { context: 'useGnaniState' });
-            };
-
-            stateMachineRef.current.on('stateChange', handleStateChange);
-
             errorLogger.info('useGnaniState initialized', { context: 'useGnaniState' });
-
-            // Cleanup
-            return () => {
-                if (stateMachineRef.current) {
-                    stateMachineRef.current.removeListener('stateChange', handleStateChange);
-                }
-            };
+        } else {
+            console.log('[useGnaniState] State machine already exists, re-registering listener');
         }
+
+        // Always subscribe to state changes (handles React Strict Mode double-mounting)
+        const handleStateChange = (event: StateChangeEvent) => {
+            console.log('[useGnaniState] State change event received:', event);
+            setCurrentState(event.to);
+            setPreviousState(event.from);
+            errorLogger.debug(`State changed: ${event.from} -> ${event.to}`, { context: 'useGnaniState' });
+        };
+
+        stateMachineRef.current.on('stateChange', handleStateChange);
+        console.log('[useGnaniState] Event listener registered');
+
+        // Cleanup - remove this specific listener
+        return () => {
+            console.log('[useGnaniState] Cleaning up event listener');
+            if (stateMachineRef.current) {
+                stateMachineRef.current.removeListener('stateChange', handleStateChange);
+            }
+        };
     }, []);
 
     /**

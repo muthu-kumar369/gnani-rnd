@@ -1,13 +1,16 @@
 import React, { useState } from 'react';
 import { useUser } from '../../../context/UserContext';
+import { useToast } from '../../../context/ToastContext';
 import SectionHeader from '../SectionHeader';
 import { Link as LinkIcon, Github, Mail, Globe } from 'lucide-react';
+import Loader from '../../ui/Loader';
 
 const LinkedAccountsSection: React.FC = () => {
     const { user, loading, unlinkOAuthProvider } = useUser();
+    const { addToast } = useToast();
     const [unlinkingProvider, setUnlinkingProvider] = useState<string | null>(null);
 
-    if (loading || !user) return <div className="text-cyan-400">Loading linked accounts...</div>;
+    if (loading || !user) return <div className="flex justify-center p-8"><Loader text="Loading linked accounts..." /></div>;
 
     const handleUnlink = async (provider: string) => {
         if (!confirm(`Are you sure you want to unlink your ${provider} account?`)) return;
@@ -15,9 +18,10 @@ const LinkedAccountsSection: React.FC = () => {
         setUnlinkingProvider(provider);
         try {
             await unlinkOAuthProvider(provider);
+            addToast('Account unlinked successfully', 'success');
         } catch (error) {
             console.error('Failed to unlink provider:', error);
-            alert('Failed to unlink account. Please try again.');
+            addToast('Failed to unlink account', 'error');
         } finally {
             setUnlinkingProvider(null);
         }

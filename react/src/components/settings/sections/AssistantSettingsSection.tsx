@@ -1,15 +1,18 @@
 import React, { useState } from 'react';
 import { useUser } from '../../../context/UserContext';
+import { useToast } from '../../../context/ToastContext';
 import type { ISettings } from '../../../types/user';
 import SectionHeader from '../SectionHeader';
 import { Save, Volume2, Mic, Keyboard } from 'lucide-react';
+import Loader from '../../ui/Loader';
 
 const AssistantSettingsSection: React.FC = () => {
     const { user, updateSettings, loading } = useUser();
+    const { addToast } = useToast();
     const [settings, setSettings] = useState<Partial<ISettings>>(user?.settings || {});
     const [isSaving, setIsSaving] = useState(false);
 
-    if (loading || !user) return <div className="text-cyan-400">Loading settings...</div>;
+    if (loading || !user) return <div className="flex justify-center p-8"><Loader text="Loading settings..." /></div>;
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value, type } = e.target;
@@ -21,6 +24,9 @@ const AssistantSettingsSection: React.FC = () => {
         setIsSaving(true);
         try {
             await updateSettings(settings);
+            addToast('Settings saved successfully', 'success');
+        } catch (error) {
+            addToast('Failed to save settings', 'error');
         } finally {
             setIsSaving(false);
         }
@@ -127,10 +133,19 @@ const AssistantSettingsSection: React.FC = () => {
                 <button
                     onClick={handleSave}
                     disabled={isSaving}
-                    className="flex items-center gap-2 px-6 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_15px_rgba(6,182,212,0.3)]"
+                    className="flex items-center gap-2 px-6 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_15px_rgba(6,182,212,0.3)] min-w-[140px] justify-center"
                 >
-                    <Save size={18} />
-                    {isSaving ? 'Saving...' : 'Save Changes'}
+                    {isSaving ? (
+                        <>
+                            <Loader size="sm" />
+                            <span>Saving...</span>
+                        </>
+                    ) : (
+                        <>
+                            <Save size={18} />
+                            <span>Save Changes</span>
+                        </>
+                    )}
                 </button>
             </div>
         </div>

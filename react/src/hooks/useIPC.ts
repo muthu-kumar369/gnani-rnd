@@ -71,15 +71,31 @@ export const useIPC = () => {
         setStreamErrorMessage(error.message);
         setIsStreamConnected(false); // Assume error means disconnected
       }));
-      unsubs.push(window.gnani.stream.on('tts:started', () => {
-        errorLogger.debug('IPC: TTS started', { context: 'useIPC' });
+      // Listen for TTS events from StreamingTTS (frontend CustomEvents)
+      const handleTtsStarted = () => {
+        errorLogger.debug('CustomEvent: TTS started', { context: 'useIPC' });
         setIsTtsStarted(true);
-      }));
-      unsubs.push(window.gnani.stream.on('tts:ended', () => {
-        errorLogger.debug('IPC: TTS ended', { context: 'useIPC' });
+      };
+      
+      const handleTtsEnded = () => {
+        errorLogger.debug('CustomEvent: TTS ended', { context: 'useIPC' });
         setIsTtsEnded(true);
+        setIsTtsStarted(false); // Reset TTS started state
+        
+        // Clear previous interaction data to prevent stuck states
+        setLatestFinalSTT(null);
+        setLatestLLMChunk(null);
+        
         setTimeout(() => setIsTtsEnded(false), 100);
-      }));
+      };
+      
+      window.addEventListener('tts:started', handleTtsStarted);
+      window.addEventListener('tts:ended', handleTtsEnded);
+      
+      unsubs.push(() => {
+        window.removeEventListener('tts:started', handleTtsStarted);
+        window.removeEventListener('tts:ended', handleTtsEnded);
+      });
 
       // Listeners for gRPC stream data
       unsubs.push(window.gnani.stream.on('stream:partial', ({ text, segment_id }: { text: string, segment_id: string }) => {

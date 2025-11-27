@@ -1,15 +1,22 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useUser } from '../../../context/UserContext';
+import { useToast } from '../../../context/ToastContext';
 import type { IProfile } from '../../../types/user';
 import SectionHeader from '../SectionHeader';
 import { Camera, Save } from 'lucide-react';
+import Loader from '../../ui/Loader';
 
 const ProfileSection: React.FC = () => {
-    const { user, updateProfile, loading } = useUser();
-    const [formData, setFormData] = useState<Partial<IProfile>>(user?.profile || {});
+    const { user, updateProfile } = useUser();
+    const { addToast } = useToast();
+    const [formData, setFormData] = useState<Partial<IProfile>>({});
     const [isSaving, setIsSaving] = useState(false);
 
-    if (loading || !user) return <div className="text-cyan-400">Loading profile...</div>;
+    useEffect(() => {
+        if (user?.profile) {
+            setFormData(user.profile);
+        }
+    }, [user]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
@@ -20,10 +27,21 @@ const ProfileSection: React.FC = () => {
         setIsSaving(true);
         try {
             await updateProfile(formData);
+            addToast('Profile updated successfully', 'success');
+        } catch (error) {
+            addToast('Failed to update profile', 'error');
         } finally {
             setIsSaving(false);
         }
     };
+
+    const getInitials = () => {
+        const first = formData.firstName?.charAt(0) || '';
+        const last = formData.lastName?.charAt(0) || '';
+        return (first + last).toUpperCase() || 'U';
+    };
+
+    if (!user) return null;
 
     return (
         <div>
@@ -36,12 +54,27 @@ const ProfileSection: React.FC = () => {
                 {/* Profile Photo */}
                 <div className="flex flex-col items-center gap-4">
                     <div className="relative group">
-                        <div className="w-32 h-32 rounded-full overflow-hidden border-2 border-cyan-500/30 shadow-[0_0_20px_rgba(6,182,212,0.2)]">
-                            <img
-                                src={formData.profilePhoto || 'https://via.placeholder.com/150'}
-                                alt="Profile"
-                                className="w-full h-full object-cover"
-                            />
+                        <div className="w-32 h-32 rounded-full overflow-hidden border-2 border-cyan-500/30 shadow-[0_0_20px_rgba(6,182,212,0.2)] bg-gray-800 flex items-center justify-center">
+                            {formData.profilePhoto ? (
+                                <img
+                                    src={formData.profilePhoto}
+                                    alt="Profile"
+                                    className="w-full h-full object-cover"
+                                    onError={(e) => {
+                                        // Fallback on error
+                                        e.currentTarget.style.display = 'none';
+                                        e.currentTarget.parentElement?.classList.add('fallback-active');
+                                    }}
+                                />
+                            ) : (
+                                <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-cyan-900 to-gray-900 text-cyan-400 text-3xl font-bold">
+                                    {getInitials()}
+                                </div>
+                            )}
+                            {/* Fallback for hidden image */}
+                            <div className="hidden fallback-active:flex w-full h-full absolute inset-0 items-center justify-center bg-gradient-to-br from-cyan-900 to-gray-900 text-cyan-400 text-3xl font-bold">
+                                {getInitials()}
+                            </div>
                         </div>
                         <button className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-full cursor-pointer">
                             <Camera className="text-cyan-300" />
@@ -60,6 +93,7 @@ const ProfileSection: React.FC = () => {
                             value={formData.firstName || ''}
                             onChange={handleChange}
                             className="w-full bg-black/40 border border-cyan-500/30 rounded-lg px-4 py-2 text-cyan-100 focus:outline-none focus:border-cyan-400 focus:shadow-[0_0_10px_rgba(6,182,212,0.2)] transition-all"
+                            placeholder="Enter first name"
                         />
                     </div>
                     <div className="space-y-2">
@@ -70,6 +104,7 @@ const ProfileSection: React.FC = () => {
                             value={formData.lastName || ''}
                             onChange={handleChange}
                             className="w-full bg-black/40 border border-cyan-500/30 rounded-lg px-4 py-2 text-cyan-100 focus:outline-none focus:border-cyan-400 focus:shadow-[0_0_10px_rgba(6,182,212,0.2)] transition-all"
+                            placeholder="Enter last name"
                         />
                     </div>
                     <div className="space-y-2">
@@ -77,7 +112,7 @@ const ProfileSection: React.FC = () => {
                         <input
                             type="date"
                             name="dob"
-                            value={formData.dob ? formData.dob.split('T')[0] : ''}
+                            value={formData.dob ? (typeof formData.dob === 'string' ? formData.dob.split('T')[0] : new Date(formData.dob).toISOString().split('T')[0]) : ''}
                             onChange={handleChange}
                             className="w-full bg-black/40 border border-cyan-500/30 rounded-lg px-4 py-2 text-cyan-100 focus:outline-none focus:border-cyan-400 focus:shadow-[0_0_10px_rgba(6,182,212,0.2)] transition-all [color-scheme:dark]"
                         />
@@ -105,10 +140,19 @@ const ProfileSection: React.FC = () => {
                 <button
                     onClick={handleSave}
                     disabled={isSaving}
-                    className="flex items-center gap-2 px-6 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_15px_rgba(6,182,212,0.3)]"
+                    className="flex items-center gap-2 px-6 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_15px_rgba(6,182,212,0.3)] min-w-[140px] justify-center"
                 >
-                    <Save size={18} />
-                    {isSaving ? 'Saving...' : 'Save Changes'}
+                    {isSaving ? (
+                        <>
+                            <Loader size="sm" />
+                            <span>Saving...</span>
+                        </>
+                    ) : (
+                        <>
+                            <Save size={18} />
+                            <span>Save Changes</span>
+                        </>
+                    )}
                 </button>
             </div>
         </div>

@@ -53,7 +53,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }) => {
     if (newState.isAuthenticated !== undefined) setIsAuthenticated(newState.isAuthenticated);
     if (newState.user !== undefined) setUser(newState.user);
-    if (newState.accessToken !== undefined) setAccessToken(newState.accessToken);
+    if (newState.accessToken !== undefined) {
+      setAccessToken(newState.accessToken);
+      if (newState.accessToken) {
+        localStorage.setItem('accessToken', newState.accessToken);
+      } else {
+        localStorage.removeItem('accessToken');
+      }
+    }
     if (newState.refreshToken !== undefined) setRefreshToken(newState.refreshToken);
     if (newState.loading !== undefined) setLoading(newState.loading);
     if (newState.error !== undefined) setError(newState.error);
@@ -69,6 +76,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setUser(null);
     setAccessToken(null);
     setRefreshToken(null);
+    localStorage.removeItem('accessToken'); // Clear from localStorage
     if (window.gnani?.auth) {
       await window.gnani.auth.clearTokens();
     }
@@ -109,10 +117,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         try {
           const { accessToken, refreshToken } = await window.gnani.auth.getTokens();
           if (accessToken && refreshToken) {
+            // Sync to localStorage for ApiClient
+            localStorage.setItem('accessToken', accessToken);
             // TODO: Implement token validation (e.g., check expiry, make a /me API call)
             setAuthState({ isAuthenticated: true, accessToken, refreshToken, loading: false });
             // TODO: Fetch user data using the token if necessary
           } else {
+            localStorage.removeItem('accessToken');
             setAuthState({ isAuthenticated: false, loading: false });
           }
         } catch (err) {
@@ -121,7 +132,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         }
       } else {
         errorLogger.warn('Electron IPC for auth not available. Running without secure storage.', { context: 'AuthContext' });
-        setAuthState({ isAuthenticated: false, loading: false });
+        // Fallback to localStorage if Electron store is not available (e.g. web only)
+        const storedToken = localStorage.getItem('accessToken');
+        if (storedToken) {
+          setAuthState({ isAuthenticated: true, accessToken: storedToken, loading: false });
+        } else {
+          setAuthState({ isAuthenticated: false, loading: false });
+        }
       }
     };
     loadTokens();
@@ -132,7 +149,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const userId = user?.id || user?.userId;
       window.gnani.auth.storeTokens(accessToken, refreshToken, userId).catch((err) => errorLogger.error('Failed to store tokens securely:', err, { context: 'AuthContext' }));
     }
-  }, [accessToken, refreshToken, loading]);
+  }, [accessToken, refreshToken, loading, user]);
 
 
   const value = {

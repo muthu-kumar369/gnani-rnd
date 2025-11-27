@@ -254,10 +254,16 @@ export const useGnaniUIState = () => {
     else if (ttsStarted && !ttsEnded) {
       dispatch({ type: 'SET_APP_STATUS', payload: 'responding' });
     }
-    else if (finalSTT && !ttsStarted && !llmChunk) {
+    // If we have LLM chunks but TTS hasn't started, we are generating response -> THINKING
+    else if (llmChunk && !ttsStarted) {
+       dispatch({ type: 'SET_APP_STATUS', payload: 'thinking' });
+    }
+    // If we have final STT and no response yet, we are waiting for response -> THINKING
+    else if (finalSTT && !ttsStarted) { 
       dispatch({ type: 'SET_APP_STATUS', payload: 'thinking' });
     }
-    else if (partialSTT || finalSTT) {
+    // Only partial STT implies user is currently speaking -> RECEIVING-STT (Listening)
+    else if (partialSTT) { 
       dispatch({ type: 'SET_APP_STATUS', payload: 'receiving-stt' });
     }
     else if (micActive && streamConnected && !ttsStarted) {

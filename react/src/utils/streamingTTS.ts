@@ -182,9 +182,9 @@ class StreamingTTS {
             errorLogger.debug(`After playNext - queue: ${this.utteranceQueue.length}, isPlaying: ${this.isPlaying}, isStreamActive: ${this.isStreamActive}`, { context: 'StreamingTTS' });
             
             // Only send tts:ended if queue is empty AND stream is NOT active (meaning no more chunks are coming)
-            if (this.utteranceQueue.length === 0 && !this.isPlaying && !this.isStreamActive && window.gnani) {
-                errorLogger.info('All TTS playback finished and stream ended, sending tts:ended', { context: 'StreamingTTS' });
-                window.gnani.send('tts:ended', { text });
+            if (this.utteranceQueue.length === 0 && !this.isPlaying && !this.isStreamActive) {
+                errorLogger.info('All TTS playback finished and stream ended, dispatching tts:ended event', { context: 'StreamingTTS' });
+                window.dispatchEvent(new CustomEvent('tts:ended', { detail: { text } }));
             } else if (this.utteranceQueue.length === 0 && !this.isPlaying && this.isStreamActive) {
                 errorLogger.info('Queue empty but stream active, waiting for more chunks...', { context: 'StreamingTTS' });
             }
@@ -194,9 +194,9 @@ class StreamingTTS {
             errorLogger.error(`TTS error for text "${text}":`, event.error, { context: 'StreamingTTS' });
             this.playNextUtterance();
             // Send tts:ended on error to prevent VAD from getting stuck
-            if (this.utteranceQueue.length === 0 && !this.isPlaying && !this.isStreamActive && window.gnani) {
-                errorLogger.warn('TTS error and queue empty, sending tts:ended', { context: 'StreamingTTS' });
-                window.gnani.send('tts:ended', { text });
+            if (this.utteranceQueue.length === 0 && !this.isPlaying && !this.isStreamActive) {
+                errorLogger.warn('TTS error and queue empty, dispatching tts:ended event', { context: 'StreamingTTS' });
+                window.dispatchEvent(new CustomEvent('tts:ended', { detail: { text } }));
             }
         };
 
@@ -237,9 +237,9 @@ class StreamingTTS {
             const wasPlaying = this.isPlaying;
             this.isPlaying = true;
             
-            if (!wasPlaying && window.gnani) {
-                errorLogger.info('Starting TTS playback, sending tts:started', { context: 'StreamingTTS' });
-                window.gnani.send('tts:started');
+            if (!wasPlaying) {
+                errorLogger.info('Starting TTS playback, dispatching tts:started event', { context: 'StreamingTTS' });
+                window.dispatchEvent(new CustomEvent('tts:started'));
             }
 
             // Check if speech synthesis is available
@@ -299,9 +299,9 @@ class StreamingTTS {
         } else {
              // If buffer is empty, we might need to trigger tts:ended if queue is also empty
              // This handles the case where the last chunk was a complete sentence and queue emptied before flush
-             if (this.utteranceQueue.length === 0 && !this.isPlaying && window.gnani) {
-                errorLogger.info('Flush called with empty buffer and queue, sending tts:ended', { context: 'StreamingTTS' });
-                window.gnani.send('tts:ended', { text: '' });
+             if (this.utteranceQueue.length === 0 && !this.isPlaying) {
+                errorLogger.info('Flush called with empty buffer and queue, dispatching tts:ended event', { context: 'StreamingTTS' });
+                window.dispatchEvent(new CustomEvent('tts:ended', { detail: { text: '' } }));
              }
         }
     }

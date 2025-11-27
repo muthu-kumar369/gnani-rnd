@@ -1,22 +1,26 @@
 import React, { useState } from 'react';
 import { useUser } from '../../../context/UserContext';
+import { useToast } from '../../../context/ToastContext';
 import SectionHeader from '../SectionHeader';
 import { Shield, Key, Lock, AlertTriangle, LogOut } from 'lucide-react';
+import Loader from '../../ui/Loader';
 
 const SecuritySection: React.FC = () => {
     const { user, loading, updateSecurity } = useUser();
+    const { addToast } = useToast();
     const [isUpdating, setIsUpdating] = useState(false);
     const [recoveryEmail, setRecoveryEmail] = useState(user?.security.recoveryEmail || '');
 
-    if (loading || !user) return <div className="text-cyan-400">Loading security settings...</div>;
+    if (loading || !user) return <div className="flex justify-center p-8"><Loader text="Loading security settings..." /></div>;
 
     const handleToggleMFA = async () => {
         setIsUpdating(true);
         try {
             await updateSecurity({ mfaEnabled: !user.security.mfaEnabled });
+            addToast(`MFA ${!user.security.mfaEnabled ? 'enabled' : 'disabled'} successfully`, 'success');
         } catch (error) {
             console.error('Failed to update MFA:', error);
-            alert('Failed to update MFA. Please try again.');
+            addToast('Failed to update MFA', 'error');
         } finally {
             setIsUpdating(false);
         }
@@ -28,9 +32,10 @@ const SecuritySection: React.FC = () => {
         setIsUpdating(true);
         try {
             await updateSecurity({ recoveryEmail });
+            addToast('Recovery email updated successfully', 'success');
         } catch (error) {
             console.error('Failed to update recovery email:', error);
-            alert('Failed to update recovery email. Please try again.');
+            addToast('Failed to update recovery email', 'error');
         } finally {
             setIsUpdating(false);
         }

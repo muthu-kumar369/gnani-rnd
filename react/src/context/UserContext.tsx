@@ -1,20 +1,21 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import type { User, ISettings, IProfile } from '../types/user';
 import { userService } from '../api/userService';
+import type { User, IProfile, ISettings, ISecurity } from '../types/user';
 import errorLogger from '../utils/errorLogger';
+import { useAuth } from './AuthContext';
 
 interface UserContextType {
     user: User | null;
     loading: boolean;
     error: string | null;
-    updateSettings: (settings: Partial<ISettings>) => Promise<void>;
-    updateProfile: (profile: Partial<IProfile>) => Promise<void>;
     refreshUser: () => Promise<void>;
+    updateProfile: (data: Partial<IProfile>) => Promise<void>;
+    updateSettings: (data: Partial<ISettings>) => Promise<void>;
     removeDevice: (deviceId: string) => Promise<void>;
-    updateSecurity: (security: { mfaEnabled?: boolean; recoveryEmail?: string }) => Promise<void>;
+    updateSecurity: (data: Partial<ISecurity>) => Promise<void>;
     unlinkOAuthProvider: (provider: string) => Promise<void>;
-    deleteHistoryItem: (id: string) => Promise<void>;
     clearHistory: () => Promise<void>;
+    deleteHistoryItem: (id: string) => Promise<void>;
     addNote: (note: string) => Promise<void>;
     deleteNote: (index: number) => Promise<void>;
 }
@@ -22,35 +23,30 @@ interface UserContextType {
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
 export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+    const { isAuthenticated, logout } = useAuth();
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
     const refreshUser = useCallback(async () => {
+        if (!isAuthenticated) {
+            setLoading(false);
+            return;
+        }
+
         setLoading(true);
         try {
-            // Fetch profile data
-            const profileData = await userService.getProfile();
+            // Fetch all user data in parallel
+            const [profileData, settingsData, devices, security, oauthProviders, history, notes] = await Promise.all([
+                userService.getProfile(),
+                userService.getSettings(),
+                userService.getDevices(),
+                userService.getSecurity(),
+                userService.getOAuthProviders(),
+                userService.getHistory(),
+                userService.getNotes()
+            ]);
 
-            // Fetch settings
-            const settingsData = await userService.getSettings();
-
-            // Fetch devices
-            const devices = await userService.getDevices();
-
-            // Fetch security info
-            const security = await userService.getSecurity();
-
-            // Fetch OAuth providers
-            const oauthProviders = await userService.getOAuthProviders();
-
-            // Fetch history
-            const history = await userService.getHistory();
-
-            // Fetch notes
-            const notes = await userService.getNotes();
-
-            // Construct User object
             const userData: User = {
                 id: profileData.userId,
                 email: profileData.email,
@@ -63,29 +59,32 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     lastActive: d.lastActive,
                     isTrusted: d.isActive
                 })),
-                history: history.map(h => ({
-                    id: h._id,
-                    query: h.action,
-                    response: JSON.stringify(h.details),
-                    timestamp: h.timestamp
-                })),
                 security: {
-                    failedLoginAttempts: 0, // Not provided by API
-                    lastFailedLogin: undefined,
+                    failedLoginAttempts: 0,
                     mfaEnabled: security.mfaEnabled,
                     recoveryEmail: security.recoveryEmail,
-                    activeSessions: 1 // Not provided by API
+                    activeSessions: 1
                 },
                 oauthProviders: oauthProviders.map(o => ({
                     provider: o.provider,
                     providerUserId: o.providerId,
                     linkedAt: o.linkedAt
                 })),
+                history: history.map(h => ({
+                    id: h._id,
+                    query: h.action,
+                    response: JSON.stringify(h.details),
+                    timestamp: h.timestamp
+                })),
                 notes,
                 roles: profileData.roles,
                 permissions: profileData.permissions,
                 preferences: profileData.preferences || settingsData.preferences,
-                metadata: {},
+                metadata: {
+                    lastLogin: profileData.lastLoginAt,
+                    accountCreated: profileData.createdAt,
+                    accountType: 'free'
+                },
                 isOnboarded: profileData.isOnboarded,
                 isActive: profileData.isActive,
                 lastLoginAt: profileData.lastLoginAt,
@@ -95,22 +94,25 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
             setUser(userData);
             setError(null);
-        } catch (err) {
+        } catch (err: any) {
             errorLogger.error('Failed to fetch user data', err, { context: 'UserContext' });
+            if (err.status === 401) {
+                logout();
+            }
             setError('Failed to load user profile');
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [isAuthenticated, logout]);
 
     useEffect(() => {
-        const token = localStorage.getItem('token');
-        if (token) {
+        if (isAuthenticated) {
             refreshUser();
         } else {
+            setUser(null);
             setLoading(false);
         }
-    }, [refreshUser]);
+    }, [isAuthenticated, refreshUser]);
 
     const updateSettings = useCallback(async (newSettings: Partial<ISettings>) => {
         if (!user) return;

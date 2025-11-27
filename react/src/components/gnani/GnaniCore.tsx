@@ -3,44 +3,35 @@ import { motion } from "framer-motion";
 import { useGnaniUIState } from "../../hooks/useGnaniUIState";
 import useMicrophone from "../../hooks/useMicrophone";
 import { useAuth } from "../../context/AuthContext";
-import { useToast } from "../../context/ToastContext";
 import { useIPC } from "../../hooks/useIPC";
-import useGnaniState from "../../hooks/useGnaniState";
+import { useGnaniStateContext } from "../../context/GnaniStateContext";
 import useBargeIn from "../../hooks/useBargeIn";
 import useSpokenText from "../../hooks/useSpokenText";
 import StreamingTTS from "../../utils/streamingTTS";
 import errorLogger from "../../utils/errorLogger";
 
 import HUDBackground from "./HUDBackground";
-import AIAvatar from "./AIAvatar";
 import MicButton from "./MicButton";
-import Waveform from "./Waveform";
-import StatusBar from "./StatusBar";
-import ResponseConsole from "./ResponseConsole";
 import IntelligencePanel from "./IntelligencePanel";
 import SpokenTextDisplay from "./SpokenTextDisplay";
 import SettingsModal from "../settings/SettingsModal";
+import AnimationWrapper from "./animations/AnimationWrapper";
+import StatusDisplay from "./StatusDisplay";
 
 const GnaniCore: React.FC = () => {
   const uiState = useGnaniUIState();
   const { audioLevel, isMicActive, startMic, stopMic } = useMicrophone();
-  const { logout, user } = useAuth();
-  const { addToast } = useToast();
-  const { latestFinalSTT, latestLLMChunk, isTtsStarted, isTtsEnded } = useIPC();
+  const { isAuthenticated } = useAuth();
+  const { latestLLMChunk, latestFinalSTT, isTtsEnded, isTtsStarted, isWakeWordTriggered } = useIPC();
 
-  // State machine - single source of truth
-  const { state, transition, isIdle, isListening, isThinking, isSpeaking } = useGnaniState();
-
-  // Spoken text display
+  const { state, transition, isIdle, isListening, isThinking, isSpeaking } = useGnaniStateContext();
   const spokenText = useSpokenText();
-
-  // Streaming TTS
   const streamingTTSRef = useRef<StreamingTTS | null>(null);
 
   const [showIntelligencePanel, setShowIntelligencePanel] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const lastProcessedFinalSTT = useRef<string | null>(null);
 
-  // Initialize StreamingTTS
   useEffect(() => {
     streamingTTSRef.current = new StreamingTTS();
     return () => {
@@ -48,18 +39,15 @@ const GnaniCore: React.FC = () => {
     };
   }, []);
 
-  // Process incoming LLM chunks
   useEffect(() => {
     if (!latestLLMChunk || !streamingTTSRef.current) return;
 
     try {
       let chunk = latestLLMChunk;
-      // Parse if string
       if (typeof chunk === 'string') {
         try {
           chunk = JSON.parse(chunk);
         } catch (e) {
-          // If not JSON, treat as raw text partial
           chunk = { type: 'partial', text: chunk };
         }
       }
@@ -73,32 +61,20 @@ const GnaniCore: React.FC = () => {
 
       if (type === 'complete_response') {
         console.log('[GnaniCore] Received COMPLETE response:', text);
-        // Reset TTS to clear any partials and play the full response
         streamingTTSRef.current.reset();
         streamingTTSRef.current.addTextChunk(text);
         streamingTTSRef.current.flush();
         return;
       }
-
-      // IGNORE partials for TTS as per user request to avoid repetition
-      // if (text) {
-      //   streamingTTSRef.current.addTextChunk(text);
-      // }
-
-      // if (type === 'final') {
-      //   streamingTTSRef.current.flush();
-      // }
     } catch (error) {
       errorLogger.error('Error processing LLM chunk', error as Error, { context: 'GnaniCore' });
     }
   }, [latestLLMChunk]);
 
-  // Initialize Gnani
   useEffect(() => {
-    if (!user) return;
+    if (!isAuthenticated) return;
 
     const init = async () => {
-      // Small delay to ensure audio context is ready and prevent startup crashes
       setTimeout(() => {
         startMic();
         if (window.gnani?.wake?.startWakeWord) {
@@ -108,76 +84,71 @@ const GnaniCore: React.FC = () => {
     };
 
     init();
-  }, [user, startMic]);
+  }, [isAuthenticated, startMic]);
 
-  // Barge-in handler
+  useEffect(() => {
+    if (isWakeWordTriggered && isIdle) {
+      errorLogger.info('Wake word triggered, transitioning to listening', { context: 'GnaniCore' });
+      transition('wake-word-detected');
+    }
+  }, [isWakeWordTriggered, isIdle, transition]);
+
+  useEffect(() => {
+    if (latestFinalSTT && isListening && latestFinalSTT !== lastProcessedFinalSTT.current) {
+      errorLogger.info('Final STT received, transitioning to thinking', { context: 'GnaniCore', text: latestFinalSTT });
+      lastProcessedFinalSTT.current = latestFinalSTT;
+      transition('vad-end');
+    }
+  }, [latestFinalSTT, isListening, transition]);
+
+  useEffect(() => {
+    if (isTtsStarted && isThinking) {
+      errorLogger.info('TTS started, transitioning to speaking', { context: 'GnaniCore' });
+      transition('tts-start');
+    }
+  }, [isTtsStarted, isThinking, transition]);
+
+  useEffect(() => {
+    if (isTtsEnded && isSpeaking) {
+      errorLogger.info('TTS ended, transitioning to idle', { context: 'GnaniCore' });
+      transition('tts-complete');
+    }
+  }, [isTtsEnded, isSpeaking, transition]);
+
   const handleBargeIn = () => {
     errorLogger.info('Barge-in triggered', { context: 'GnaniCore', currentState: state });
 
-    // Stop TTS immediately
     if (streamingTTSRef.current) {
       streamingTTSRef.current.stop();
     }
 
-    // Clear spoken text
     spokenText.clearText();
     spokenText.stopPlayback();
 
-    // Transition to listening state
     transition('barge-in');
 
-    // Start microphone if not already active
     if (!isMicActive) {
       startMic();
     }
   };
 
-  // Barge-in hook
   const bargeIn = useBargeIn(state, handleBargeIn);
 
-  // Dynamically adjust barge-in sensitivity
-  // When speaking, increase threshold to prevent self-interruption (echo)
   useEffect(() => {
     if (isSpeaking) {
-      bargeIn.updateConfig({ vadThreshold: 20 }); // Very low sensitivity (approx 600ms)
-      console.log('[GnaniCore] Increased barge-in threshold to 20 (Speaking)');
-      errorLogger.debug('Increased barge-in threshold to 20 (Speaking)', { context: 'GnaniCore' });
+      bargeIn.updateConfig({ vadThreshold: 20 });
     } else {
-      // The existing effect [isIdle, isMicActive] will handle the mic restart
-      // But we can force it here to be sure
-
-      // We don't have a direct 'tts-end' transition in the hook usually, 
-      // but 'vad-end' -> thinking -> speaking -> (tts-end?) -> idle
-      // Let's assume the state machine handles 'speaking' -> 'idle' via some event or we force it.
-
-      // Actually, we should check useGnaniState to see available transitions.
-      // Usually 'speaking' -> 'idle' happens when TTS finishes.
-
-      // Let's try to transition to idle if possible, or just restart mic if state allows.
-      // For now, let's rely on the existing effect:
-      // useEffect(() => { if (isIdle && !isMicActive) ... }, [isIdle])
-
-      // So we just need to ensure state goes to IDLE.
-      // If useGnaniState doesn't auto-transition, we might need to call transition('tts-end') if it exists.
-      // Since I can't see useGnaniState source, I'll assume we need to trigger something.
-      // But wait, isTtsEnded comes from IPC.
-
-      // Let's manually call startMic() just in case, but after a small delay to allow state update
       setTimeout(() => {
         if (!isMicActive) {
-          console.log('[GnaniCore] Auto-restarting mic after TTS ended');
           startMic();
         }
       }, 200);
     }
-  }, [isTtsEnded, isSpeaking, isMicActive, startMic]);
+  }, [isTtsEnded, isSpeaking, isMicActive, startMic, bargeIn]);
 
-  // Monitor state transitions to restart microphone after speaking
   useEffect(() => {
-    // When transitioning from speaking to idle, restart the microphone for next interaction
     if (isIdle && !isMicActive) {
       errorLogger.info('Transitioning to idle, ensuring microphone is ready', { context: 'GnaniCore' });
-      // Small delay to ensure clean state transition
       setTimeout(() => {
         if (window.gnani?.wake?.startWakeWord) {
           window.gnani.wake.startWakeWord();
@@ -187,25 +158,19 @@ const GnaniCore: React.FC = () => {
     }
   }, [isIdle, isMicActive, startMic]);
 
-  // Manual start recording
   const handleStartRecording = () => {
     if (isIdle) {
       errorLogger.info('Manual start, transitioning to listening', { context: 'GnaniCore' });
-
-      // Reset TTS state to clear any old buffers
       if (streamingTTSRef.current) {
         streamingTTSRef.current.reset();
       }
-
       transition('manual-start');
       startMic();
     } else if (isSpeaking || isThinking) {
-      // Manual barge-in
       bargeIn.handleManualBargeIn();
     }
   };
 
-  // Manual stop recording
   const handleStopRecording = () => {
     if (isListening) {
       errorLogger.info('Manual stop, transitioning to thinking', { context: 'GnaniCore' });
@@ -214,7 +179,6 @@ const GnaniCore: React.FC = () => {
     }
   };
 
-  // Map canonical state to UI status for existing components
   const getUIStatus = () => {
     switch (state) {
       case 'idle':
@@ -230,12 +194,25 @@ const GnaniCore: React.FC = () => {
     }
   };
 
+  const getAnimationState = (): 'IDLE' | 'LISTENING' | 'THINKING' | 'SPEAKING' | 'ERROR' => {
+    if (uiState.streamErrorMessage) return 'ERROR';
+
+    switch (state) {
+      case 'idle':
+        return 'IDLE';
+      case 'listening':
+        return 'LISTENING';
+      case 'thinking':
+        return 'THINKING';
+      case 'speaking':
+        return 'SPEAKING';
+      default:
+        return 'IDLE';
+    }
+  };
+
   const currentUIStatus = getUIStatus();
-  const currentStatus = uiState.streamErrorMessage
-    ? `ERROR: ${uiState.streamErrorMessage}`
-    : uiState.isStreamConnected
-      ? "STREAMING"
-      : "IDLE";
+  const animationState = getAnimationState();
 
   return (
     <div className="relative w-screen h-screen overflow-hidden font-sans text-white">
@@ -247,7 +224,7 @@ const GnaniCore: React.FC = () => {
         animate={{ opacity: 1 }}
         transition={{ duration: 1 }}
       >
-        <header className="flex justify-between items-start">
+        <header className="flex justify-between items-start h-20 shrink-0">
           <div className="text-left">
             <h1
               className="text-2xl font-bold uppercase text-cyan-200"
@@ -256,66 +233,55 @@ const GnaniCore: React.FC = () => {
               GNANI
             </h1>
             <p className="text-sm text-cyan-400">v2.0 HUD Interface</p>
-            <p className="text-xs text-cyan-300/70 mt-1">
-              State: {state.toUpperCase()}
-            </p>
           </div>
-          <div className="text-right">
-            <p className="text-sm text-cyan-400">
-              WAKE: {uiState.isWakeWordReady ? "READY" : "OFFLINE"}
-            </p>
-            <p className="text-sm text-cyan-400">
-              VAD: {uiState.isVADReady ? "READY" : "OFFLINE"}
-            </p>
-            <p className="text-sm text-cyan-400">STREAM: {currentStatus}</p>
+          <div className="text-right flex gap-2">
             <button
               onClick={() => setShowIntelligencePanel(!showIntelligencePanel)}
-              className="mt-2 px-3 py-1 text-xs bg-cyan-800 hover:bg-cyan-700 rounded-full transition-colors"
+              className="px-3 py-1 text-xs bg-cyan-900/50 hover:bg-cyan-800 border border-cyan-500/30 rounded-full transition-colors text-cyan-300"
             >
-              {showIntelligencePanel ? "Hide Debug" : "Show Debug"}
+              {showIntelligencePanel ? "Hide Debug" : "Debug"}
             </button>
             <button
               onClick={() => setShowSettings(true)}
-              className="mt-2 ml-2 px-3 py-1 text-xs bg-cyan-800 hover:bg-cyan-700 rounded-full transition-colors"
+              className="px-3 py-1 text-xs bg-cyan-900/50 hover:bg-cyan-800 border border-cyan-500/30 rounded-full transition-colors text-cyan-300"
             >
               Settings
             </button>
           </div>
         </header>
 
-        <main className="flex-1 flex flex-col items-center justify-center gap-8 py-4">
-          <AIAvatar status={currentUIStatus} />
-
-          {/* Spoken Text Display - shows what Gnani is currently saying */}
-          <SpokenTextDisplay
-            words={spokenText.words}
-            isVisible={isSpeaking && spokenText.words.length > 0}
-          />
-
-          <div className="w-full max-w-2xl">
-            <Waveform
-              audioLevel={audioLevel}
-              isMicActive={isMicActive}
-              status={currentUIStatus}
+        <main className="flex-1 flex flex-col items-center justify-end gap-8 pb-8">
+          <div className="h-16 flex items-center justify-center">
+            <SpokenTextDisplay
+              words={spokenText.words}
+              isVisible={isSpeaking && spokenText.words.length > 0}
             />
-          </div>
-          <div className="w-full max-w-4xl">
-            <ResponseConsole messages={uiState.conversationMessages} />
           </div>
         </main>
 
-        <footer className="w-full absolute bottom-0 left-0 p-4 md:p-8">
-          <StatusBar status={currentUIStatus} />
+        <footer className="w-full absolute bottom-0 left-0 p-4 md:p-8 pointer-events-none">
         </footer>
       </motion.div>
 
-      <div className="absolute bottom-16 md:bottom-24 left-1/2 -translate-x-1/2 z-20">
-        <MicButton
-          isMicActive={isMicActive}
-          onStart={handleStartRecording}
-          onStop={handleStopRecording}
-          status={currentUIStatus}
-        />
+      {/* Mic Button Area - Fixed at top-mid (35% from top) */}
+      <div className="absolute left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-4" style={{ top: '35%' }}>
+        <StatusDisplay status={animationState} subtext={uiState.streamErrorMessage || undefined} />
+
+        <div className="relative flex items-center justify-center">
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <AnimationWrapper state={animationState} audioLevel={audioLevel} />
+          </div>
+
+          <div className="relative z-10">
+            <MicButton
+              isMicActive={isMicActive}
+              onStart={handleStartRecording}
+              onStop={handleStopRecording}
+              status={currentUIStatus}
+              currentState={state}
+            />
+          </div>
+        </div>
       </div>
 
       <IntelligencePanel isVisible={showIntelligencePanel} />

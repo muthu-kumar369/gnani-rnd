@@ -1,15 +1,18 @@
 import React, { useState } from 'react';
 import { useUser } from '../../../context/UserContext';
+import { useToast } from '../../../context/ToastContext';
 import SectionHeader from '../SectionHeader';
 import { StickyNote, Database, Plus, Trash2 } from 'lucide-react';
+import Loader from '../../ui/Loader';
 
 const PreferencesSection: React.FC = () => {
     const { user, loading, addNote, deleteNote } = useUser();
+    const { addToast } = useToast();
     const [newNote, setNewNote] = useState('');
     const [isAdding, setIsAdding] = useState(false);
     const [deletingIndex, setDeletingIndex] = useState<number | null>(null);
 
-    if (loading || !user) return <div className="text-cyan-400">Loading preferences...</div>;
+    if (loading || !user) return <div className="flex justify-center p-8"><Loader text="Loading preferences..." /></div>;
 
     const handleAddNote = async () => {
         if (!newNote.trim()) return;
@@ -18,9 +21,10 @@ const PreferencesSection: React.FC = () => {
         try {
             await addNote(newNote);
             setNewNote('');
+            addToast('Note added successfully', 'success');
         } catch (error) {
             console.error('Failed to add note:', error);
-            alert('Failed to add note. Please try again.');
+            addToast('Failed to add note', 'error');
         } finally {
             setIsAdding(false);
         }
@@ -30,9 +34,10 @@ const PreferencesSection: React.FC = () => {
         setDeletingIndex(index);
         try {
             await deleteNote(index);
+            addToast('Note deleted successfully', 'success');
         } catch (error) {
             console.error('Failed to delete note:', error);
-            alert('Failed to delete note. Please try again.');
+            addToast('Failed to delete note', 'error');
         } finally {
             setDeletingIndex(null);
         }
