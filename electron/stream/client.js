@@ -23,7 +23,7 @@ class StreamingClient extends EventEmitter {
     if (!this.store) {
       throw new Error("StreamingClient requires an electron-store instance.");
     }
-     if (!this.options.callRefreshTokenApiFromMain) {
+    if (!this.options.callRefreshTokenApiFromMain) {
       throw new Error("StreamingClient requires a callRefreshTokenApiFromMain function.");
     }
     this.grpcClient = null;
@@ -81,12 +81,12 @@ class StreamingClient extends EventEmitter {
             return reject(error);
           }
           if (!response || !response.session_id) {
-             logger.error("StartSession response is invalid or missing session_id.", response, {
+            logger.error("StartSession response is invalid or missing session_id.", response, {
               context: "StreamingClient",
             });
             return reject(new Error("Failed to get session_id from backend."));
           }
-          
+
           // Workaround for corrupted session_id string
           let sessionId = response.session_id;
           if (sessionId.includes('$')) {
@@ -156,10 +156,10 @@ class StreamingClient extends EventEmitter {
     try {
       this.currentSessionId = await this.startSession(metadata);
     } catch (error) {
-       this.emit("stream:error", {
+      this.emit("stream:error", {
         message: "Failed to start a new session with the server.",
       });
-       return;
+      return;
     }
 
     this.call = this.grpcClient.SendAudioStream(metadata);
@@ -176,7 +176,7 @@ class StreamingClient extends EventEmitter {
       if (response.partial_text && response.partial_text.trim() !== '') {
         this.emit("stream:partial", { text: response.partial_text });
       }
-      
+
       // Handle LLM text chunks
       if (response.llm_chunk) {
         console.log(`[StreamingClient] Received LLM chunk: "${response.llm_chunk}"`);
@@ -186,11 +186,11 @@ class StreamingClient extends EventEmitter {
           console.log('[StreamingClient] Ignored empty LLM chunk');
         }
       }
-      
+
       if (response.final_text && response.final_text.trim() !== '') {
         this.emit("stream:final", { text: response.final_text });
       }
-      
+
       if (response.error_message && response.error_message.trim() !== '') {
         this.emit("stream:error", { message: response.error_message });
       }
@@ -198,8 +198,7 @@ class StreamingClient extends EventEmitter {
 
     this.call.on("error", async (error) => {
       logger.error(
-        `gRPC stream error: ${error.details || error.message} (Code: ${
-          error.code
+        `gRPC stream error: ${error.details || error.message} (Code: ${error.code
         })`,
         { context: "StreamingClient" }
       );
@@ -215,16 +214,16 @@ class StreamingClient extends EventEmitter {
           if (newTokens) {
             logger.info("Tokens refreshed. A new connection will be attempted on next audio start.", { context: "StreamingClient" });
           } else {
-             this.emit("stream:error", { message: "Session expired. Please log in again." });
-             if (this.options.mainWindow) {
-                this.options.mainWindow.webContents.send("auth:force-logout");
-             }
+            this.emit("stream:error", { message: "Session expired. Please log in again." });
+            if (this.options.mainWindow) {
+              this.options.mainWindow.webContents.send("auth:force-logout");
+            }
           }
-        } catch(refreshError) {
-            logger.error("Error during token refresh:", refreshError, { context: "StreamingClient" });
-            this.emit("stream:error", { message: "Failed to refresh session." });
+        } catch (refreshError) {
+          logger.error("Error during token refresh:", refreshError, { context: "StreamingClient" });
+          this.emit("stream:error", { message: "Failed to refresh session." });
         } finally {
-            this.isRefreshingToken = false;
+          this.isRefreshingToken = false;
         }
       }
     });
@@ -272,7 +271,7 @@ class StreamingClient extends EventEmitter {
     const metadata = new grpc.Metadata();
     const accessToken = this.store.get("accessToken");
     if (accessToken) {
-        metadata.add("authorization", `Bearer ${accessToken}`);
+      metadata.add("authorization", `Bearer ${accessToken}`);
     }
     await this.endSession(metadata).catch(err => logger.error("endSession failed during disconnect:", err, { context: "StreamingClient" }));
 
@@ -313,33 +312,33 @@ class StreamingClient extends EventEmitter {
   async startAudioStreaming(isTest = false) {
     this.isConnecting = true; // Set connecting flag
     this.pendingAudioBuffer = []; // Initialize buffer
-    
+
     if (!this.isConnected) {
       await this.connect(isTest);
     }
-    
+
     this.isConnecting = false; // Clear connecting flag
 
     if (this.isConnected) { // Check if connection was successful
-        this.isStreamingAudio = true;
-        logger.info("Started gRPC audio streaming.", {
-          context: "StreamingClient",
-        });
-        
-        // Flush buffered frames
-        if (this.pendingAudioBuffer.length > 0) {
-          logger.info(`Flushing ${this.pendingAudioBuffer.length} buffered audio frames.`, { context: "StreamingClient" });
-          for (const frame of this.pendingAudioBuffer) {
-            this.addAudioFrame(frame);
-          }
-          this.pendingAudioBuffer = [];
+      this.isStreamingAudio = true;
+      logger.info("Started gRPC audio streaming.", {
+        context: "StreamingClient",
+      });
+
+      // Flush buffered frames
+      if (this.pendingAudioBuffer.length > 0) {
+        logger.info(`Flushing ${this.pendingAudioBuffer.length} buffered audio frames.`, { context: "StreamingClient" });
+        for (const frame of this.pendingAudioBuffer) {
+          this.addAudioFrame(frame);
         }
+        this.pendingAudioBuffer = [];
+      }
     } else {
-        logger.error("Failed to start audio streaming because connection failed.", {
-          context: "StreamingClient",
-        });
-        this.emit("stream:error", { message: "Connection to server failed." });
-        this.pendingAudioBuffer = []; // Clear buffer on failure
+      logger.error("Failed to start audio streaming because connection failed.", {
+        context: "StreamingClient",
+      });
+      this.emit("stream:error", { message: "Connection to server failed." });
+      this.pendingAudioBuffer = []; // Clear buffer on failure
     }
   }
 
@@ -358,10 +357,10 @@ class StreamingClient extends EventEmitter {
   addAudioFrame(pcmFrame, isLast = false) {
     // If connecting, buffer the frame
     if (this.isConnecting) {
-        if (this.pendingAudioBuffer) {
-            this.pendingAudioBuffer.push(pcmFrame);
-        }
-        return;
+      if (this.pendingAudioBuffer) {
+        this.pendingAudioBuffer.push(pcmFrame);
+      }
+      return;
     }
 
     if (!this.call || !this.isStreamingAudio) {
@@ -389,11 +388,11 @@ class StreamingClient extends EventEmitter {
         audio_chunk: pcmFrame,
         end_of_stream: isLast,
       });
-      
+
       this.metrics.recordBytesSent(pcmFrame.length);
-      
+
       if (isLast) {
-          logger.info(`Sent LAST chunk for session ${this.currentSessionId}`, { context: "StreamingClient" });
+        logger.info(`Sent LAST chunk for session ${this.currentSessionId}`, { context: "StreamingClient" });
       }
 
     } catch (error) {
@@ -428,6 +427,8 @@ class StreamingClient extends EventEmitter {
   cleanup() {
     this.disconnect();
     this.backoff.reset();
+    this.disconnect();
+    this.backoff.reset();
     logger.info("gRPC StreamingClient cleaned up.", {
       context: "StreamingClient",
     });
@@ -445,7 +446,7 @@ class StreamingClient extends EventEmitter {
       if (!require('fs').existsSync(audioFilePath)) {
         throw new Error(`Test audio file not found at: ${audioFilePath}`);
       }
-      
+
       logger.info(`Streaming audio file: ${audioFilePath}`, { context: 'StreamingClient' });
       const audioBuffer = require('fs').readFileSync(audioFilePath);
       const pcmData = audioBuffer.slice(44); // Simple 44-byte WAV header strip
@@ -463,13 +464,45 @@ class StreamingClient extends EventEmitter {
       logger.info('Finished sending all audio chunks for file test.', { context: 'StreamingClient' });
 
       this.stopAudioStreaming();
-      
+
     } catch (error) {
       logger.error('Audio file stream test failed:', error, { context: 'StreamingClient' });
       this.emit('stream:error', { message: `File stream test failed: ${error.message}` });
     } finally {
       this.disconnect();
-       logger.info('--- Finished Audio File Stream Test ---', { context: 'StreamingClient' });
+      logger.info('--- Finished Audio File Stream Test ---', { context: 'StreamingClient' });
+    }
+  }
+
+  async sendText(text) {
+    logger.info(`Sending text input: "${text}"`, { context: 'StreamingClient' });
+
+    if (!this.isConnected) {
+      try {
+        await this.connect();
+      } catch (error) {
+        logger.error("Failed to connect for text input:", error, { context: "StreamingClient" });
+        this.emit("stream:error", { message: "Failed to connect to server." });
+        return;
+      }
+    }
+
+    if (!this.call) {
+      logger.error("gRPC call object is null despite connection.", { context: "StreamingClient" });
+      this.emit("stream:error", { message: "Connection error." });
+      return;
+    }
+
+    try {
+      this.call.write({
+        session_id: this.currentSessionId,
+        text_input: text,
+        end_of_stream: true, // Text input is always a complete request
+      });
+      logger.info("Text input sent successfully.", { context: "StreamingClient" });
+    } catch (error) {
+      logger.error("Error sending text input:", error, { context: "StreamingClient" });
+      this.emit("stream:error", { message: "Failed to send text." });
     }
   }
 }

@@ -1,10 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Terminal, ChevronDown, Trash2, Maximize2, Minimize2 } from 'lucide-react';
+import { Terminal, ChevronDown, Trash2, Maximize2, Minimize2, Keyboard } from 'lucide-react';
 import { useConversation } from '../../context/ConversationContext';
+import { useGnaniStateContext } from '../../context/GnaniStateContext';
 import MessageBubble from './MessageBubble';
 import StateIndicator from './StateIndicator';
 import ActionIndicator from './ActionIndicator';
+import TextInput from './TextInput';
 
 interface TerminalPanelProps {
     isVisible: boolean;
@@ -12,9 +14,29 @@ interface TerminalPanelProps {
 }
 
 const TerminalPanel: React.FC<TerminalPanelProps> = ({ isVisible, onToggle }) => {
-    const { messages, clearMessages } = useConversation();
+    const { messages, clearMessages, addMessage } = useConversation();
+    const { transition } = useGnaniStateContext();
     const scrollRef = useRef<HTMLDivElement>(null);
     const [isExpanded, setIsExpanded] = useState(false);
+    const [showInput, setShowInput] = useState(false);
+
+    const handleSendText = (text: string) => {
+        if (window.gnani && window.gnani.stream && window.gnani.stream.sendText) {
+            // 1. Send text to backend
+            window.gnani.stream.sendText(text);
+
+            // 2. Trigger state transition to 'thinking'
+            transition('text-input');
+
+            // 3. Optimistically add message to conversation
+            addMessage({
+                type: 'user',
+                message: text,
+            });
+        } else {
+            console.error("gnani.stream.sendText is not available");
+        }
+    };
 
     // Auto-scroll to bottom
     useEffect(() => {
@@ -58,6 +80,14 @@ const TerminalPanel: React.FC<TerminalPanelProps> = ({ isVisible, onToggle }) =>
                         title="Clear History"
                     >
                         <Trash2 size={12} />
+                    </button>
+
+                    <button
+                        onClick={() => setShowInput(!showInput)}
+                        className={`p-1.5 rounded transition-colors ${showInput ? 'text-cyan-300 bg-cyan-900/40' : 'text-cyan-400/60 hover:text-cyan-300 hover:bg-cyan-900/20'}`}
+                        title="Toggle Keyboard Input"
+                    >
+                        <Keyboard size={12} />
                     </button>
 
                     <button
@@ -116,6 +146,13 @@ const TerminalPanel: React.FC<TerminalPanelProps> = ({ isVisible, onToggle }) =>
                     )}
                 </AnimatePresence>
             </div>
+
+            {/* Text Input Area */}
+            <TextInput
+                isVisible={showInput}
+                onClose={() => setShowInput(false)}
+                onSend={handleSendText}
+            />
 
             {/* Footer / Input Status */}
             <div className="relative z-10 px-4 py-1.5 bg-cyan-950/30 border-t border-cyan-500/20 flex justify-between items-center text-[10px] font-mono text-cyan-500/60">

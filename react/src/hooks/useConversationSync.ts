@@ -26,18 +26,19 @@ export function useConversationSync() {
     const lastProcessedSTT = useRef<string | null>(null);
     const lastProcessedLLM = useRef<string | null>(null);
     const lastProcessedState = useRef<string | null>(null);
-    // const lastTTSText = useRef<string | null>(null);
 
     /**
      * Sync final STT (user messages)
+     * Note: TerminalPanel adds text input messages optimistically, 
+     * but backend echo will also trigger this. We check for duplicates.
      */
     useEffect(() => {
         if (!latestFinalSTT || latestFinalSTT === lastProcessedSTT.current) {
             return;
         }
 
-        // Only add user message if we're in listening or thinking state
-        // (to ensure it's part of an active conversation)
+        // Add user message if we're in listening or thinking state
+        // This covers both voice input (listening -> thinking) and text input (idle -> thinking)
         if (state === 'listening' || state === 'thinking' || previousState === 'listening') {
             addMessage({
                 type: 'user',
@@ -48,7 +49,7 @@ export function useConversationSync() {
             });
 
             lastProcessedSTT.current = latestFinalSTT;
-            
+
             errorLogger.info('Added user message to conversation', {
                 context: 'useConversationSync',
                 text: latestFinalSTT.substring(0, 50),
@@ -64,7 +65,7 @@ export function useConversationSync() {
 
         try {
             let chunk = latestLLMChunk;
-            
+
             // Parse if string
             if (typeof chunk === 'string') {
                 try {
@@ -85,7 +86,6 @@ export function useConversationSync() {
                 });
 
                 lastProcessedLLM.current = text;
-                // lastTTSText.current = text; // Removed to prevent duplicate TTS message
 
                 errorLogger.info('Added Gnani message to conversation', {
                     context: 'useConversationSync',
@@ -98,20 +98,6 @@ export function useConversationSync() {
             });
         }
     }, [latestLLMChunk, addMessage]);
-
-    /**
-     * Sync TTS events (TTS messages)
-     */
-    // TTS sync removed to prevent duplicate messages in terminal.
-    // The 'gnani' message from LLM response is sufficient.
-    /*
-    useEffect(() => {
-        const handleTTSStarted = () => {
-            // ...
-        };
-        // ...
-    }, [addMessage]);
-    */
 
     /**
      * Sync state transitions (system messages)

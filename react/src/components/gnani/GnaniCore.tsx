@@ -20,6 +20,7 @@ import SettingsModal from "../settings/SettingsModal";
 import AnimationWrapper from "./animations/AnimationWrapper";
 import StatusDisplay from "./StatusDisplay";
 import TerminalPanel from "../terminal/TerminalPanel";
+import SystemIndicators from "../device/SystemIndicators";
 
 const GnaniCore: React.FC = () => {
   const uiState = useGnaniUIState();
@@ -239,12 +240,13 @@ const GnaniCore: React.FC = () => {
             </h1>
             <p className="text-sm text-cyan-400">v2.0 HUD Interface</p>
           </div>
-          <div className="text-right flex gap-2">
+          <div className="text-right flex gap-2 items-center">
+            <SystemIndicators />
             <button
               onClick={() => setShowTerminal(!showTerminal)}
               className={`px-3 py-1 text-xs border rounded-full transition-colors flex items-center gap-2 ${showTerminal
-                  ? "bg-cyan-800 border-cyan-400 text-cyan-100 shadow-[0_0_10px_rgba(6,182,212,0.3)]"
-                  : "bg-cyan-900/50 hover:bg-cyan-800 border-cyan-500/30 text-cyan-300"
+                ? "bg-cyan-800 border-cyan-400 text-cyan-100 shadow-[0_0_10px_rgba(6,182,212,0.3)]"
+                : "bg-cyan-900/50 hover:bg-cyan-800 border-cyan-500/30 text-cyan-300"
                 }`}
             >
               <Terminal size={12} />

@@ -21,7 +21,8 @@ export type StateTrigger =
     | 'tts-complete'
     | 'barge-in'
     | 'error'
-    | 'reset';
+    | 'reset'
+    | 'text-input';
 
 /**
  * State transition definition
@@ -166,6 +167,32 @@ class GnaniStateMachine extends EventEmitter {
                 from: 'speaking',
                 to: 'idle',
                 trigger: 'reset',
+            },
+
+            // Text Input Transitions
+            {
+                from: 'idle',
+                to: 'thinking',
+                trigger: 'text-input',
+                action: () => errorLogger.info('Text input received, transitioning to thinking', { context: 'StateMachine' }),
+            },
+            {
+                from: 'listening',
+                to: 'thinking',
+                trigger: 'text-input',
+                action: () => errorLogger.info('Text input received during listening, transitioning to thinking', { context: 'StateMachine' }),
+            },
+            {
+                from: 'speaking',
+                to: 'thinking',
+                trigger: 'text-input',
+                action: () => errorLogger.info('Text input received during speaking, transitioning to thinking', { context: 'StateMachine' }),
+            },
+            {
+                from: 'thinking',
+                to: 'thinking',
+                trigger: 'text-input',
+                action: () => errorLogger.info('Text input received during thinking, re-processing', { context: 'StateMachine' }),
             },
         ];
     }

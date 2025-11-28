@@ -82,7 +82,7 @@ function setupStreamIPC(streamingClient, ttsPlayer) {
       global.mainWindow.webContents.send('tts:error', payload);
     }
   });
-  
+
   // --- Renderer -> Main ---
   ipcMain.on('stream:start', async (event, options) => {
     logger.info('Received stream:start from renderer.', options);
@@ -111,6 +111,11 @@ function setupStreamIPC(streamingClient, ttsPlayer) {
   ipcMain.on('stream:setEndpoint', (event, cfg) => {
     logger.info('Received stream:setEndpoint from renderer.', cfg);
     streamingClient.setEndpoint(cfg);
+  });
+
+  ipcMain.on('stream:sendText', (event, text) => {
+    logger.info('Received stream:sendText from renderer.', text);
+    streamingClient.sendText(text);
   });
 }
 

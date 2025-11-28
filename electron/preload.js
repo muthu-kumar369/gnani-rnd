@@ -29,6 +29,7 @@ contextBridge.exposeInMainWorld("gnani", {
       "stream:setEndpoint",
       "stream:audio-frame", // New channel for sending audio frames
       "stream:start-file-test",
+      "stream:sendText", // New channel for sending text input
       "tts:started", // Allow renderer to signal TTS start
       "tts:ended", // Allow renderer to signal TTS end
       "log", // Allow renderer to send logs to main process
@@ -199,6 +200,10 @@ contextBridge.exposeInMainWorld("gnani", {
       // pcmData is an ArrayBuffer from AudioWorkletNode
       ipcRenderer.send('stream:audio-frame', pcmData);
     },
+    sendText: (text) => {
+      logger.info("Preload calling stream:sendText", { context: 'Preload', extra: text });
+      ipcRenderer.send("stream:sendText", text);
+    },
     on: (event, callback) => {
       const validStreamEvents = [
         "stream:connected",
@@ -223,6 +228,38 @@ contextBridge.exposeInMainWorld("gnani", {
         };
       } else {
         logger.warn(`Unknown Stream event channel for 'on': ${event}`, { context: 'Preload' });
+      }
+    },
+  },
+
+  // --- Device Awareness API ---
+  device: {
+    // Getters
+    getActiveWindow: () => ipcRenderer.invoke('device:get-active-window'),
+    getSystemStatus: () => ipcRenderer.invoke('device:get-system-status'),
+    getBatteryStatus: () => ipcRenderer.invoke('device:get-battery-status'),
+    getConnectivityStatus: () => ipcRenderer.invoke('device:get-connectivity-status'),
+    getAudioDevices: () => ipcRenderer.invoke('device:get-audio-devices'),
+
+    // Event Listeners
+    on: (event, callback) => {
+      const validDeviceEvents = [
+        'device:active-window-changed',
+        'device:system-status-update',
+        'device:battery-changed',
+        'device:connectivity-changed',
+        'device:audio-devices-changed',
+      ];
+
+      if (validDeviceEvents.includes(event)) {
+        const subscription = (ipcEvent, ...args) => callback(...args);
+        ipcRenderer.on(event, subscription);
+        return () => {
+          ipcRenderer.removeListener(event, subscription);
+        };
+      } else {
+        logger.warn(`Unknown Device event channel: ${event}`, { context: 'Preload' });
+        return () => { };
       }
     },
   },
