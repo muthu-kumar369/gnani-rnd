@@ -1,5 +1,4 @@
 // /react/src/App.tsx
-import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import GnaniCore from './components/gnani/GnaniCore';
 import LoginPage from './pages/LoginPage';
@@ -9,19 +8,13 @@ import { ToastProvider } from './context/ToastContext';
 import { UserProvider } from './context/UserContext';
 import { GnaniStateProvider } from './context/GnaniStateContext';
 import { ConversationProvider } from './context/ConversationContext';
-
-// Simple Loading Spinner Component
-const LoadingSpinner: React.FC = () => (
-  <div className="flex items-center justify-center min-h-screen bg-jarvis-bg">
-    <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-jarvis-blue"></div>
-  </div>
-);
+import LoadingScreen from './components/common/LoadingScreen';
 
 function App() {
   const { isAuthenticated, loading } = useAuth();
 
   if (loading) {
-    return <LoadingSpinner />;
+    return <LoadingScreen />;
   }
 
   return (

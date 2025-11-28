@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import type { ActiveWindowInfo, SystemStatus, BatteryStatus, ConnectivityStatus, AudioDevices } from '../types/window.d';
+import type { ActiveWindowInfo, SystemStatus, BatteryStatus, ConnectivityStatus, AudioDevices } from '../types/window';
 import errorLogger from '../utils/errorLogger';
 
 export interface DeviceAwarenessState {
@@ -23,7 +23,8 @@ export function useDeviceAwareness() {
 
     // Fetch initial data
     useEffect(() => {
-        if (!window.gnani?.device) {
+        const deviceApi = window.gnani?.device;
+        if (!deviceApi) {
             errorLogger.warn('Device API not available', { context: 'useDeviceAwareness' });
             setState(prev => ({ ...prev, isLoading: false }));
             return;
@@ -33,11 +34,11 @@ export function useDeviceAwareness() {
             try {
                 const [activeWindow, systemStatus, batteryStatus, connectivityStatus, audioDevices] =
                     await Promise.all([
-                        window.gnani.device.getActiveWindow(),
-                        window.gnani.device.getSystemStatus(),
-                        window.gnani.device.getBatteryStatus(),
-                        window.gnani.device.getConnectivityStatus(),
-                        window.gnani.device.getAudioDevices(),
+                        deviceApi.getActiveWindow(),
+                        deviceApi.getSystemStatus(),
+                        deviceApi.getBatteryStatus(),
+                        deviceApi.getConnectivityStatus(),
+                        deviceApi.getAudioDevices(),
                     ]);
 
                 setState({
@@ -59,22 +60,23 @@ export function useDeviceAwareness() {
 
     // Subscribe to updates
     useEffect(() => {
-        if (!window.gnani?.device) return;
+        const deviceApi = window.gnani?.device;
+        if (!deviceApi) return;
 
         const unsubs = [
-            window.gnani.device.on('device:active-window-changed', (data) => {
+            deviceApi.on('device:active-window-changed', (data) => {
                 setState(prev => ({ ...prev, activeWindow: data }));
             }),
-            window.gnani.device.on('device:system-status-update', (data) => {
+            deviceApi.on('device:system-status-update', (data) => {
                 setState(prev => ({ ...prev, systemStatus: data }));
             }),
-            window.gnani.device.on('device:battery-changed', (data) => {
+            deviceApi.on('device:battery-changed', (data) => {
                 setState(prev => ({ ...prev, batteryStatus: data }));
             }),
-            window.gnani.device.on('device:connectivity-changed', (data) => {
+            deviceApi.on('device:connectivity-changed', (data) => {
                 setState(prev => ({ ...prev, connectivityStatus: data }));
             }),
-            window.gnani.device.on('device:audio-devices-changed', (data) => {
+            deviceApi.on('device:audio-devices-changed', (data) => {
                 setState(prev => ({ ...prev, audioDevices: data }));
             }),
         ];
@@ -85,16 +87,17 @@ export function useDeviceAwareness() {
     }, []);
 
     const refresh = useCallback(async () => {
-        if (!window.gnani?.device) return;
+        const deviceApi = window.gnani?.device;
+        if (!deviceApi) return;
 
         try {
             const [activeWindow, systemStatus, batteryStatus, connectivityStatus, audioDevices] =
                 await Promise.all([
-                    window.gnani.device.getActiveWindow(),
-                    window.gnani.device.getSystemStatus(),
-                    window.gnani.device.getBatteryStatus(),
-                    window.gnani.device.getConnectivityStatus(),
-                    window.gnani.device.getAudioDevices(),
+                    deviceApi.getActiveWindow(),
+                    deviceApi.getSystemStatus(),
+                    deviceApi.getBatteryStatus(),
+                    deviceApi.getConnectivityStatus(),
+                    deviceApi.getAudioDevices(),
                 ]);
 
             setState({

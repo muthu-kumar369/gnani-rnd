@@ -54,6 +54,7 @@ class SystemMonitor extends EventEmitter {
      */
     async updateSystemStatus() {
         try {
+            logger.debug('SystemMonitor: Fetching system stats...', { context: 'SystemMonitor' });
             // Get CPU, Memory, and Disk info in parallel
             const [cpu, mem, disk, uptime] = await Promise.all([
                 si.currentLoad(),
@@ -61,6 +62,7 @@ class SystemMonitor extends EventEmitter {
                 si.fsSize(),
                 si.time()
             ]);
+            logger.debug('SystemMonitor: Stats fetched successfully.', { context: 'SystemMonitor' });
 
             const status = {
                 cpu: {

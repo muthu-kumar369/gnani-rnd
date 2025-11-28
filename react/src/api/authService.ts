@@ -98,3 +98,30 @@ export const refreshToken = async (
     throw error;
   }
 };
+
+export const logout = async (refreshToken?: string): Promise<void> => {
+  try {
+    const accessToken = localStorage.getItem('accessToken');
+    const headers: HeadersInit = {
+      "Content-Type": "application/json",
+    };
+
+    if (accessToken) {
+      headers["x-auth-token"] = accessToken;
+    }
+
+    const response = await fetch(`${API_BASE_URL}/logout`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ refreshToken }),
+    });
+    
+    if (!response.ok) {
+       // We don't throw here because we want to proceed with client-side logout anyway
+       errorLogger.warn("Logout API returned error status", { context: "AuthService", status: response.status });
+    }
+  } catch (error) {
+    // Log but don't block client-side logout
+    errorLogger.error("Logout API error:", error, { context: "AuthService" });
+  }
+};

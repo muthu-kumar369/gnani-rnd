@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import type { ReactNode } from 'react';
-import { refreshToken as callRefreshTokenAPI } from '../api/authService';
+import { refreshToken as callRefreshTokenAPI, logout as callLogoutAPI } from '../api/authService';
 import errorLogger from '../utils/errorLogger'; // Import errorLogger
 
 /**
@@ -72,6 +72,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, []);
 
   const logout = useCallback(async () => {
+    try {
+      await callLogoutAPI(refreshToken || undefined);
+    } catch (err) {
+      errorLogger.error('Logout API failed', err, { context: 'AuthContext' });
+    }
+
     setIsAuthenticated(false);
     setUser(null);
     setAccessToken(null);
@@ -128,7 +134,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           }
         } catch (err) {
           errorLogger.error('Failed to load tokens from secure storage:', err, { context: 'AuthContext' });
-          setAuthState({ isAuthenticated: false, loading: false, error: 'Failed to load session.' });
+          setAuthState({ isAuthenticated: false, loading: false });
         }
       } else {
         errorLogger.warn('Electron IPC for auth not available. Running without secure storage.', { context: 'AuthContext' });

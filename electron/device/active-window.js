@@ -54,7 +54,8 @@ class ActiveWindowDetector extends EventEmitter {
      */
     async checkActiveWindow() {
         try {
-            const result = await activeWin();
+            // const result = await activeWin();
+            const result = null; // Disable active-win for now to prevent crash
 
             if (!result) {
                 // No active window (e.g., desktop focused)

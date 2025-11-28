@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Terminal, ChevronDown, Trash2, Maximize2, Minimize2, Keyboard } from 'lucide-react';
 import { useConversation } from '../../context/ConversationContext';
 import { useGnaniStateContext } from '../../context/GnaniStateContext';
+import { useDeviceAwareness } from '../../hooks/useDeviceAwareness';
 import MessageBubble from './MessageBubble';
 import StateIndicator from './StateIndicator';
 import ActionIndicator from './ActionIndicator';
@@ -16,6 +17,7 @@ interface TerminalPanelProps {
 const TerminalPanel: React.FC<TerminalPanelProps> = ({ isVisible, onToggle }) => {
     const { messages, clearMessages, addMessage } = useConversation();
     const { transition } = useGnaniStateContext();
+    const { systemStatus, connectivityStatus } = useDeviceAwareness();
     const scrollRef = useRef<HTMLDivElement>(null);
     const [isExpanded, setIsExpanded] = useState(false);
     const [showInput, setShowInput] = useState(false);
@@ -156,8 +158,8 @@ const TerminalPanel: React.FC<TerminalPanelProps> = ({ isVisible, onToggle }) =>
 
             {/* Footer / Input Status */}
             <div className="relative z-10 px-4 py-1.5 bg-cyan-950/30 border-t border-cyan-500/20 flex justify-between items-center text-[10px] font-mono text-cyan-500/60">
-                <span>STATUS: ONLINE</span>
-                <span>MEM: {messages.length} / 100</span>
+                <span>STATUS: {connectivityStatus?.online ? 'ONLINE' : 'OFFLINE'}</span>
+                <span>MEM: {systemStatus?.memory.usagePercent ? `${Math.round(systemStatus.memory.usagePercent)}%` : '--%'}</span>
             </div>
         </motion.div>
     );

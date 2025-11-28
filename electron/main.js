@@ -13,20 +13,30 @@ const { setupSystemIPC } = require("./ipc/system");
 const { setupWakeIPC } = require("./ipc/wake");
 const { setupVadIPC } = require("./ipc/vad");
 const { setupStreamIPC } = require("./ipc/stream");
-const MockWebSocketServer = require('./stream/test/mockServer.js');
+const { setupAuthIPC } = require("./ipc/auth");
+const { OSAwarenessManager } = require("./device");
 
-logger.info("Electron main process starting...", { context: 'MainProcess' });
+// Global Error Handlers
+process.on('uncaughtException', (error) => {
+  logger.error('Uncaught Exception:', error, { context: 'MainProcess' });
+});
 
-const isDev = process.env.NODE_ENV !== "production";
+process.on('unhandledRejection', (reason, promise) => {
+  logger.error('Unhandled Rejection:', reason, { context: 'MainProcess' });
+});
 
-if (isDev) {
+// Simple file logger
+function logToFile(msg) {
   try {
-    // require("electron-reloader")(module);
-    logger.info("Electron reloader disabled for stability.", { context: 'MainProcess' });
-  } catch (err) {
-    logger.error("Failed to load electron-reloader:", err, { context: 'MainProcess' });
+    fs.appendFileSync('debug.log', `[${new Date().toISOString()}] ${msg}\n`);
+  } catch (e) {
+    // ignore
   }
 }
+
+logToFile("Electron script loaded. Waiting for app ready...");
+
+// ... (existing imports)
 
 let mainWindow;
 let micCapture;
@@ -36,268 +46,226 @@ let streamingClient;
 let ttsPlayer;
 let mockServer;
 let store;
-
-ipcMain.handle('auth:store-tokens', (event, { accessToken, refreshToken, userId }) => {
-  store.set('accessToken', accessToken);
-  store.set('refreshToken', refreshToken);
-  if (userId) {
-    store.set('userId', userId);
-  }
-  logger.info('Tokens and User ID stored securely.', { context: 'MainProcess' });
-  return true;
-});
-
-ipcMain.handle('auth:get-tokens', () => {
-  const accessToken = store.get('accessToken');
-  const refreshToken = store.get('refreshToken');
-  logger.info('Tokens retrieved.', { context: 'MainProcess' });
-  return { accessToken, refreshToken };
-});
-
-ipcMain.handle('auth:clear-tokens', () => {
-  store.delete('accessToken');
-  store.delete('refreshToken');
-  logger.info('Tokens cleared securely.', { context: 'MainProcess' });
-  return true;
-});
-
-ipcMain.handle('auth:start-oauth', async (event, provider) => {
-  logger.info(`Starting OAuth flow for provider: ${provider}`, { context: 'MainProcess' });
-
-  // Base URL configuration
-  const baseUrl = isDev ? 'http://localhost:3000' : 'https://api.gnani.ai';
-  const startEndpoint = `${baseUrl}/api/auth/oauth/${provider}/start?platform=desktop`;
-
-  let authUrl;
-  try {
-    // Fetch the actual OAuth URL from the backend
-    logger.info(`Fetching OAuth URL from: ${startEndpoint}`, { context: 'MainProcess' });
-    const response = await fetch(startEndpoint);
-    if (!response.ok) {
-      throw new Error(`Failed to fetch OAuth URL: ${response.statusText}`);
-    }
-    const data = await response.json();
-    if (!data.authUrl) {
-      throw new Error('Backend did not return an authUrl');
-    }
-    authUrl = data.authUrl;
-    logger.info(`Got OAuth URL: ${authUrl}`, { context: 'MainProcess' });
-  } catch (error) {
-    logger.error('Failed to initiate OAuth flow', error, { context: 'MainProcess' });
-    throw error;
-  }
-
-  return new Promise((resolve, reject) => {
-    const authWindow = new BrowserWindow({
-      width: 600,
-      height: 700,
-      show: true,
-      parent: mainWindow,
-      modal: true,
-      webPreferences: {
-        nodeIntegration: false,
-        contextIsolation: true,
-        webSecurity: true,
-      },
-    });
-
-    // Handle window close by user
-    let isResolved = false;
-    authWindow.on('closed', () => {
-      if (!isResolved) {
-        logger.info('OAuth window closed by user', { context: 'MainProcess' });
-        reject(new Error('OAuth cancelled by user'));
-      }
-    });
-
-    // Intercept navigation to capture the callback
-    const filter = {
-      urls: ['http://localhost:3000/auth/oauth/callback*'] // Adjust if your backend URL is different
-    };
-
-    // We can also check the title or page content if the backend returns a specific success page
-    // Assuming the backend redirects to a page that displays the token or sends it via postMessage
-    // For this implementation, we'll assume the backend returns a JSON response on the callback URL
-    // or redirects to a success page with tokens in the URL hash/query.
-
-    // Better approach for Electron:
-    // The backend should ideally redirect to a custom protocol (e.g. gnani://auth/callback)
-    // OR we can inject a script to extract tokens if the backend renders a page.
-    
-    // Let's assume the backend returns JSON on the callback endpoint.
-    // We can intercept the response.
-    
-    // NOTE: Since we can't easily read the response body of a navigation request in Electron without
-    // complex debugger attachment, a common pattern is:
-    // 1. Backend redirects to a success page (e.g. /auth/success?token=...)
-    // 2. We detect that URL.
-    
-    // Let's try to detect the callback URL and extract params.
-    authWindow.webContents.on('will-redirect', (event, url) => {
-      handleCallbackUrl(url);
-    });
-    
-    authWindow.webContents.on('will-navigate', (event, url) => {
-      handleCallbackUrl(url);
-    });
-
-    function handleCallbackUrl(url) {
-      if (url.includes('/auth/oauth/callback')) {
-        logger.info('Detected OAuth callback URL', { context: 'MainProcess', url });
-        // If the backend returns JSON directly, Electron might download it or show it as text.
-        // We need to parse it.
-        
-        // Strategy: Inject code to read the document body if it's a JSON response displayed in browser
-        // OR check URL params if tokens are there.
-        
-        // Let's assume the backend returns the tokens in the URL query parameters for simplicity in this "desktop app" flow
-        // If your backend sets cookies, we can grab session.
-        
-        // If the backend returns a JSON body, we can wait for 'did-finish-load' and execute JS.
-      }
-    }
-
-    authWindow.webContents.on('did-finish-load', async () => {
-      const url = authWindow.webContents.getURL();
-      if (url.includes('/auth/oauth/callback')) {
-        try {
-          // Attempt to read the content of the page (assuming it's the JSON response)
-          const pageContent = await authWindow.webContents.executeJavaScript('document.body.innerText');
-          logger.info('OAuth callback page loaded', { context: 'MainProcess' });
-          
-          try {
-            const data = JSON.parse(pageContent);
-            if (data.token || data.accessToken) {
-              const accessToken = data.token || data.accessToken;
-              const refreshToken = data.refreshToken;
-              const userId = data.user?.id || data.userId;
-              
-              // Store tokens
-              store.set('accessToken', accessToken);
-              if (refreshToken) store.set('refreshToken', refreshToken);
-              if (userId) store.set('userId', userId);
-              
-              isResolved = true;
-              authWindow.close();
-              resolve({ 
-                success: true, 
-                user: data.user, 
-                accessToken, 
-                refreshToken 
-              });
-            } else if (data.error) {
-               isResolved = true;
-               authWindow.close();
-               reject(new Error(data.error));
-            }
-          } catch (e) {
-            // Not JSON, maybe just a redirect page?
-            logger.warn('Could not parse OAuth response as JSON', { context: 'MainProcess' });
-          }
-        } catch (err) {
-          logger.error('Error executing JS in auth window', err, { context: 'MainProcess' });
-        }
-      }
-    });
-
-    // Load the fetched auth URL
-    authWindow.loadURL(authUrl);
-  });
-});
-
-async function callRefreshTokenApiFromMain(refreshToken) {
-  logger.warn('callRefreshTokenApiFromMain is not implemented. Returning null.', { context: 'MainProcess' });
-  return null;
-}
-
-async function main() {
-  store = new Store();
-
-  createWindow();
-
-  micCapture = new MicCapture();
-  wakeManager = new WakeManager();
-  vadManager = new VadManager();
-  streamingClient = new StreamingClient({
-    mainWindow: mainWindow,
-    store: store,
-    callRefreshTokenApiFromMain: callRefreshTokenApiFromMain,
-  });
-  ttsPlayer = new TtsPlayer();
-
-  await wakeManager.initialize();
-  await vadManager.init();
-
-  vadManager.on('speech:start', () => {
-    logger.info('VAD detected speech, starting audio stream.', { context: 'MainProcess' });
-    streamingClient.startAudioStreaming(true);
-  });
-
-  vadManager.on('speech:end', () => {
-    logger.info('VAD detected silence, stopping audio stream.', { context: 'MainProcess' });
-    streamingClient.stopAudioStreaming();
-  });
-
-  vadManager.on('audio:frame', (frame) => {
-    streamingClient.addAudioFrame(frame);
-  });
-
-  setupAudioIPC(wakeManager, vadManager);
-  setupSystemIPC();
-  setupWakeIPC(wakeManager);
-  setupVadIPC(vadManager);
-  setupStreamIPC(streamingClient, ttsPlayer);
-
-  // When stream disconnects, we DO NOT want to stop TTS playback immediately.
-  // The frontend might still have text buffered that needs to be spoken.
-  // The frontend handles stream:disconnected by flushing its buffer.
-  streamingClient.on('stream:disconnected', () => {
-    logger.info('Stream disconnected. Letting frontend handle TTS completion.', { context: 'MainProcess' });
-  });
-
-  // Echo Cancellation: Pause VAD when TTS is playing (Controlled by Renderer)
-  // We removed the ttsPlayer.on('tts:started') listener because it could fire for partial chunks
-  // that don't result in immediate playback, causing VAD to get stuck in 'stopped' state.
-
-  logger.info("All managers initialized and IPCs are set up.", { context: 'MainProcess' });
-}
+let osAwarenessManager; // Add variable
 
 function createWindow() {
+  const { width, height } = store.get("windowBounds") || { width: 1200, height: 800 };
+  
   mainWindow = new BrowserWindow({
-    width: 800,
-    height: 600,
+    width,
+    height,
     webPreferences: {
-      preload: path.resolve(__dirname, "preload.js"),
-      contextIsolation: true,
+      preload: path.join(__dirname, "preload.js"),
       nodeIntegration: false,
-      webSecurity: true,
-      contentSecurityPolicy: isDev
-        ? "default-src 'self' http://localhost:5173 ws://localhost:5173 data: blob:; script-src 'self' http://localhost:5173 'unsafe-inline' 'unsafe-eval'; style-src 'self' http://localhost:5173 'unsafe-inline';"
-        : "default-src 'self' data: blob:; script-src 'self'; style-src 'self';"
+      contextIsolation: true,
     },
+    titleBarStyle: 'default', // Restore default title bar
+    backgroundColor: '#000000',
   });
 
+  const startUrl = process.env.NODE_ENV === "development"
+    ? "http://localhost:5173"
+    : `file://${path.join(__dirname, "../react/dist/index.html")}`;
+
+  mainWindow.loadURL(startUrl);
+
+  // Assign to global for IPC access
   global.mainWindow = mainWindow;
 
-  if (isDev) {
-    logger.info(
-      "Running in development mode. Loading Vite server at http://localhost:5173", { context: 'MainProcess' }
-    );
-    mainWindow.loadURL("http://localhost:5173");
+  if (process.env.NODE_ENV === "development") {
     mainWindow.webContents.openDevTools();
-  } else {
-    logger.info("Running in production mode. Loading built React app.", { context: 'MainProcess' });
-    const reactAppPath = path.join(__dirname, "../../react/dist/index.html");
-    mainWindow.loadFile(reactAppPath);
   }
 
+  mainWindow.on("resize", () => {
+    const { width, height } = mainWindow.getBounds();
+    store.set("windowBounds", { width, height });
+  });
+
   mainWindow.on("closed", () => {
-    logger.info("Main window closed.", { context: 'MainProcess' });
     mainWindow = null;
   });
 }
 
-app.whenReady().then(main);
+// ... (existing code)
+
+// Real implementation of refresh token API call
+const callRefreshTokenApiFromMain = async (refreshToken) => {
+  try {
+    const API_BASE_URL = "http://localhost:3000/api/auth";
+    logger.info('Attempting to refresh token from main process...', { context: 'MainProcess' });
+    
+    const response = await fetch(`${API_BASE_URL}/refresh`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ refreshToken }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      logger.error(`Refresh token API failed with status ${response.status}: ${errorText}`, { context: 'MainProcess' });
+      return null;
+    }
+
+    const data = await response.json();
+    logger.info('Token refresh successful.', { context: 'MainProcess' });
+    return {
+      accessToken: data.accessToken,
+      refreshToken: data.refreshToken
+    };
+  } catch (error) {
+    logger.error('Error calling refresh token API from main:', error, { context: 'MainProcess' });
+    return null;
+  }
+};
+
+async function main() {
+  try {
+    logger.info("Starting main function...", { context: 'MainProcess' });
+    store = new Store();
+
+    logger.info("Creating window...", { context: 'MainProcess' });
+    createWindow();
+
+    logger.info("Initializing managers...", { context: 'MainProcess' });
+    
+    try {
+      micCapture = new MicCapture();
+    } catch (error) {
+      logger.error('Failed to instantiate MicCapture:', error, { context: 'MainProcess' });
+    }
+
+    try {
+      wakeManager = new WakeManager();
+    } catch (error) {
+      logger.error('Failed to instantiate WakeManager:', error, { context: 'MainProcess' });
+    }
+
+    try {
+      vadManager = new VadManager();
+    } catch (error) {
+      logger.error('Failed to instantiate VadManager:', error, { context: 'MainProcess' });
+    }
+
+    try {
+      streamingClient = new StreamingClient({
+        mainWindow: mainWindow,
+        store: store,
+        callRefreshTokenApiFromMain: callRefreshTokenApiFromMain,
+      });
+    } catch (error) {
+      logger.error('Failed to instantiate StreamingClient:', error, { context: 'MainProcess' });
+    }
+
+    try {
+      ttsPlayer = new TtsPlayer();
+    } catch (error) {
+      logger.error('Failed to instantiate TtsPlayer:', error, { context: 'MainProcess' });
+    }
+
+    // Instantiate OS Awareness Manager early
+    try {
+      osAwarenessManager = new OSAwarenessManager();
+    } catch (error) {
+      logger.error('Failed to instantiate OS Awareness Manager:', error, { context: 'MainProcess' });
+    }
+
+    // Setup IPCs EARLY to ensure handlers are registered even if initialization fails or hangs
+    logger.info("Setting up IPCs...", { context: 'MainProcess' });
+    try {
+      setupAudioIPC(wakeManager, vadManager);
+    } catch (error) {
+      logger.error('Failed to setup Audio IPC:', error, { context: 'MainProcess' });
+    }
+    
+    try {
+      setupSystemIPC(osAwarenessManager); // Pass manager
+    } catch (error) {
+      logger.error('Failed to setup System IPC:', error, { context: 'MainProcess' });
+    }
+    
+    try {
+      setupWakeIPC(wakeManager);
+    } catch (error) {
+      logger.error('Failed to setup Wake IPC:', error, { context: 'MainProcess' });
+    }
+    
+    try {
+      setupVadIPC(vadManager);
+    } catch (error) {
+      logger.error('Failed to setup VAD IPC:', error, { context: 'MainProcess' });
+    }
+    
+    try {
+      setupStreamIPC(streamingClient, ttsPlayer);
+    } catch (error) {
+      logger.error('Failed to setup Stream IPC:', error, { context: 'MainProcess' });
+    }
+
+    try {
+      setupAuthIPC();
+    } catch (error) {
+      logger.error('Failed to setup Auth IPC:', error, { context: 'MainProcess' });
+    }
+    
+    // Initialize OS Awareness (Async)
+    if (osAwarenessManager) {
+      try {
+        logger.info("Initializing OS Awareness Manager...", { context: 'MainProcess' });
+        await osAwarenessManager.initialize();
+        logger.info("OS Awareness Manager initialized.", { context: 'MainProcess' });
+      } catch (error) {
+        logger.error('Failed to initialize OS Awareness:', error, { context: 'MainProcess' });
+        // Continue without OS awareness
+      }
+    }
+
+    logger.info("Initializing Wake Manager...", { context: 'MainProcess' });
+    try {
+        await wakeManager.initialize();
+    } catch (error) {
+        logger.error('Failed to initialize Wake Manager:', error, { context: 'MainProcess' });
+    }
+
+    logger.info("Initializing VAD Manager...", { context: 'MainProcess' });
+    try {
+        await vadManager.init();
+    } catch (error) {
+        logger.error('Failed to initialize VAD Manager:', error, { context: 'MainProcess' });
+    }
+
+    logger.info("Setting up VAD listeners...", { context: 'MainProcess' });
+    vadManager.on('speech:start', () => {
+      logger.info('VAD detected speech, starting audio stream.', { context: 'MainProcess' });
+      streamingClient.startAudioStreaming(true);
+    });
+
+    vadManager.on('speech:end', () => {
+      logger.info('VAD detected silence, stopping audio stream.', { context: 'MainProcess' });
+      streamingClient.stopAudioStreaming();
+    });
+
+    vadManager.on('audio:frame', (frame) => {
+      streamingClient.addAudioFrame(frame);
+    });
+
+    // When stream disconnects, we DO NOT want to stop TTS playback immediately.
+    // The frontend might still have text buffered that needs to be spoken.
+    // The frontend handles stream:disconnected by flushing its buffer.
+    streamingClient.on('stream:disconnected', () => {
+      logger.info('Stream disconnected. Letting frontend handle TTS completion.', { context: 'MainProcess' });
+    });
+
+    logger.info("All managers initialized and IPCs are set up.", { context: 'MainProcess' });
+  } catch (error) {
+    logger.error("CRITICAL ERROR IN MAIN:", error, { context: 'MainProcess' });
+  }
+}
+
+
+
+// ... (existing code)
 
 app.on("window-all-closed", () => {
   logger.info("All windows closed, cleaning up and quitting.", { context: 'MainProcess' });
@@ -318,6 +286,9 @@ app.on("window-all-closed", () => {
   }
   if (micCapture) {
     micCapture.stopMicrophone();
+  }
+  if (osAwarenessManager) {
+    osAwarenessManager.cleanup();
   }
   if (process.platform !== "darwin") {
     app.quit();
@@ -363,3 +334,5 @@ ipcMain.on("message", (event, channel, ...args) => {
     `Unhandled IPC message on channel: "${channel}" with args: ${args}`, { context: 'MainProcess' }
   );
 });
+
+app.whenReady().then(main);

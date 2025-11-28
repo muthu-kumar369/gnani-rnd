@@ -37,39 +37,49 @@ class OSAwarenessManager extends EventEmitter {
             logger.info('Initializing OS Awareness modules...', { context: 'OSAwareness' });
 
             // Initialize Active Window Detector
+            logger.info('Initializing Active Window Detector...', { context: 'OSAwareness' });
             this.activeWindowDetector = new ActiveWindowDetector();
             this.activeWindowDetector.on('window-changed', (data) => {
                 this.emit('active-window-changed', data);
             });
             await this.activeWindowDetector.start();
+            logger.info('Active Window Detector initialized.', { context: 'OSAwareness' });
 
             // Initialize System Monitor
+            logger.info('Initializing System Monitor...', { context: 'OSAwareness' });
             this.systemMonitor = new SystemMonitor();
             this.systemMonitor.on('status-update', (data) => {
                 this.emit('system-status-update', data);
             });
             await this.systemMonitor.start();
+            logger.info('System Monitor initialized.', { context: 'OSAwareness' });
 
             // Initialize Battery Monitor
+            logger.info('Initializing Battery Monitor...', { context: 'OSAwareness' });
             this.batteryMonitor = new BatteryMonitor();
             this.batteryMonitor.on('battery-changed', (data) => {
                 this.emit('battery-changed', data);
             });
             await this.batteryMonitor.start();
+            logger.info('Battery Monitor initialized.', { context: 'OSAwareness' });
 
             // Initialize Connectivity Monitor
+            logger.info('Initializing Connectivity Monitor...', { context: 'OSAwareness' });
             this.connectivityMonitor = new ConnectivityMonitor();
             this.connectivityMonitor.on('connectivity-changed', (data) => {
                 this.emit('connectivity-changed', data);
             });
             await this.connectivityMonitor.start();
+            logger.info('Connectivity Monitor initialized.', { context: 'OSAwareness' });
 
             // Initialize Audio Device Manager
+            logger.info('Initializing Audio Device Manager...', { context: 'OSAwareness' });
             this.audioDeviceManager = new AudioDeviceManager();
             this.audioDeviceManager.on('devices-changed', (data) => {
                 this.emit('audio-devices-changed', data);
             });
             await this.audioDeviceManager.start();
+            logger.info('Audio Device Manager initialized.', { context: 'OSAwareness' });
 
             this.isInitialized = true;
             logger.info('OS Awareness modules initialized successfully', { context: 'OSAwareness' });

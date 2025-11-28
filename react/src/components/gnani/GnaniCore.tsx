@@ -21,6 +21,7 @@ import AnimationWrapper from "./animations/AnimationWrapper";
 import StatusDisplay from "./StatusDisplay";
 import TerminalPanel from "../terminal/TerminalPanel";
 import SystemIndicators from "../device/SystemIndicators";
+import DeviceStatsHUD from "../device/DeviceStatsHUD";
 
 const GnaniCore: React.FC = () => {
   const uiState = useGnaniUIState();
@@ -299,6 +300,12 @@ const GnaniCore: React.FC = () => {
             />
           </div>
         </div>
+
+      </div>
+
+      {/* Device Stats HUD - Fixed at bottom right */}
+      <div className="absolute bottom-6 right-6 z-50">
+        <DeviceStatsHUD />
       </div>
 
       <TerminalPanel isVisible={showTerminal} onToggle={() => setShowTerminal(!showTerminal)} />

@@ -1,6 +1,7 @@
 import React from 'react';
-import { Battery, Wifi, WifiOff } from 'lucide-react';
+import { Wifi, WifiOff } from 'lucide-react';
 import { useDeviceAwareness } from '../../hooks/useDeviceAwareness';
+import BatteryIcon from './BatteryIcon';
 
 const SystemIndicators: React.FC = () => {
     const { batteryStatus, connectivityStatus } = useDeviceAwareness();
@@ -23,17 +24,10 @@ const SystemIndicators: React.FC = () => {
             {/* Battery Indicator */}
             {batteryStatus && batteryStatus.hasBattery && (
                 <div
-                    className="flex items-center gap-1"
+                    className="flex items-center gap-1 relative"
                     title={`Battery: ${batteryStatus.level}%${batteryStatus.isCharging ? ' (Charging)' : ''}`}
                 >
-                    <Battery
-                        size={14}
-                        className={
-                            batteryStatus.isCharging ? 'text-green-400' :
-                                batteryStatus.level > 20 ? 'text-cyan-400' :
-                                    'text-red-400'
-                        }
-                    />
+                    <BatteryIcon level={batteryStatus.level} isCharging={batteryStatus.isCharging} size={16} />
                     <span className="text-[10px]">{batteryStatus.level}%</span>
                 </div>
             )}

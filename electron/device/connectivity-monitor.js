@@ -49,9 +49,14 @@ class ConnectivityMonitor extends EventEmitter {
     async checkConnectivity() {
         try {
             const startTime = Date.now();
-            const online = await isOnline({
-                timeout: 5000 // 5 second timeout
+            
+            // Use DNS lookup as a reliable check for internet connectivity
+            const online = await new Promise((resolve) => {
+                require('dns').lookup('google.com', (err) => {
+                    resolve(!err);
+                });
             });
+
             const latency = Date.now() - startTime;
 
             const status = {

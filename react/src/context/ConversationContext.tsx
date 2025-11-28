@@ -52,19 +52,24 @@ export const ConversationProvider: React.FC<ConversationProviderProps> = ({
         if (persistToStorage && typeof window !== 'undefined') {
             try {
                 const stored = localStorage.getItem(STORAGE_KEY);
+                console.log('[ConversationContext] Loading from storage:', STORAGE_KEY, stored ? 'Found data' : 'No data');
                 if (stored) {
                     const parsed = JSON.parse(stored);
                     errorLogger.info('Loaded conversation history from storage', {
                         context: 'ConversationContext',
                         messageCount: parsed.length
                     });
+                    console.log('[ConversationContext] Parsed messages:', parsed.length);
                     return parsed;
                 }
             } catch (error) {
+                console.error('[ConversationContext] Failed to load:', error);
                 errorLogger.error('Failed to load conversation history', error as Error, {
                     context: 'ConversationContext'
                 });
             }
+        } else {
+            console.log('[ConversationContext] Persistence disabled or no window');
         }
         return [];
     });

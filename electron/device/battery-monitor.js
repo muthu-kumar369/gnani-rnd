@@ -68,11 +68,11 @@ class BatteryMonitor extends EventEmitter {
 
             const status = {
                 hasBattery: battery.hasBattery,
-                isCharging: battery.isCharging,
+                isCharging: battery.isCharging || battery.acConnected, // Fallback to acConnected
                 level: battery.percent || 0,
                 timeRemaining: battery.timeRemaining || null, // minutes
-                onAC: !isOnBattery,
-                onBattery: isOnBattery,
+                onAC: battery.acConnected, // Use si source of truth
+                onBattery: !battery.acConnected,
                 timestamp: Date.now()
             };
 

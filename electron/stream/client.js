@@ -138,6 +138,8 @@ class StreamingClient extends EventEmitter {
     }
 
     const accessToken = this.store.get("accessToken");
+    logger.debug(`Attempting to connect. Token present: ${!!accessToken}`, { context: "StreamingClient" });
+
     const metadata = new grpc.Metadata();
     if (!accessToken && !isTest) {
       logger.warn("No access token found. Cannot start session.", {
@@ -156,6 +158,7 @@ class StreamingClient extends EventEmitter {
     try {
       this.currentSessionId = await this.startSession(metadata);
     } catch (error) {
+      logger.error("Failed to start session:", error, { context: "StreamingClient" });
       this.emit("stream:error", {
         message: "Failed to start a new session with the server.",
       });
@@ -479,6 +482,7 @@ class StreamingClient extends EventEmitter {
 
     if (!this.isConnected) {
       try {
+        logger.info("Not connected, attempting to connect before sending text...", { context: 'StreamingClient' });
         await this.connect();
       } catch (error) {
         logger.error("Failed to connect for text input:", error, { context: "StreamingClient" });
@@ -487,9 +491,10 @@ class StreamingClient extends EventEmitter {
       }
     }
 
-    if (!this.call) {
-      logger.error("gRPC call object is null despite connection.", { context: "StreamingClient" });
-      this.emit("stream:error", { message: "Connection error." });
+    // Check again after attempted connection
+    if (!this.isConnected || !this.call) {
+      logger.error("gRPC call object is null or not connected after connect attempt.", { context: "StreamingClient" });
+      this.emit("stream:error", { message: "Connection error. Please try again." });
       return;
     }
 
