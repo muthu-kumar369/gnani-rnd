@@ -1,4 +1,5 @@
 // /react/src/App.tsx
+import { useState, useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import GnaniCore from './components/gnani/GnaniCore';
 import LoginPage from './pages/LoginPage';
@@ -12,13 +13,21 @@ import LoadingScreen from './components/common/LoadingScreen';
 
 function App() {
   const { isAuthenticated, loading } = useAuth();
+  const [minLoadComplete, setMinLoadComplete] = useState(false);
 
-  if (loading) {
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setMinLoadComplete(true);
+    }, 2000); // Minimum 2 seconds loading screen
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (loading || !minLoadComplete) {
     return <LoadingScreen />;
   }
 
   return (
-    <div className="bg-black">
+    <div className="bg-jarvis-bg min-h-screen w-full overflow-hidden text-jarvis-text font-sans selection:bg-jarvis-blue selection:text-jarvis-bg">
       <ToastProvider>
         <UserProvider>
           <GnaniStateProvider>

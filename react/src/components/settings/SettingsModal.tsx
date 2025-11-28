@@ -64,7 +64,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: 20 }}
                         transition={{ duration: 0.2 }}
-                        className="relative w-full max-w-6xl h-[85vh] bg-gray-900/90 border border-cyan-500/30 rounded-xl shadow-[0_0_50px_rgba(6,182,212,0.15)] overflow-hidden flex"
+                        className="relative w-full max-w-6xl h-[85vh] glass-panel rounded-xl overflow-hidden flex"
                     >
                         {/* Close Button */}
                         <button
@@ -115,14 +115,17 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                                 {/* Main Content Area */}
                                 <div className="flex-1 h-full overflow-hidden flex flex-col bg-black/20">
                                     <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
-                                        <motion.div
-                                            key={activeTab}
-                                            initial={{ opacity: 0, x: 20 }}
-                                            animate={{ opacity: 1, x: 0 }}
-                                            transition={{ duration: 0.2 }}
-                                        >
-                                            {renderContent()}
-                                        </motion.div>
+                                        <AnimatePresence mode="wait">
+                                            <motion.div
+                                                key={activeTab}
+                                                initial={{ opacity: 0, x: 10 }}
+                                                animate={{ opacity: 1, x: 0 }}
+                                                exit={{ opacity: 0, x: -10 }}
+                                                transition={{ duration: 0.15, ease: "easeOut" }}
+                                            >
+                                                {renderContent()}
+                                            </motion.div>
+                                        </AnimatePresence>
                                     </div>
                                 </div>
                             </>

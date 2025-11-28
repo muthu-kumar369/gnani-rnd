@@ -9,20 +9,35 @@ interface LoaderProps {
 
 const Loader: React.FC<LoaderProps> = ({ size = 'md', className = '', text }) => {
     const sizeClasses = {
-        sm: 'w-5 h-5 border-2',
-        md: 'w-8 h-8 border-3',
-        lg: 'w-12 h-12 border-4'
+        sm: 'w-6 h-6',
+        md: 'w-12 h-12',
+        lg: 'w-20 h-20'
     };
 
     return (
-        <div className={`flex flex-col items-center justify-center gap-3 ${className}`}>
-            <motion.div
-                className={`${sizeClasses[size]} rounded-full border-cyan-500/30 border-t-cyan-400`}
-                animate={{ rotate: 360 }}
-                transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-            />
+        <div className={`flex flex-col items-center justify-center gap-4 ${className}`}>
+            <div className={`relative ${sizeClasses[size]} flex items-center justify-center`}>
+                {/* Outer Ring */}
+                <motion.div
+                    className="absolute inset-0 rounded-full border-2 border-transparent border-t-jarvis-blue border-r-jarvis-blue/50"
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                />
+                {/* Inner Ring */}
+                <motion.div
+                    className="absolute inset-2 rounded-full border-2 border-transparent border-b-jarvis-cyan border-l-jarvis-cyan/50"
+                    animate={{ rotate: -360 }}
+                    transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+                />
+                {/* Core Pulse */}
+                <motion.div
+                    className="w-2 h-2 bg-jarvis-blue rounded-full shadow-jarvis-glow"
+                    animate={{ scale: [1, 1.5, 1], opacity: [0.5, 1, 0.5] }}
+                    transition={{ duration: 1, repeat: Infinity }}
+                />
+            </div>
             {text && (
-                <span className="text-cyan-400/80 text-sm font-medium animate-pulse">
+                <span className="text-jarvis-cyan/80 text-xs font-mono tracking-widest uppercase animate-pulse">
                     {text}
                 </span>
             )}

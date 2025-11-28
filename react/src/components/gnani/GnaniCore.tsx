@@ -231,39 +231,52 @@ const GnaniCore: React.FC = () => {
         animate={{ opacity: 1 }}
         transition={{ duration: 1 }}
       >
-        <header className="flex justify-between items-start h-20 shrink-0">
-          <div className="text-left">
+        <header className="flex justify-between items-center h-20 shrink-0 z-50">
+          <div className="text-left relative group cursor-default">
+            <div className="absolute -inset-2 bg-jarvis-blue/20 blur-xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
             <h1
-              className="text-2xl font-bold uppercase text-cyan-200"
-              style={{ textShadow: "0 0 8px rgba(0, 255, 255, 0.7)" }}
+              className="relative text-3xl font-bold uppercase text-jarvis-blue tracking-[0.2em]"
+              style={{ textShadow: "0 0 10px rgba(0, 240, 255, 0.8)" }}
             >
               GNANI
             </h1>
-            <p className="text-sm text-cyan-400">v2.0 HUD Interface</p>
+            <div className="flex items-center gap-2">
+              <div className="h-[1px] w-8 bg-jarvis-blue/50" />
+              <p className="text-xs text-jarvis-cyan/70 font-mono tracking-widest uppercase">System v2.0 Online</p>
+            </div>
           </div>
-          <div className="text-right flex gap-2 items-center">
+          <div className="text-right flex gap-4 items-center">
             <SystemIndicators />
+
+            <div className="h-8 w-[1px] bg-jarvis-border mx-2" />
+
             <button
               onClick={() => setShowTerminal(!showTerminal)}
-              className={`px-3 py-1 text-xs border rounded-full transition-colors flex items-center gap-2 ${showTerminal
-                ? "bg-cyan-800 border-cyan-400 text-cyan-100 shadow-[0_0_10px_rgba(6,182,212,0.3)]"
-                : "bg-cyan-900/50 hover:bg-cyan-800 border-cyan-500/30 text-cyan-300"
+              className={`px-4 py-2 text-xs font-mono tracking-wider border rounded-sm transition-all duration-300 flex items-center gap-2 relative overflow-hidden group ${showTerminal
+                ? "bg-jarvis-blue/20 border-jarvis-blue text-jarvis-blue shadow-jarvis-glow"
+                : "bg-jarvis-panel border-jarvis-border text-jarvis-cyan/70 hover:text-jarvis-blue hover:border-jarvis-blue hover:shadow-jarvis-border-glow"
                 }`}
             >
-              <Terminal size={12} />
-              Terminal
+              <div className="absolute inset-0 bg-jarvis-blue/10 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
+              <Terminal size={14} />
+              TERMINAL
             </button>
-            <button
+            {false && <button
               onClick={() => setShowIntelligencePanel(!showIntelligencePanel)}
-              className="px-3 py-1 text-xs bg-cyan-900/50 hover:bg-cyan-800 border border-cyan-500/30 rounded-full transition-colors text-cyan-300"
+              className={`px-4 py-2 text-xs font-mono tracking-wider border rounded-sm transition-all duration-300 relative overflow-hidden group ${showIntelligencePanel
+                ? "bg-jarvis-blue/20 border-jarvis-blue text-jarvis-blue shadow-jarvis-glow"
+                : "bg-jarvis-panel border-jarvis-border text-jarvis-cyan/70 hover:text-jarvis-blue hover:border-jarvis-blue hover:shadow-jarvis-border-glow"
+                }`}
             >
-              {showIntelligencePanel ? "Hide Debug" : "Debug"}
-            </button>
+              <div className="absolute inset-0 bg-jarvis-blue/10 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
+              {showIntelligencePanel ? "HIDE DEBUG" : "DEBUG"}
+            </button>}
             <button
               onClick={() => setShowSettings(true)}
-              className="px-3 py-1 text-xs bg-cyan-900/50 hover:bg-cyan-800 border border-cyan-500/30 rounded-full transition-colors text-cyan-300"
+              className="px-4 py-2 text-xs font-mono tracking-wider bg-jarvis-panel hover:bg-jarvis-blue/20 border border-jarvis-border hover:border-jarvis-blue rounded-sm transition-all duration-300 text-jarvis-cyan/70 hover:text-jarvis-blue hover:shadow-jarvis-border-glow relative overflow-hidden group"
             >
-              Settings
+              <div className="absolute inset-0 bg-jarvis-blue/10 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
+              SETTINGS
             </button>
           </div>
         </header>

@@ -4,6 +4,7 @@ import { useToast } from '../../../context/ToastContext';
 import SectionHeader from '../SectionHeader';
 import { Smartphone, Laptop, Monitor, Speaker, Trash2, CheckCircle } from 'lucide-react';
 import Loader from '../../ui/Loader';
+import Button from '../../ui/Button';
 
 const DevicesSection: React.FC = () => {
     const { user, loading, removeDevice } = useUser();
@@ -58,32 +59,34 @@ const DevicesSection: React.FC = () => {
                 {user.devices.map((device) => (
                     <div
                         key={device.deviceId}
-                        className="flex items-center justify-between bg-cyan-900/10 border border-cyan-500/20 rounded-xl p-4 hover:bg-cyan-900/20 transition-colors"
+                        className="flex items-center justify-between bg-jarvis-panel border border-jarvis-border rounded-sm p-4 hover:bg-jarvis-blue/10 transition-colors group"
                     >
                         <div className="flex items-center gap-4">
-                            <div className="p-3 bg-cyan-500/10 rounded-lg text-cyan-400">
+                            <div className="p-3 bg-jarvis-blue/10 rounded-sm text-jarvis-blue border border-jarvis-blue/30">
                                 {getDeviceIcon(device.deviceType)}
                             </div>
                             <div>
-                                <h4 className="text-cyan-100 font-medium flex items-center gap-2">
+                                <h4 className="text-jarvis-text font-medium flex items-center gap-2 font-mono tracking-wide">
                                     {device.deviceName}
                                     {device.isTrusted && (
-                                        <CheckCircle size={14} className="text-green-400" />
+                                        <CheckCircle size={14} className="text-jarvis-success" />
                                     )}
                                 </h4>
-                                <p className="text-xs text-cyan-400/60">
+                                <p className="text-xs text-jarvis-cyan/60 font-mono">
                                     Last active: {formatDate(device.lastActive)}
                                 </p>
                             </div>
                         </div>
-                        <button
+                        <Button
+                            variant="danger"
+                            size="sm"
                             onClick={() => handleRemoveDevice(device.deviceId)}
                             disabled={removingDeviceId === device.deviceId}
-                            className="p-2 text-red-400/60 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                            title="Remove Device"
+                            isLoading={removingDeviceId === device.deviceId}
+                            icon={!removingDeviceId && <Trash2 size={16} />}
                         >
-                            <Trash2 size={18} />
-                        </button>
+                            {removingDeviceId !== device.deviceId && "REMOVE"}
+                        </Button>
                     </div>
                 ))}
             </div>

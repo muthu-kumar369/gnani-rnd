@@ -47,10 +47,10 @@ class StreamingTTS {
         errorLogger.debug(`addTextChunk (raw): "${text}"`, { context: 'StreamingTTS' });
         
         // Clean text: remove markdown bold/italic markers (*, _), headers (#), and code blocks (`)
-        // We keep punctuation and spaces. 
-        // FIX: Don't be too aggressive with cleaning to avoid stripping valid text if regex is wrong
-        // Just remove the specific markdown chars we know are issues for TTS
-        const cleanText = text.replace(/[*_#`]/g, '');
+        // Also remove emojis using a broad regex range
+        const cleanText = text
+            .replace(/[*_#`]/g, '')
+            .replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '');
         
         errorLogger.debug(`addTextChunk (clean): "${cleanText}"`, { context: 'StreamingTTS' });
 

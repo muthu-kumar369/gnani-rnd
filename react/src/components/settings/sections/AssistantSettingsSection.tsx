@@ -5,6 +5,9 @@ import type { ISettings } from '../../../types/user';
 import SectionHeader from '../SectionHeader';
 import { Save, Volume2, Mic, Keyboard } from 'lucide-react';
 import Loader from '../../ui/Loader';
+import Input from '../../ui/Input';
+import Button from '../../ui/Button';
+import Card from '../../ui/Card';
 
 const AssistantSettingsSection: React.FC = () => {
     const { user, updateSettings, loading } = useUser();
@@ -41,29 +44,21 @@ const AssistantSettingsSection: React.FC = () => {
 
             <div className="space-y-8">
                 {/* Voice & Audio */}
-                <div className="bg-cyan-900/10 border border-cyan-500/20 rounded-xl p-6">
-                    <h4 className="text-lg font-semibold text-cyan-200 mb-4 flex items-center gap-2">
-                        <Volume2 size={20} />
-                        Voice & Audio
-                    </h4>
+                <Card title="Voice & Audio" action={<Volume2 size={18} className="text-jarvis-cyan/70" />}>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="space-y-2">
-                            <label className="text-sm text-cyan-300 font-medium">Wake Word</label>
-                            <input
-                                type="text"
-                                name="wakeWord"
-                                value={settings.wakeWord || ''}
-                                onChange={handleChange}
-                                className="w-full bg-black/40 border border-cyan-500/30 rounded-lg px-4 py-2 text-cyan-100 focus:outline-none focus:border-cyan-400 transition-all"
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <label className="text-sm text-cyan-300 font-medium">Preferred Voice</label>
+                        <Input
+                            label="Wake Word"
+                            name="wakeWord"
+                            value={settings.wakeWord || ''}
+                            onChange={handleChange}
+                        />
+                        <div className="space-y-1">
+                            <label className="text-xs font-mono text-jarvis-cyan/70 uppercase tracking-wider ml-1">Preferred Voice</label>
                             <select
                                 name="preferredVoice"
                                 value={settings.preferredVoice || 'jarvis'}
                                 onChange={handleChange}
-                                className="w-full bg-black/40 border border-cyan-500/30 rounded-lg px-4 py-2 text-cyan-100 focus:outline-none focus:border-cyan-400 transition-all"
+                                className="w-full bg-jarvis-panel border-b-2 border-jarvis-border px-4 py-2 text-sm text-jarvis-text focus:outline-none focus:border-jarvis-blue focus:shadow-[0_4px_10px_-4px_rgba(0,240,255,0.3)] transition-all duration-300 rounded-t-sm"
                             >
                                 <option value="jarvis">Jarvis (Male)</option>
                                 <option value="friday">Friday (Female)</option>
@@ -72,8 +67,8 @@ const AssistantSettingsSection: React.FC = () => {
                         </div>
                         <div className="space-y-2 col-span-1 md:col-span-2">
                             <div className="flex justify-between">
-                                <label className="text-sm text-cyan-300 font-medium">Volume</label>
-                                <span className="text-sm text-cyan-400">{settings.volume}%</span>
+                                <label className="text-xs font-mono text-jarvis-cyan/70 uppercase tracking-wider ml-1">Volume</label>
+                                <span className="text-sm font-mono text-jarvis-blue">{settings.volume}%</span>
                             </div>
                             <input
                                 type="range"
@@ -82,26 +77,22 @@ const AssistantSettingsSection: React.FC = () => {
                                 max="100"
                                 value={settings.volume || 80}
                                 onChange={handleChange}
-                                className="w-full h-2 bg-cyan-900/50 rounded-lg appearance-none cursor-pointer accent-cyan-500"
+                                className="w-full h-1 bg-jarvis-border rounded-lg appearance-none cursor-pointer accent-jarvis-blue hover:accent-jarvis-cyan"
                             />
                         </div>
                     </div>
-                </div>
+                </Card>
 
                 {/* Appearance */}
-                <div className="bg-cyan-900/10 border border-cyan-500/20 rounded-xl p-6">
-                    <h4 className="text-lg font-semibold text-cyan-200 mb-4 flex items-center gap-2">
-                        <Mic size={20} />
-                        Appearance
-                    </h4>
+                <Card title="Appearance" action={<Mic size={18} className="text-jarvis-cyan/70" />}>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="space-y-2">
-                            <label className="text-sm text-cyan-300 font-medium">Theme</label>
+                        <div className="space-y-1">
+                            <label className="text-xs font-mono text-jarvis-cyan/70 uppercase tracking-wider ml-1">Theme</label>
                             <select
                                 name="theme"
                                 value={settings.theme || 'jarvis'}
                                 onChange={handleChange}
-                                className="w-full bg-black/40 border border-cyan-500/30 rounded-lg px-4 py-2 text-cyan-100 focus:outline-none focus:border-cyan-400 transition-all"
+                                className="w-full bg-jarvis-panel border-b-2 border-jarvis-border px-4 py-2 text-sm text-jarvis-text focus:outline-none focus:border-jarvis-blue focus:shadow-[0_4px_10px_-4px_rgba(0,240,255,0.3)] transition-all duration-300 rounded-t-sm"
                             >
                                 <option value="jarvis">Jarvis HUD (Default)</option>
                                 <option value="dark">Dark Mode</option>
@@ -110,43 +101,30 @@ const AssistantSettingsSection: React.FC = () => {
                             </select>
                         </div>
                     </div>
-                </div>
+                </Card>
 
                 {/* Shortcuts */}
-                <div className="bg-cyan-900/10 border border-cyan-500/20 rounded-xl p-6">
-                    <h4 className="text-lg font-semibold text-cyan-200 mb-4 flex items-center gap-2">
-                        <Keyboard size={20} />
-                        Keyboard Shortcuts
-                    </h4>
+                <Card title="Keyboard Shortcuts" action={<Keyboard size={18} className="text-jarvis-cyan/70" />}>
                     <div className="space-y-4">
                         {settings.shortcuts && Object.entries(settings.shortcuts).map(([key, action]) => (
-                            <div key={key} className="flex items-center justify-between bg-black/20 p-3 rounded-lg border border-cyan-500/10">
-                                <span className="text-cyan-100 capitalize">{action}</span>
-                                <code className="bg-cyan-900/30 px-2 py-1 rounded text-cyan-300 text-sm border border-cyan-500/20">{key}</code>
+                            <div key={key} className="flex items-center justify-between bg-jarvis-bg/50 p-3 rounded-sm border border-jarvis-border/30">
+                                <span className="text-jarvis-text capitalize font-mono text-sm">{action}</span>
+                                <code className="bg-jarvis-blue/10 px-2 py-1 rounded text-jarvis-blue text-xs border border-jarvis-blue/30 font-mono">{key}</code>
                             </div>
                         ))}
                     </div>
-                </div>
+                </Card>
             </div>
 
-            <div className="flex justify-end pt-6 mt-6 border-t border-cyan-500/20">
-                <button
+            <div className="flex justify-end pt-6 mt-6 border-t border-jarvis-border">
+                <Button
                     onClick={handleSave}
                     disabled={isSaving}
-                    className="flex items-center gap-2 px-6 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_15px_rgba(6,182,212,0.3)] min-w-[140px] justify-center"
+                    isLoading={isSaving}
+                    icon={<Save size={18} />}
                 >
-                    {isSaving ? (
-                        <>
-                            <Loader size="sm" />
-                            <span>Saving...</span>
-                        </>
-                    ) : (
-                        <>
-                            <Save size={18} />
-                            <span>Save Changes</span>
-                        </>
-                    )}
-                </button>
+                    Save Changes
+                </Button>
             </div>
         </div>
     );

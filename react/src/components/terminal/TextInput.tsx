@@ -72,7 +72,7 @@ const TextInput: React.FC<TextInputProps> = ({ isVisible, onClose, onSend }) => 
                         <button
                             onClick={handleSend}
                             disabled={!text.trim()}
-                            className="p-3 bg-cyan-600 hover:bg-cyan-500 disabled:bg-cyan-900/50 disabled:text-cyan-500/30 text-white rounded-lg transition-colors shadow-[0_0_10px_rgba(6,182,212,0.3)]"
+                            className="h-[46px] w-[46px] flex items-center justify-center bg-cyan-600 hover:bg-cyan-500 disabled:bg-cyan-900/50 disabled:text-cyan-500/30 text-white rounded-lg transition-colors shadow-[0_0_10px_rgba(6,182,212,0.3)] shrink-0 mb-[1px]"
                         >
                             <Send size={18} />
                         </button>

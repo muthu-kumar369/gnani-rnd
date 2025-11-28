@@ -4,7 +4,8 @@ import { useToast } from '../../../context/ToastContext';
 import type { IProfile } from '../../../types/user';
 import SectionHeader from '../SectionHeader';
 import { Camera, Save } from 'lucide-react';
-import Loader from '../../ui/Loader';
+import Input from '../../ui/Input';
+import Button from '../../ui/Button';
 
 const ProfileSection: React.FC = () => {
     const { user, updateProfile } = useUser();
@@ -54,7 +55,7 @@ const ProfileSection: React.FC = () => {
                 {/* Profile Photo */}
                 <div className="flex flex-col items-center gap-4">
                     <div className="relative group">
-                        <div className="w-32 h-32 rounded-full overflow-hidden border-2 border-cyan-500/30 shadow-[0_0_20px_rgba(6,182,212,0.2)] bg-gray-800 flex items-center justify-center">
+                        <div className="w-32 h-32 rounded-full overflow-hidden border-2 border-jarvis-border shadow-jarvis-glow bg-jarvis-bg flex items-center justify-center relative">
                             {formData.profilePhoto ? (
                                 <img
                                     src={formData.profilePhoto}
@@ -67,63 +68,56 @@ const ProfileSection: React.FC = () => {
                                     }}
                                 />
                             ) : (
-                                <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-cyan-900 to-gray-900 text-cyan-400 text-3xl font-bold">
+                                <div className="w-full h-full flex items-center justify-center bg-jarvis-panel text-jarvis-blue text-3xl font-bold font-mono">
                                     {getInitials()}
                                 </div>
                             )}
                             {/* Fallback for hidden image */}
-                            <div className="hidden fallback-active:flex w-full h-full absolute inset-0 items-center justify-center bg-gradient-to-br from-cyan-900 to-gray-900 text-cyan-400 text-3xl font-bold">
+                            <div className="hidden fallback-active:flex w-full h-full absolute inset-0 items-center justify-center bg-jarvis-panel text-jarvis-blue text-3xl font-bold font-mono">
                                 {getInitials()}
                             </div>
+
+                            {/* Holographic Ring Overlay */}
+                            <div className="absolute inset-0 rounded-full border border-jarvis-blue/30 animate-pulse-fast pointer-events-none" />
                         </div>
-                        <button className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-full cursor-pointer">
-                            <Camera className="text-cyan-300" />
+                        <button className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-full cursor-pointer backdrop-blur-sm">
+                            <Camera className="text-jarvis-blue" />
                         </button>
                     </div>
-                    <span className="text-xs text-cyan-400/60 uppercase tracking-wider">Profile Photo</span>
+                    <span className="text-xs text-jarvis-cyan/60 font-mono uppercase tracking-wider">Profile Photo</span>
                 </div>
 
                 {/* Form Fields */}
                 <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                        <label className="text-sm text-cyan-300 font-medium">First Name</label>
-                        <input
-                            type="text"
-                            name="firstName"
-                            value={formData.firstName || ''}
-                            onChange={handleChange}
-                            className="w-full bg-black/40 border border-cyan-500/30 rounded-lg px-4 py-2 text-cyan-100 focus:outline-none focus:border-cyan-400 focus:shadow-[0_0_10px_rgba(6,182,212,0.2)] transition-all"
-                            placeholder="Enter first name"
-                        />
-                    </div>
-                    <div className="space-y-2">
-                        <label className="text-sm text-cyan-300 font-medium">Last Name</label>
-                        <input
-                            type="text"
-                            name="lastName"
-                            value={formData.lastName || ''}
-                            onChange={handleChange}
-                            className="w-full bg-black/40 border border-cyan-500/30 rounded-lg px-4 py-2 text-cyan-100 focus:outline-none focus:border-cyan-400 focus:shadow-[0_0_10px_rgba(6,182,212,0.2)] transition-all"
-                            placeholder="Enter last name"
-                        />
-                    </div>
-                    <div className="space-y-2">
-                        <label className="text-sm text-cyan-300 font-medium">Date of Birth</label>
-                        <input
-                            type="date"
-                            name="dob"
-                            value={formData.dob ? (typeof formData.dob === 'string' ? formData.dob.split('T')[0] : new Date(formData.dob).toISOString().split('T')[0]) : ''}
-                            onChange={handleChange}
-                            className="w-full bg-black/40 border border-cyan-500/30 rounded-lg px-4 py-2 text-cyan-100 focus:outline-none focus:border-cyan-400 focus:shadow-[0_0_10px_rgba(6,182,212,0.2)] transition-all [color-scheme:dark]"
-                        />
-                    </div>
-                    <div className="space-y-2">
-                        <label className="text-sm text-cyan-300 font-medium">Language</label>
+                    <Input
+                        label="First Name"
+                        name="firstName"
+                        value={formData.firstName || ''}
+                        onChange={handleChange}
+                        placeholder="Enter first name"
+                    />
+                    <Input
+                        label="Last Name"
+                        name="lastName"
+                        value={formData.lastName || ''}
+                        onChange={handleChange}
+                        placeholder="Enter last name"
+                    />
+                    <Input
+                        label="Date of Birth"
+                        type="date"
+                        name="dob"
+                        value={formData.dob ? (typeof formData.dob === 'string' ? formData.dob.split('T')[0] : new Date(formData.dob).toISOString().split('T')[0]) : ''}
+                        onChange={handleChange}
+                        className="[color-scheme:dark]"
+                    />
+                    <div className="space-y-1">
+                        <label className="text-xs font-mono text-jarvis-cyan/70 uppercase tracking-wider ml-1">Language</label>
                         <select
                             name="language"
                             value={formData.language || 'en-US'}
                             onChange={handleChange}
-                            className="w-full bg-black/40 border border-cyan-500/30 rounded-lg px-4 py-2 text-cyan-100 focus:outline-none focus:border-cyan-400 focus:shadow-[0_0_10px_rgba(6,182,212,0.2)] transition-all"
+                            className="w-full bg-jarvis-panel border-b-2 border-jarvis-border px-4 py-2 text-sm text-jarvis-text focus:outline-none focus:border-jarvis-blue focus:shadow-[0_4px_10px_-4px_rgba(0,240,255,0.3)] transition-all duration-300 rounded-t-sm"
                         >
                             <option value="en-US">English (US)</option>
                             <option value="en-GB">English (UK)</option>
@@ -136,24 +130,15 @@ const ProfileSection: React.FC = () => {
                 </div>
             </div>
 
-            <div className="flex justify-end pt-6 border-t border-cyan-500/20">
-                <button
+            <div className="flex justify-end pt-6 border-t border-jarvis-border">
+                <Button
                     onClick={handleSave}
                     disabled={isSaving}
-                    className="flex items-center gap-2 px-6 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_15px_rgba(6,182,212,0.3)] min-w-[140px] justify-center"
+                    isLoading={isSaving}
+                    icon={<Save size={18} />}
                 >
-                    {isSaving ? (
-                        <>
-                            <Loader size="sm" />
-                            <span>Saving...</span>
-                        </>
-                    ) : (
-                        <>
-                            <Save size={18} />
-                            <span>Save Changes</span>
-                        </>
-                    )}
-                </button>
+                    Save Changes
+                </Button>
             </div>
         </div>
     );

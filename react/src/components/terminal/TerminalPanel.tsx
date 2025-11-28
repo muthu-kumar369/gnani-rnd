@@ -15,7 +15,7 @@ interface TerminalPanelProps {
 }
 
 const TerminalPanel: React.FC<TerminalPanelProps> = ({ isVisible, onToggle }) => {
-    const { messages, clearMessages, addMessage } = useConversation();
+    const { messages, clearMessages } = useConversation();
     const { transition } = useGnaniStateContext();
     const { systemStatus, connectivityStatus } = useDeviceAwareness();
     const scrollRef = useRef<HTMLDivElement>(null);
@@ -30,11 +30,11 @@ const TerminalPanel: React.FC<TerminalPanelProps> = ({ isVisible, onToggle }) =>
             // 2. Trigger state transition to 'thinking'
             transition('text-input');
 
-            // 3. Optimistically add message to conversation
-            addMessage({
-                type: 'user',
-                message: text,
-            });
+            // 2. Trigger state transition to 'thinking'
+            transition('text-input');
+
+            // Note: We do NOT add the message optimistically here because the backend
+            // echoes the user message back to us, which would cause duplicates.
         } else {
             console.error("gnani.stream.sendText is not available");
         }
@@ -54,19 +54,11 @@ const TerminalPanel: React.FC<TerminalPanelProps> = ({ isVisible, onToggle }) =>
             initial={{ opacity: 0, y: 50 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 50 }}
-            className={`fixed left-4 bottom-4 z-40 flex flex-col bg-black/80 backdrop-blur-md border border-cyan-500/30 rounded-lg shadow-[0_0_30px_rgba(6,182,212,0.15)] overflow-hidden transition-all duration-300 ${isExpanded ? 'w-[600px] h-[80vh]' : 'w-[400px] h-[300px]'
+            className={`fixed left-4 bottom-4 z-40 flex flex-col glass-panel rounded-lg overflow-hidden transition-all duration-300 ${isExpanded ? 'w-[600px] h-[80vh]' : 'w-[400px] h-[300px]'
                 }`}
         >
             {/* Holographic Grid Background */}
-            <div className="absolute inset-0 pointer-events-none opacity-10"
-                style={{
-                    backgroundImage: `
-                        linear-gradient(rgba(6, 182, 212, 0.3) 1px, transparent 1px),
-                        linear-gradient(90deg, rgba(6, 182, 212, 0.3) 1px, transparent 1px)
-                    `,
-                    backgroundSize: '20px 20px',
-                }}
-            />
+            <div className="absolute inset-0 pointer-events-none opacity-20 bg-grid-pattern" />
 
             {/* Header */}
             <div className="relative z-10 flex items-center justify-between px-4 py-2 bg-cyan-950/50 border-b border-cyan-500/30">
