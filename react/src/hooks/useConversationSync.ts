@@ -39,7 +39,10 @@ export function useConversationSync() {
 
         // Add user message if we're in listening or thinking state
         // This covers both voice input (listening -> thinking) and text input (idle -> thinking)
-        if (state === 'listening' || state === 'thinking' || previousState === 'listening') {
+        // Add user message if we're in listening, thinking, or speaking state (barge-in)
+        // This covers both voice input (listening -> thinking) and text input (idle -> thinking)
+        // and barge-in (speaking -> listening)
+        if (state === 'listening' || state === 'thinking' || state === 'speaking' || previousState === 'listening' || previousState === 'speaking') {
             addMessage({
                 type: 'user',
                 message: latestFinalSTT,

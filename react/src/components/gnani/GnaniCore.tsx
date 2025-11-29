@@ -122,6 +122,18 @@ const GnaniCore: React.FC = () => {
     }
   }, [isTtsEnded, isSpeaking, transition]);
 
+  useEffect(() => {
+    const handleInterruption = () => {
+      errorLogger.info('TTS Interrupted event received', { context: 'GnaniCore' });
+      handleBargeIn();
+    };
+
+    window.addEventListener('tts:interrupted', handleInterruption);
+    return () => {
+      window.removeEventListener('tts:interrupted', handleInterruption);
+    };
+  }, [state]);
+
   const handleBargeIn = () => {
     errorLogger.info('Barge-in triggered', { context: 'GnaniCore', currentState: state });
 

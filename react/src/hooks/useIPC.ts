@@ -69,24 +69,24 @@ export const useIPC = () => {
       unsubs.push(window.gnani.stream.on('stream:error', (error: Error) => {
         errorLogger.error('IPC: Stream error', error, { context: 'useIPC' });
         setStreamErrorMessage(error.message);
-        setIsStreamConnected(false); // Assume error means disconnected
+        setIsStreamConnected(false);
       }));
+
       // Listen for TTS events from StreamingTTS (frontend CustomEvents)
       const handleTtsStarted = () => {
         errorLogger.debug('CustomEvent: TTS started', { context: 'useIPC' });
         setIsTtsStarted(true);
+        window.gnani?.send('tts:started');
       };
       
       const handleTtsEnded = () => {
         errorLogger.debug('CustomEvent: TTS ended', { context: 'useIPC' });
         setIsTtsEnded(true);
-        setIsTtsStarted(false); // Reset TTS started state
-        
-        // Clear previous interaction data to prevent stuck states
+        setIsTtsStarted(false);
         setLatestFinalSTT(null);
         setLatestLLMChunk(null);
-        
         setTimeout(() => setIsTtsEnded(false), 100);
+        window.gnani?.send('tts:ended');
       };
       
       window.addEventListener('tts:started', handleTtsStarted);
@@ -116,11 +116,15 @@ export const useIPC = () => {
         errorLogger.debug(`IPC: LLM Chunk: ${chunk}`, { context: 'useIPC' });
         setLatestLLMChunk(chunk);
       }));
+
+      unsubs.push(window.gnani.stream.on('stream:tts_stop', () => {
+        console.log('[IPC] stream:tts_stop received. Dispatching tts:interrupted');
+        errorLogger.info('IPC: TTS Stop received', { context: 'useIPC' });
+        window.dispatchEvent(new CustomEvent('tts:interrupted'));
+      }));
       
-      // Also listen for 'stream:llm_chunk' explicitly if the backend uses that name
       unsubs.push(window.gnani.stream.on('stream:llm_chunk', (data: any) => {
           console.log('[IPC] RAW stream:llm_chunk received:', data); // DEBUG LOG
-          // Pass the full data object (which might be { type: 'partial', text: '...' })
           setLatestLLMChunk(data);
       }));
     }

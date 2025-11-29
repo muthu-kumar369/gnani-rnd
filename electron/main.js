@@ -237,7 +237,18 @@ async function main() {
 
     logger.info("Setting up VAD listeners...", { context: 'MainProcess' });
     vadManager.on('speech:start', () => {
-      logger.info('VAD detected speech, starting audio stream.', { context: 'MainProcess' });
+      logger.info('VAD detected speech.', { context: 'MainProcess' });
+      
+      // Barge-in logic: If TTS is playing, stop it immediately
+      if (isFrontendSpeaking) {
+        logger.info('Barge-in detected! Stopping TTS.', { context: 'MainProcess' });
+        if (ttsPlayer) {
+          ttsPlayer.stopPlayback();
+        }
+        isFrontendSpeaking = false; // Reset flag immediately
+      }
+
+      logger.info('Starting audio stream.', { context: 'MainProcess' });
       streamingClient.startAudioStreaming(true);
     });
 
@@ -262,10 +273,6 @@ async function main() {
     logger.error("CRITICAL ERROR IN MAIN:", error, { context: 'MainProcess' });
   }
 }
-
-
-
-// ... (existing code)
 
 app.on("window-all-closed", () => {
   logger.info("All windows closed, cleaning up and quitting.", { context: 'MainProcess' });
@@ -301,6 +308,8 @@ app.on("activate", () => {
   }
 });
 
+let isFrontendSpeaking = false;
+
 ipcMain.on('mic:start', async () => {
   logger.info('Received mic:start IPC from renderer. Starting microphone and VAD...', { context: 'MainProcess' });
   micCapture.startMicrophone();
@@ -314,13 +323,14 @@ ipcMain.on('mic:stop', () => {
 });
 
 ipcMain.on('tts:started', () => {
-  logger.info('Received tts:started IPC from renderer. Pausing VAD.', { context: 'MainProcess' });
-  vadManager.stopProcessing();
+  logger.info('Received tts:started IPC from renderer. Marking as speaking.', { context: 'MainProcess' });
+  isFrontendSpeaking = true;
+  // Do NOT stop VAD here to allow barge-in
 });
 
 ipcMain.on('tts:ended', () => {
-  logger.info('Received tts:ended IPC from renderer. Resuming VAD.', { context: 'MainProcess' });
-  vadManager.startProcessing();
+  logger.info('Received tts:ended IPC from renderer. Marking as not speaking.', { context: 'MainProcess' });
+  isFrontendSpeaking = false;
 });
 
 ipcMain.on('log', (event, { level, message, context, extra }) => {
