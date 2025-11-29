@@ -312,7 +312,7 @@ const GnaniCore: React.FC = () => {
 
         <div className="relative flex items-center justify-center">
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <AnimationWrapper state={animationState} audioLevel={audioLevel} />
+            <AnimationWrapper state={currentUIStatus} audioLevel={audioLevel} />
           </div>
 
           <div className="relative z-10">
