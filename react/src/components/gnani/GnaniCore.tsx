@@ -4,6 +4,7 @@ import { Terminal } from "lucide-react";
 import { useGnaniUIState } from "../../hooks/useGnaniUIState";
 import useMicrophone from "../../hooks/useMicrophone";
 import { useAuth } from "../../context/AuthContext";
+import { useUser } from "../../context/UserContext";
 import { useIPC } from "../../hooks/useIPC";
 import { useGnaniStateContext } from "../../context/GnaniStateContext";
 import useBargeIn from "../../hooks/useBargeIn";
@@ -18,6 +19,7 @@ import IntelligencePanel from "./IntelligencePanel";
 import SpokenTextDisplay from "./SpokenTextDisplay";
 import SettingsModal from "../settings/SettingsModal";
 import AnimationWrapper from "./animations/AnimationWrapper";
+// import AvatarContainer from "./avatar/AvatarContainer";
 import StatusDisplay from "./StatusDisplay";
 import TerminalPanel from "../terminal/TerminalPanel";
 import SystemIndicators from "../device/SystemIndicators";
@@ -39,12 +41,33 @@ const GnaniCore: React.FC = () => {
   const [showSettings, setShowSettings] = useState(false);
   const lastProcessedFinalSTT = useRef<string | null>(null);
 
+  const { user, loading } = useUser(); // Access user data from UserContext
+
   useEffect(() => {
     streamingTTSRef.current = new StreamingTTS();
     return () => {
       streamingTTSRef.current?.cleanup();
     };
   }, []);
+
+  // Sync User Settings to UI State
+  useEffect(() => {
+    if (user?.settings) {
+      if (user.settings.avatarEnabled !== undefined) {
+        uiState.setAvatarEnabled(user.settings.avatarEnabled);
+      }
+      if (user.settings.avatarGender) {
+        uiState.setAvatarGender(user.settings.avatarGender);
+      }
+    }
+  }, [user?.settings, uiState.setAvatarEnabled, uiState.setAvatarGender]);
+
+  // Sync Avatar Gender to StreamingTTS
+  useEffect(() => {
+    if (streamingTTSRef.current && uiState.avatarGender) {
+      streamingTTSRef.current.setVoiceGender(uiState.avatarGender);
+    }
+  }, [uiState.avatarGender]);
 
   useEffect(() => {
     if (!latestLLMChunk || !streamingTTSRef.current) return;
@@ -313,6 +336,16 @@ const GnaniCore: React.FC = () => {
         <div className="relative flex items-center justify-center">
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             <AnimationWrapper state={currentUIStatus} audioLevel={audioLevel} />
+            {!loading && (
+              // AvatarContainer hidden by request
+              null
+              /* <AvatarContainer
+               status={currentUIStatus}
+               isSpeaking={isSpeaking}
+               avatarEnabled={uiState.avatarEnabled}
+               avatarGender={uiState.avatarGender}
+             /> */
+            )}
           </div>
 
           <div className="relative z-10">
@@ -325,7 +358,6 @@ const GnaniCore: React.FC = () => {
             />
           </div>
         </div>
-
       </div>
 
       {/* Device Stats HUD - Fixed at bottom right */}

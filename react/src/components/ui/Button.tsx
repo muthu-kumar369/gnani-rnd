@@ -18,7 +18,7 @@ const Button: React.FC<ButtonProps> = ({
     disabled,
     ...props
 }) => {
-    const baseStyles = "relative overflow-hidden font-mono tracking-wider uppercase transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed group";
+    const baseStyles = "relative overflow-hidden font-mono tracking-wider uppercase transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed group rounded-md";
 
     const variants = {
         primary: "bg-jarvis-blue/10 border border-jarvis-blue text-jarvis-blue hover:bg-jarvis-blue/20 hover:shadow-jarvis-glow",

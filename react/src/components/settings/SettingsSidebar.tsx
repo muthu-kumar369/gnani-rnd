@@ -20,7 +20,8 @@ export type SettingsTab =
     | 'accounts'
     | 'history'
     | 'preferences'
-    | 'about';
+    | 'about'
+    | 'avatar';
 
 interface SettingsSidebarProps {
     activeTab: SettingsTab;
@@ -36,6 +37,7 @@ const MENU_ITEMS: { id: SettingsTab; label: string; icon: React.ElementType }[] 
     { id: 'history', label: 'Activity History', icon: Clock },
     { id: 'preferences', label: 'Preferences', icon: Sliders },
     { id: 'about', label: 'About', icon: Info },
+    { id: 'avatar', label: 'Avatar', icon: User }, // Using User icon for Avatar as well
 ];
 
 const SettingsSidebar: React.FC<SettingsSidebarProps> = ({ activeTab, onTabChange }) => {

@@ -11,6 +11,25 @@ import { GnaniStateProvider } from './context/GnaniStateContext';
 import { ConversationProvider } from './context/ConversationContext';
 import LoadingScreen from './components/common/LoadingScreen';
 
+// Protected Route Wrapper - only renders when authenticated
+function ProtectedRoute() {
+  const { isAuthenticated } = useAuth();
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return (
+    <UserProvider>
+      <GnaniStateProvider>
+        <ConversationProvider>
+          <GnaniCore />
+        </ConversationProvider>
+      </GnaniStateProvider>
+    </UserProvider>
+  );
+}
+
 function App() {
   const { isAuthenticated, loading } = useAuth();
   const [minLoadComplete, setMinLoadComplete] = useState(false);
@@ -29,22 +48,17 @@ function App() {
   return (
     <div className="bg-jarvis-bg min-h-screen w-full overflow-hidden text-jarvis-text font-sans selection:bg-jarvis-blue selection:text-jarvis-bg">
       <ToastProvider>
-        <UserProvider>
-          <GnaniStateProvider>
-            <ConversationProvider>
-              <Routes>
-                <Route path="/login" element={<LoginPage />} />
-                <Route path="/register" element={<RegisterPage />} />
-                <Route
-                  path="/"
-                  element={isAuthenticated ? <GnaniCore /> : <Navigate to="/login" replace />}
-                />
-                {/* Add other protected routes here */}
-                <Route path="*" element={<Navigate to="/" replace />} />
-              </Routes>
-            </ConversationProvider>
-          </GnaniStateProvider>
-        </UserProvider>
+        <Routes>
+          {/* Public Routes */}
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+
+          {/* Protected Route */}
+          <Route path="/" element={<ProtectedRoute />} />
+
+          {/* Catch-all redirect */}
+          <Route path="*" element={<Navigate to={isAuthenticated ? "/" : "/login"} replace />} />
+        </Routes>
       </ToastProvider>
     </div>
   );

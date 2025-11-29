@@ -106,12 +106,23 @@ const AssistantSettingsSection: React.FC = () => {
                 {/* Shortcuts */}
                 <Card title="Keyboard Shortcuts" action={<Keyboard size={18} className="text-jarvis-cyan/70" />}>
                     <div className="space-y-4">
-                        {settings.shortcuts && Object.entries(settings.shortcuts).map(([key, action]) => (
-                            <div key={key} className="flex items-center justify-between bg-jarvis-bg/50 p-3 rounded-sm border border-jarvis-border/30">
-                                <span className="text-jarvis-text capitalize font-mono text-sm">{action}</span>
-                                <code className="bg-jarvis-blue/10 px-2 py-1 rounded text-jarvis-blue text-xs border border-jarvis-blue/30 font-mono">{key}</code>
+                        {!settings.shortcuts || Object.keys(settings.shortcuts).length === 0 ? (
+                            <div className="flex flex-col items-center justify-center py-8 text-center">
+                                <div className="p-3 bg-jarvis-blue/5 rounded-sm border border-jarvis-border/30 mb-3">
+                                    <Keyboard size={24} className="text-jarvis-cyan/40" />
+                                </div>
+                                <p className="text-jarvis-cyan/60 font-mono text-sm">
+                                    No keyboard shortcuts configured.
+                                </p>
                             </div>
-                        ))}
+                        ) : (
+                            settings.shortcuts && Object.entries(settings.shortcuts).map(([key, action]) => (
+                                <div key={key} className="flex items-center justify-between bg-jarvis-bg/50 p-3 rounded-sm border border-jarvis-border/30">
+                                    <span className="text-jarvis-text capitalize font-mono text-sm">{action}</span>
+                                    <code className="bg-jarvis-blue/10 px-2 py-1 rounded text-jarvis-blue text-xs border border-jarvis-blue/30 font-mono">{key}</code>
+                                </div>
+                            ))
+                        )}
                     </div>
                 </Card>
             </div>

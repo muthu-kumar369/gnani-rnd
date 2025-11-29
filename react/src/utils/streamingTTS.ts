@@ -133,6 +133,13 @@ class StreamingTTS {
         }
     }
 
+    private preferredGender: 'male' | 'female' = 'female';
+
+    public setVoiceGender(gender: 'male' | 'female'): void {
+        this.preferredGender = gender;
+        errorLogger.info(`Voice gender set to: ${gender}`, { context: 'StreamingTTS' });
+    }
+
     /**
      * Queue an utterance for playback
      */
@@ -152,20 +159,29 @@ class StreamingTTS {
         utterance.pitch = 1.0;
         utterance.volume = 1.0;
 
-        // Select Female Voice
+        // Select Voice based on preferred gender
         const voices = window.speechSynthesis.getVoices();
-        // Prefer Google US English Female, or Microsoft Zira, or any female voice
-        const femaleVoice = voices.find(v => 
-            v.name.includes('Google US English') || 
-            v.name.includes('Zira') || 
-            v.name.includes('Female')
-        );
-        
-        if (femaleVoice) {
-            utterance.voice = femaleVoice;
-            errorLogger.debug(`Selected voice: ${femaleVoice.name}`, { context: 'StreamingTTS' });
+        let selectedVoice: SpeechSynthesisVoice | undefined;
+
+        if (this.preferredGender === 'male') {
+             selectedVoice = voices.find(v => 
+                v.name.includes('Google US English Male') || 
+                v.name.includes('David') || 
+                v.name.includes('Male')
+            );
         } else {
-            errorLogger.warn('No female voice found, using default', { context: 'StreamingTTS' });
+             selectedVoice = voices.find(v => 
+                v.name.includes('Google US English Female') || 
+                v.name.includes('Zira') || 
+                v.name.includes('Female')
+            );
+        }
+        
+        if (selectedVoice) {
+            utterance.voice = selectedVoice;
+            errorLogger.debug(`Selected voice: ${selectedVoice.name} (${this.preferredGender})`, { context: 'StreamingTTS' });
+        } else {
+            errorLogger.warn(`No ${this.preferredGender} voice found, using default`, { context: 'StreamingTTS' });
         }
 
         // Set up event handlers
@@ -197,6 +213,25 @@ class StreamingTTS {
             if (this.utteranceQueue.length === 0 && !this.isPlaying && !this.isStreamActive) {
                 errorLogger.warn('TTS error and queue empty, dispatching tts:ended event', { context: 'StreamingTTS' });
                 window.dispatchEvent(new CustomEvent('tts:ended', { detail: { text } }));
+            }
+        };
+
+        // Add boundary event for lip sync
+        utterance.onboundary = (event) => {
+            if (event.name === 'word') {
+                // Get the word being spoken
+                const charIndex = event.charIndex;
+                const charLength = event.charLength || 0;
+                const word = text.substring(charIndex, charIndex + charLength);
+                
+                // Dispatch event for UI/Avatar to consume
+                window.dispatchEvent(new CustomEvent('tts:word', { 
+                    detail: { 
+                        word,
+                        charIndex,
+                        elapsedTime: event.elapsedTime
+                    } 
+                }));
             }
         };
 

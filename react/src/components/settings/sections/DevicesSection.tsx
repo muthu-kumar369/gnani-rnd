@@ -56,39 +56,50 @@ const DevicesSection: React.FC = () => {
             />
 
             <div className="space-y-4">
-                {user.devices.map((device) => (
-                    <div
-                        key={device.deviceId}
-                        className="flex items-center justify-between bg-jarvis-panel border border-jarvis-border rounded-sm p-4 hover:bg-jarvis-blue/10 transition-colors group"
-                    >
-                        <div className="flex items-center gap-4">
-                            <div className="p-3 bg-jarvis-blue/10 rounded-sm text-jarvis-blue border border-jarvis-blue/30">
-                                {getDeviceIcon(device.deviceType)}
-                            </div>
-                            <div>
-                                <h4 className="text-jarvis-text font-medium flex items-center gap-2 font-mono tracking-wide">
-                                    {device.deviceName}
-                                    {device.isTrusted && (
-                                        <CheckCircle size={14} className="text-jarvis-success" />
-                                    )}
-                                </h4>
-                                <p className="text-xs text-jarvis-cyan/60 font-mono">
-                                    Last active: {formatDate(device.lastActive)}
-                                </p>
-                            </div>
+                {user.devices.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-12 text-center">
+                        <div className="p-4 bg-jarvis-blue/5 rounded-sm border border-jarvis-border/30 mb-4">
+                            <Monitor size={32} className="text-jarvis-cyan/40" />
                         </div>
-                        <Button
-                            variant="danger"
-                            size="sm"
-                            onClick={() => handleRemoveDevice(device.deviceId)}
-                            disabled={removingDeviceId === device.deviceId}
-                            isLoading={removingDeviceId === device.deviceId}
-                            icon={!removingDeviceId && <Trash2 size={16} />}
-                        >
-                            {removingDeviceId !== device.deviceId && "REMOVE"}
-                        </Button>
+                        <p className="text-jarvis-cyan/60 font-mono text-sm">
+                            No devices connected to your account.
+                        </p>
                     </div>
-                ))}
+                ) : (
+                    user.devices.map((device) => (
+                        <div
+                            key={device.deviceId}
+                            className="flex items-center justify-between bg-jarvis-panel border border-jarvis-border rounded-sm p-4 hover:bg-jarvis-blue/10 transition-colors group"
+                        >
+                            <div className="flex items-center gap-4">
+                                <div className="p-3 bg-jarvis-blue/10 rounded-sm text-jarvis-blue border border-jarvis-blue/30">
+                                    {getDeviceIcon(device.deviceType)}
+                                </div>
+                                <div>
+                                    <h4 className="text-jarvis-text font-medium flex items-center gap-2 font-mono tracking-wide">
+                                        {device.deviceName}
+                                        {device.isTrusted && (
+                                            <CheckCircle size={14} className="text-jarvis-success" />
+                                        )}
+                                    </h4>
+                                    <p className="text-xs text-jarvis-cyan/60 font-mono">
+                                        Last active: {formatDate(device.lastActive)}
+                                    </p>
+                                </div>
+                            </div>
+                            <Button
+                                variant="danger"
+                                size="sm"
+                                onClick={() => handleRemoveDevice(device.deviceId)}
+                                disabled={removingDeviceId === device.deviceId}
+                                isLoading={removingDeviceId === device.deviceId}
+                                icon={!removingDeviceId && <Trash2 size={16} />}
+                            >
+                                {removingDeviceId !== device.deviceId && "REMOVE"}
+                            </Button>
+                        </div>
+                    ))
+                )}
             </div>
         </div>
     );

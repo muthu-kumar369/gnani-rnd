@@ -10,6 +10,7 @@ import LinkedAccountsSection from './sections/LinkedAccountsSection';
 import ActivityHistorySection from './sections/ActivityHistorySection';
 import PreferencesSection from './sections/PreferencesSection';
 import AboutSection from './sections/AboutSection';
+import AvatarSettings from './AvatarSettings';
 import { useUser } from '../../context/UserContext';
 import { useAuth } from '../../context/AuthContext';
 import Loader from '../ui/Loader';
@@ -41,6 +42,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
             case 'history': return <ActivityHistorySection />;
             case 'preferences': return <PreferencesSection />;
             case 'about': return <AboutSection />;
+            case 'avatar': return <AvatarSettings />;
             default: return <ProfileSection />;
         }
     };

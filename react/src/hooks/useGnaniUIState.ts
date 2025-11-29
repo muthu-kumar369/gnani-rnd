@@ -35,6 +35,8 @@ export interface GnaniUIState {
   latestLLMChunk: string | null;
   latestSTTSegmentId: string | null;
   conversationMessages: Message[]; // New state for managing conversation history
+  avatarEnabled: boolean;
+  avatarGender: 'male' | 'female';
 }
 
 // Define actions for the UI state reducer (optional, but good for complex states)
@@ -55,7 +57,9 @@ type UIAction =
   | { type: 'SET_LATEST_LLM_CHUNK'; payload: string | null }
   | { type: 'SET_LATEST_STT_SEGMENT_ID'; payload: string | null }
   | { type: 'ADD_MESSAGE'; payload: Message } // New action to add/update messages
-  | { type: 'RESET_STREAM_STATE' };
+  | { type: 'RESET_STREAM_STATE' }
+  | { type: 'SET_AVATAR_ENABLED'; payload: boolean }
+  | { type: 'SET_AVATAR_GENDER'; payload: 'male' | 'female' };
 
 
 export const useGnaniUIState = () => {
@@ -80,6 +84,8 @@ export const useGnaniUIState = () => {
     latestLLMChunk: null,
     latestSTTSegmentId: null,
     conversationMessages: [], // Initialize conversation messages
+    avatarEnabled: true, // Default ON
+    avatarGender: 'female', // Default Female
   });
 
   const dispatch = useCallback((action: UIAction) => {
@@ -165,6 +171,12 @@ export const useGnaniUIState = () => {
             // Clear conversation messages on stream reset
             conversationMessages: [],
           };
+          break;
+        case 'SET_AVATAR_ENABLED':
+          newState.avatarEnabled = action.payload;
+          break;
+        case 'SET_AVATAR_GENDER':
+          newState.avatarGender = action.payload;
           break;
         default:
           break;
@@ -386,5 +398,17 @@ export const useGnaniUIState = () => {
   }, [dispatch]);
 
 
-  return useMemo(() => uiState, [uiState]);
+  const setAvatarEnabled = useCallback((enabled: boolean) => {
+    dispatch({ type: 'SET_AVATAR_ENABLED', payload: enabled });
+  }, [dispatch]);
+
+  const setAvatarGender = useCallback((gender: 'male' | 'female') => {
+    dispatch({ type: 'SET_AVATAR_GENDER', payload: gender });
+  }, [dispatch]);
+
+  return useMemo(() => ({
+    ...uiState,
+    setAvatarEnabled,
+    setAvatarGender
+  }), [uiState, setAvatarEnabled, setAvatarGender]);
 };

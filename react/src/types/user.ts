@@ -5,6 +5,8 @@ export interface ISettings {
     theme: 'dark' | 'light' | 'system' | 'jarvis';
     shortcuts: Record<string, string>; // Using Record instead of Map for easier JSON serialization
     speechSpeed: number; // Frontend only requirement
+    avatarEnabled: boolean;
+    avatarGender: 'male' | 'female';
 }
 
 export interface IProfile {

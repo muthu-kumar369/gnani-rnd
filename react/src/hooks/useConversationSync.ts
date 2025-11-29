@@ -25,7 +25,7 @@ export function useConversationSync() {
     // Track last processed items to prevent duplicates
     const lastProcessedSTT = useRef<string | null>(null);
     const lastProcessedLLM = useRef<string | null>(null);
-    const lastProcessedState = useRef<string | null>(null);
+    // lastProcessedState removed - state transitions no longer added to conversation history
 
     /**
      * Sync final STT (user messages)
@@ -104,7 +104,12 @@ export function useConversationSync() {
 
     /**
      * Sync state transitions (system messages)
+     * 
+     * DISABLED: State transitions are no longer added to conversation history
+     * to keep the terminal clean and focused on user/gnani messages only.
+     * State transitions still occur and are logged, just not displayed.
      */
+    /*
     useEffect(() => {
         if (!previousState || state === previousState) {
             return;
@@ -148,6 +153,7 @@ export function useConversationSync() {
             to: state,
         });
     }, [state, previousState, addMessage]);
+    */
 
     // This hook doesn't return anything - it just syncs data
     return null;
