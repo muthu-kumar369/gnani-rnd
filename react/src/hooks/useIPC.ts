@@ -108,7 +108,8 @@ export const useIPC = () => {
         console.log(`[IPC] Received final STT for segment ${segment_id}: "${text}"`);
         errorLogger.debug(`IPC: Final STT: ${text}`, { context: 'useIPC' });
         setLatestFinalSTT(text);
-        setLatestSTTSegmentId(segment_id);
+        // Ensure we always have a segment ID, even for text input echoes
+        setLatestSTTSegmentId(segment_id || `text-${Date.now()}`);
         setLatestPartialSTT(null); // Clear partial when final arrives
       }));
       unsubs.push(window.gnani.stream.on('stream:tts_chunk', ({ chunk }: { chunk: any }) => {
@@ -125,7 +126,9 @@ export const useIPC = () => {
       
       unsubs.push(window.gnani.stream.on('stream:llm_chunk', (data: any) => {
           console.log('[IPC] RAW stream:llm_chunk received:', data); // DEBUG LOG
-          setLatestLLMChunk(data);
+          // Wrap data to ensure state update triggers even for identical content
+          // and to handle both strings and objects safely
+          setLatestLLMChunk({ payload: data, _t: Date.now() });
       }));
     }
 

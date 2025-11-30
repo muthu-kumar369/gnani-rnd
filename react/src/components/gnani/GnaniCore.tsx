@@ -73,7 +73,8 @@ const GnaniCore: React.FC = () => {
     if (!latestLLMChunk || !streamingTTSRef.current) return;
 
     try {
-      let chunk = latestLLMChunk;
+      // Unwrap the payload from useIPC wrapper
+      let chunk = latestLLMChunk.payload;
       if (typeof chunk === 'string') {
         try {
           chunk = JSON.parse(chunk);
@@ -255,6 +256,10 @@ const GnaniCore: React.FC = () => {
 
   const currentUIStatus = getUIStatus();
   const animationState = getAnimationState();
+
+  if (loading) {
+    return null; // Or return <LoadingScreen /> if available and desired
+  }
 
   return (
     <div className="relative w-screen h-screen overflow-hidden font-sans text-white">

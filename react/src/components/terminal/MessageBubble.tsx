@@ -23,8 +23,8 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isLatest }) => {
 
             const interval = setInterval(() => {
                 if (i < text.length) {
-                    setDisplayedText(prev => prev + text.charAt(i));
                     i++;
+                    setDisplayedText(text.substring(0, i));
                 } else {
                     clearInterval(interval);
                 }
