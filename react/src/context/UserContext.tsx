@@ -96,14 +96,16 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
             setUser(userData);
             setError(null);
+            setLoading(false);
         } catch (err: any) {
             errorLogger.error('Failed to fetch user data', err, { context: 'UserContext' });
             if (err.status === 401) {
                 logout();
+                // Don't set loading to false here; keep it true until the redirect happens
+            } else {
+                setError('Failed to load user profile');
+                setLoading(false);
             }
-            setError('Failed to load user profile');
-        } finally {
-            setLoading(false);
         }
     }, [isAuthenticated, logout]);
 
