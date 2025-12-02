@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useUser } from '../../../context/UserContext';
+import { useUserStore } from '../../../store/useUserStore';
 import { useOAuth } from '../../../hooks/useOAuth';
 import SectionHeader from '../SectionHeader';
 import { Link as LinkIcon, Github, Mail, Globe, Loader2 } from 'lucide-react';
@@ -7,7 +7,7 @@ import Loader from '../../ui/Loader';
 import { motion } from 'framer-motion';
 
 const LinkedAccountsSection: React.FC = () => {
-    const { user, loading, unlinkOAuthProvider } = useUser();
+    const { user, loading, unlinkOAuthProvider } = useUserStore();
     const { linkProvider, isAuthenticating } = useOAuth();
     const [unlinkingProvider, setUnlinkingProvider] = useState<string | null>(null);
 

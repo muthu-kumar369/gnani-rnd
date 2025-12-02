@@ -49,6 +49,13 @@ function setupStreamIPC(streamingClient, ttsPlayer) {
     }
   });
 
+  streamingClient.on('stream:tool_status', (payload) => {
+    logger.debug(`Received stream:tool_status from client. Passing to renderer.`);
+    if (global.mainWindow && !global.mainWindow.isDestroyed()) {
+      global.mainWindow.webContents.send('tool:status', payload.tool_status);
+    }
+  });
+
   streamingClient.on('stream:error', (payload) => {
     logger.error('Sending stream:error to renderer.', payload);
     if (global.mainWindow && !global.mainWindow.isDestroyed()) {
@@ -111,6 +118,11 @@ function setupStreamIPC(streamingClient, ttsPlayer) {
   ipcMain.on('stream:setEndpoint', (event, cfg) => {
     logger.info('Received stream:setEndpoint from renderer.', cfg);
     streamingClient.setEndpoint(cfg);
+  });
+
+  ipcMain.on('stream:setSessionId', (event, sessionId) => {
+    logger.info(`Received stream:setSessionId from renderer: ${sessionId}`);
+    streamingClient.setSessionId(sessionId);
   });
 
   ipcMain.on('stream:sendText', (event, text) => {

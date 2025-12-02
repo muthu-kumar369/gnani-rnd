@@ -1,16 +1,23 @@
-import { StrictMode } from "react";
+import { StrictMode, useEffect } from "react";
 import { createRoot } from "react-dom/client";
 import { HashRouter } from "react-router-dom"; // Import HashRouter
 import "./index.css";
 import App from "./App";
-import { AuthProvider } from './context/AuthContext'; // Import AuthProvider
+import { useUserStore } from "./store/useUserStore";
+
+// Initialize store wrapper
+function AppWrapper() {
+  useEffect(() => {
+    useUserStore.getState().initialize();
+  }, []);
+
+  return <App />;
+}
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <HashRouter>
-      <AuthProvider>
-        <App />
-      </AuthProvider>
+      <AppWrapper />
     </HashRouter>
   </StrictMode>
 );

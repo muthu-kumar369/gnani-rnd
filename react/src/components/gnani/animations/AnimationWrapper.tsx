@@ -1,6 +1,6 @@
 import React from 'react';
 
-import CoreOrb from './CoreOrb';
+
 import ListeningAnimation from './ListeningAnimation';
 import SpeakingAnimation from './SpeakingAnimation';
 import ThinkingAnimation from './ThinkingAnimation';
@@ -16,12 +16,12 @@ const AnimationWrapper: React.FC<AnimationWrapperProps> = ({ state, audioLevel }
     // Determine which animation to show based on state
     const renderAnimation = () => {
         switch (state) {
-            case 'listening':
+            case 'streaming':
+            case 'receiving-stt':
             case 'mic-recording':
             case 'wake-word-listening':
                 return <ListeningAnimation audioLevel={audioLevel} />;
 
-            case 'speaking':
             case 'responding':
                 return <SpeakingAnimation />;
 
@@ -29,6 +29,8 @@ const AnimationWrapper: React.FC<AnimationWrapperProps> = ({ state, audioLevel }
                 return <ThinkingAnimation />;
 
             case 'idle':
+            case 'initializing':
+            case 'error':
             default:
                 return <IdleAnimation />;
         }

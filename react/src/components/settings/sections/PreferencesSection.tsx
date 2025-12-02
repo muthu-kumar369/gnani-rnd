@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { useUser } from '../../../context/UserContext';
+import { useUserStore } from '../../../store/useUserStore';
 import { useToast } from '../../../context/ToastContext';
 import SectionHeader from '../SectionHeader';
 import { StickyNote, Database, Plus, Trash2 } from 'lucide-react';
 import Loader from '../../ui/Loader';
 
 const PreferencesSection: React.FC = () => {
-    const { user, loading, addNote, deleteNote } = useUser();
+    const { user, loading, addNote, deleteNote } = useUserStore();
     const { addToast } = useToast();
     const [newNote, setNewNote] = useState('');
     const [isAdding, setIsAdding] = useState(false);
@@ -79,7 +79,7 @@ const PreferencesSection: React.FC = () => {
                     </div>
 
                     <div className="space-y-2">
-                        {user.notes.map((note, index) => (
+                        {user.notes.map((note: string, index: number) => (
                             <div key={index} className="p-3 bg-black/20 rounded-lg border border-cyan-500/10 text-cyan-100 text-sm flex items-center justify-between group">
                                 <span>{note}</span>
                                 <button

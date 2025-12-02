@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { useUser } from '../../../context/UserContext';
+import { useUserStore } from '../../../store/useUserStore';
 import { useToast } from '../../../context/ToastContext';
 import SectionHeader from '../SectionHeader';
 import { Shield, Key, Lock, AlertTriangle, LogOut } from 'lucide-react';
 import Loader from '../../ui/Loader';
 
 const SecuritySection: React.FC = () => {
-    const { user, loading, updateSecurity } = useUser();
+    const { user, loading, updateSecurity } = useUserStore();
     const { addToast } = useToast();
     const [isUpdating, setIsUpdating] = useState(false);
     const [recoveryEmail, setRecoveryEmail] = useState(user?.security.recoveryEmail || '');

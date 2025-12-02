@@ -1,9 +1,9 @@
 import React from 'react';
-import { useUser } from '../../context/UserContext';
+import { useUserStore } from '../../store/useUserStore';
 import errorLogger from '../../utils/errorLogger';
 
 const AvatarSettings: React.FC = () => {
-    const { user, updateSettings } = useUser();
+    const { user, updateSettings } = useUserStore();
     const avatarEnabled = user?.settings?.avatarEnabled ?? true;
     const avatarGender = user?.settings?.avatarGender ?? 'female';
 

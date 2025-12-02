@@ -1,7 +1,7 @@
 // react/src/components/auth/LoginForm.tsx
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
+import { useUserStore } from '../../store/useUserStore';
 import { login } from '../../api/authService';
 import { oauthService } from '../../api/oauthService';
 import errorLogger from '../../utils/errorLogger';
@@ -10,25 +10,23 @@ import { useToast } from '../../context/ToastContext';
 const LoginForm: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const { setAuthState, error } = useAuth();
+  const [localLoading, setLocalLoading] = useState(false);
+  const { loginStart, loginFailure, setAuth, refreshUser, error } = useUserStore();
   const { addToast } = useToast();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
-    setAuthState({ error: null });
+    setLocalLoading(true);
+    loginStart();
 
     try {
       const response = await login(email, password);
-      setAuthState({
-        isAuthenticated: true,
-        user: response.user,
-        accessToken: response.accessToken,
-        refreshToken: response.refreshToken,
-        loading: false,
-      });
+      // Set auth token first
+      setAuth(true, response.accessToken);
+      // Then fetch full user profile
+      await refreshUser();
+
       errorLogger.info('Login successful:', { context: 'LoginForm', extra: response });
       addToast('Login successful!', 'success');
       navigate('/');
@@ -36,15 +34,8 @@ const LoginForm: React.FC = () => {
       errorLogger.error('Login error:', err, { context: 'LoginForm' });
       const errorMessage = err.message || 'An unknown error occurred during login';
       addToast(errorMessage, 'error');
-      setAuthState({
-        isAuthenticated: false,
-        user: null,
-        accessToken: null,
-        refreshToken: null,
-        loading: false,
-        error: errorMessage,
-      });
-      setIsLoading(false);
+      loginFailure(errorMessage);
+      setLocalLoading(false);
     }
   };
 
@@ -65,7 +56,7 @@ const LoginForm: React.FC = () => {
             className="w-full p-3 bg-black/40 border border-jarvis-blue/50 rounded-md focus:outline-none focus:ring-2 focus:ring-jarvis-blue text-cyan-100 placeholder-cyan-700"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            disabled={isLoading}
+            disabled={localLoading}
             required
             placeholder="Enter your email"
           />
@@ -81,7 +72,7 @@ const LoginForm: React.FC = () => {
             className="w-full p-3 bg-black/40 border border-jarvis-blue/50 rounded-md focus:outline-none focus:ring-2 focus:ring-jarvis-blue text-cyan-100 placeholder-cyan-700"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            disabled={isLoading}
+            disabled={localLoading}
             required
             placeholder="Enter your password"
           />
@@ -90,27 +81,22 @@ const LoginForm: React.FC = () => {
         <button
           type="submit"
           className="w-full bg-jarvis-blue text-black py-3 rounded-md font-bold hover:bg-cyan-300 transition-all duration-200 shadow-[0_0_15px_rgba(6,182,212,0.3)] hover:shadow-[0_0_25px_rgba(6,182,212,0.5)]"
-          disabled={isLoading}
+          disabled={localLoading}
         >
-          {isLoading ? 'Logging In...' : 'Login'}
+          {localLoading ? 'Logging In...' : 'Login'}
         </button>
 
         <div className="mt-6 border-t border-jarvis-blue/30 pt-6">
           <button
             type="button"
             onClick={async () => {
-              setIsLoading(true);
-              setAuthState({ error: null });
+              setLocalLoading(true);
+              loginStart();
               try {
                 const response = await oauthService.initiateOAuth('google');
 
-                setAuthState({
-                  isAuthenticated: true,
-                  user: response.user,
-                  accessToken: response.accessToken,
-                  refreshToken: response.refreshToken,
-                  loading: false,
-                });
+                setAuth(true, response.accessToken);
+                await refreshUser();
 
                 errorLogger.info('Google Login successful:', { context: 'LoginForm', extra: response });
                 addToast('Login successful!', 'success');
@@ -119,19 +105,12 @@ const LoginForm: React.FC = () => {
                 errorLogger.error('Google Login error:', err, { context: 'LoginForm' });
                 const errorMessage = err.message || 'An unknown error occurred during Google login';
                 addToast(errorMessage, 'error');
-                setAuthState({
-                  isAuthenticated: false,
-                  user: null,
-                  accessToken: null,
-                  refreshToken: null,
-                  loading: false,
-                  error: errorMessage,
-                });
-                setIsLoading(false);
+                loginFailure(errorMessage);
+                setLocalLoading(false);
               }
             }}
             className="w-full bg-black/40 border border-jarvis-blue/50 text-jarvis-blue py-3 rounded-md font-semibold hover:bg-jarvis-blue/10 hover:border-jarvis-blue transition-all duration-200 flex items-center justify-center gap-3 group"
-            disabled={isLoading}
+            disabled={localLoading}
           >
             <svg className="w-5 h-5 transition-transform group-hover:scale-110" viewBox="0 0 24 24">
               <path

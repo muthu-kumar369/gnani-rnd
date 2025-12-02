@@ -1,9 +1,9 @@
 // react/src/hooks/useConversationSync.ts
 
 import { useEffect, useRef } from 'react';
-import { useConversation } from '../context/ConversationContext';
+import { useConversationStore } from '../store/useConversationStore';
 import { useIPC } from './useIPC';
-import { useGnaniStateContext } from '../context/GnaniStateContext';
+import { useGnaniStore } from '../store/useGnaniStore';
 import errorLogger from '../utils/errorLogger';
 
 /**
@@ -18,9 +18,9 @@ import errorLogger from '../utils/errorLogger';
  * And adds them to the conversation history.
  */
 export function useConversationSync() {
-    const { addMessage } = useConversation();
+    const { addMessage } = useConversationStore();
     const { latestFinalSTT, latestLLMChunk, latestSTTSegmentId } = useIPC();
-    const { state, previousState } = useGnaniStateContext();
+    const { state, previousState } = useGnaniStore();
 
     // Track last processed items to prevent duplicates
     const lastProcessedSegmentId = useRef<string | null>(null);

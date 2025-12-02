@@ -11,8 +11,8 @@ import ActivityHistorySection from './sections/ActivityHistorySection';
 import PreferencesSection from './sections/PreferencesSection';
 import AboutSection from './sections/AboutSection';
 import AvatarSettings from './AvatarSettings';
-import { useUser } from '../../context/UserContext';
-import { useAuth } from '../../context/AuthContext';
+import HotkeySettings from './HotkeySettings';
+import { useUserStore } from '../../store/useUserStore';
 import Loader from '../ui/Loader';
 
 interface SettingsModalProps {
@@ -22,8 +22,7 @@ interface SettingsModalProps {
 
 const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
     const [activeTab, setActiveTab] = useState<SettingsTab>('profile');
-    const { user, loading } = useUser();
-    const { logout } = useAuth();
+    const { user, loading, logout } = useUserStore();
 
     // Reset tab when modal opens
     useEffect(() => {
@@ -41,6 +40,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
             case 'accounts': return <LinkedAccountsSection />;
             case 'history': return <ActivityHistorySection />;
             case 'preferences': return <PreferencesSection />;
+            case 'hotkey': return <HotkeySettings />;
             case 'about': return <AboutSection />;
             case 'avatar': return <AvatarSettings />;
             default: return <ProfileSection />;

@@ -109,6 +109,11 @@ function setupSystemIPC(osAwarenessManager) {
       global.mainWindow.webContents.send('llm:response', data);
     }
   });
+  ipcMain.handle('system:get-hotkey', async () => {
+    const Store = require('electron-store');
+    const store = new Store();
+    return store.get('globalHotkey') || 'CommandOrControl+Shift+Space';
+  });
 }
 
 module.exports = { setupSystemIPC };

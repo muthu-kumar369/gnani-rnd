@@ -1,7 +1,7 @@
 // react/src/components/auth/RegisterForm.tsx
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
+import { useUserStore } from '../../store/useUserStore';
 import { register } from '../../api/authService';
 import errorLogger from '../../utils/errorLogger';
 import { useToast } from '../../context/ToastContext';
@@ -11,27 +11,34 @@ const RegisterForm: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const { setAuthState, loading, error } = useAuth();
+  const [localLoading, setLocalLoading] = useState(false);
+  const { loginStart, loginFailure, error } = useUserStore();
   const { addToast } = useToast();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setAuthState({ loading: true, error: null });
+    setLocalLoading(true);
+    loginStart();
 
     if (password !== confirmPassword) {
       const errorMessage = 'Passwords do not match';
-      setAuthState({ loading: false, error: errorMessage });
+      loginFailure(errorMessage);
       addToast(errorMessage, 'error');
+      setLocalLoading(false);
       return;
     }
 
     try {
       await register(username, email, password);
-      setAuthState({
-        loading: false,
-        error: null,
-      });
+      // Register doesn't automatically login usually, or if it does, we should handle it.
+      // Assuming register just creates account and redirects to login.
+      // So we don't call loginSuccess here.
+
+      // Reset store error/loading
+      loginFailure(''); // Clear error/loading state effectively, or use a reset action. 
+      // Actually loginFailure sets loading false.
+
       errorLogger.info('Registration successful!', { context: 'RegisterForm' });
       addToast('Registration successful! Please log in.', 'success');
       navigate('/login');
@@ -39,10 +46,8 @@ const RegisterForm: React.FC = () => {
       errorLogger.error('Registration error:', err, { context: 'RegisterForm' });
       const errorMessage = err.message || 'An unknown error occurred during registration';
       addToast(errorMessage, 'error');
-      setAuthState({
-        loading: false,
-        error: errorMessage,
-      });
+      loginFailure(errorMessage);
+      setLocalLoading(false);
     }
   };
 
@@ -63,7 +68,7 @@ const RegisterForm: React.FC = () => {
             className="w-full p-3 bg-black/40 border border-jarvis-blue/50 rounded-md focus:outline-none focus:ring-2 focus:ring-jarvis-blue text-cyan-100 placeholder-cyan-700"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
-            disabled={loading}
+            disabled={localLoading}
             required
             placeholder="Choose a username"
           />
@@ -79,7 +84,7 @@ const RegisterForm: React.FC = () => {
             className="w-full p-3 bg-black/40 border border-jarvis-blue/50 rounded-md focus:outline-none focus:ring-2 focus:ring-jarvis-blue text-cyan-100 placeholder-cyan-700"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            disabled={loading}
+            disabled={localLoading}
             required
             placeholder="Enter your email"
           />
@@ -95,7 +100,7 @@ const RegisterForm: React.FC = () => {
             className="w-full p-3 bg-black/40 border border-jarvis-blue/50 rounded-md focus:outline-none focus:ring-2 focus:ring-jarvis-blue text-cyan-100 placeholder-cyan-700"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            disabled={loading}
+            disabled={localLoading}
             required
             placeholder="Create a password"
           />
@@ -111,7 +116,7 @@ const RegisterForm: React.FC = () => {
             className="w-full p-3 bg-black/40 border border-jarvis-blue/50 rounded-md focus:outline-none focus:ring-2 focus:ring-jarvis-blue text-cyan-100 placeholder-cyan-700"
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
-            disabled={loading}
+            disabled={localLoading}
             required
             placeholder="Confirm your password"
           />
@@ -120,9 +125,9 @@ const RegisterForm: React.FC = () => {
         <button
           type="submit"
           className="w-full bg-jarvis-blue text-black py-3 rounded-md font-bold hover:bg-cyan-300 transition-all duration-200 shadow-[0_0_15px_rgba(6,182,212,0.3)] hover:shadow-[0_0_25px_rgba(6,182,212,0.5)]"
-          disabled={loading}
+          disabled={localLoading}
         >
-          {loading ? 'Registering...' : 'Register'}
+          {localLoading ? 'Registering...' : 'Register'}
         </button>
 
         <p className="text-center mt-6 text-sm text-cyan-500/70">

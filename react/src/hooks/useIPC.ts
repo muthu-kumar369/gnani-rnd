@@ -21,6 +21,8 @@ export const useIPC = () => {
   const [latestFinalSTT, setLatestFinalSTT] = useState<string | null>(null);
   const [latestLLMChunk, setLatestLLMChunk] = useState<any>(null);
   const [latestSTTSegmentId, setLatestSTTSegmentId] = useState<string | null>(null); // To help combine partials
+  const [latestSessionId, setLatestSessionId] = useState<string | null>(null);
+  const [toolStatus, setToolStatus] = useState<any>(null);
 
   useEffect(() => {
     if (!window.gnani) return;
@@ -57,10 +59,11 @@ export const useIPC = () => {
     }));
 
     if (window.gnani.stream) {
-      unsubs.push(window.gnani.stream.on('stream:connected', () => {
-        errorLogger.debug('IPC: Stream connected', { context: 'useIPC' });
+      unsubs.push(window.gnani.stream.on('stream:connected', ({ sessionId }: { sessionId?: string }) => {
+        errorLogger.debug(`IPC: Stream connected (Session: ${sessionId})`, { context: 'useIPC' });
         setIsStreamConnected(true);
         setStreamErrorMessage(null);
+        if (sessionId) setLatestSessionId(sessionId);
       }));
       unsubs.push(window.gnani.stream.on('stream:disconnected', () => {
         errorLogger.debug('IPC: Stream disconnected', { context: 'useIPC' });
@@ -124,11 +127,63 @@ export const useIPC = () => {
         window.dispatchEvent(new CustomEvent('tts:interrupted'));
       }));
       
+      // Queue for LLM chunks to prevent React state update flooding
+      const llmChunkQueue: any[] = [];
+      let isProcessingQueue = false;
+
+      const processQueue = () => {
+        if (llmChunkQueue.length === 0) {
+          isProcessingQueue = false;
+          return;
+        }
+
+        isProcessingQueue = true;
+        
+        // Process up to 5 chunks per frame to balance responsiveness and performance
+        // or just take the latest one if we only care about the latest?
+        // Actually, for TTS we might need all of them, but here we are just setting 'latestLLMChunk'.
+        // If the consumer of this hook (GnaniCore) appends them, we must ensure we don't miss any.
+        // BUT, 'latestLLMChunk' implies we only expose the *latest* one.
+        // If the consumer depends on *every* chunk triggering a useEffect, we might have a problem if we batch them.
+        // However, the previous implementation was: setLatestLLMChunk({ payload: data, _t: Date.now() });
+        // This suggests the consumer listens to changes.
+        
+        // Let's try to process one by one but throttled by RAF?
+        // Or better: expose the queue itself? No, that changes the API.
+        
+        // If we receive 10 chunks in 16ms, we want to trigger 10 updates? 
+        // React might batch them anyway.
+        
+        // The goal of backpressure on frontend is to NOT block the main thread.
+        // If we just set state 100 times a second, React will try to re-render.
+        
+        // Let's shift one chunk from the queue and update state.
+        // If there are more, request another frame.
+        
+        const chunk = llmChunkQueue.shift();
+        if (chunk) {
+             setLatestLLMChunk({ payload: chunk, _t: Date.now() });
+        }
+
+        if (llmChunkQueue.length > 0) {
+           requestAnimationFrame(processQueue);
+        } else {
+           isProcessingQueue = false;
+        }
+      };
+
       unsubs.push(window.gnani.stream.on('stream:llm_chunk', (data: any) => {
-          console.log('[IPC] RAW stream:llm_chunk received:', data); // DEBUG LOG
-          // Wrap data to ensure state update triggers even for identical content
-          // and to handle both strings and objects safely
-          setLatestLLMChunk({ payload: data, _t: Date.now() });
+          // console.log('[IPC] RAW stream:llm_chunk received:', data); // Verbose log
+          llmChunkQueue.push(data);
+          if (!isProcessingQueue) {
+            processQueue();
+          }
+      }));
+
+      // Tool Status Listener
+      unsubs.push(window.gnani.stream.on('stream:tool_status', ({ status }: { status: any }) => {
+        console.log('[IPC] Tool Status received:', status);
+        setToolStatus(status);
       }));
     }
 
@@ -156,5 +211,12 @@ export const useIPC = () => {
     latestFinalSTT,
     latestLLMChunk,
     latestSTTSegmentId,
+    sessionId: (latestSessionId as string | null),
+    toolStatus,
+    setSessionId: (sessionId: string) => {
+      if (window.gnani && window.gnani.stream) {
+        window.gnani.stream.setSessionId(sessionId);
+      }
+    }
   };
 };

@@ -112,6 +112,17 @@ declare global {
         getAudioDevices(): Promise<AudioDevices>;
         on(event: string, callback: (...args: any[]) => void): () => void;
       };
+
+      // System settings
+      system?: {
+        getHotkey: () => Promise<string>;
+        updateHotkey: (hotkey: string) => Promise<boolean>;
+      };
+
+      // Notifications
+      notifications?: {
+        show: (title: string, body: string, options?: any) => void;
+      };
     };
   }
 }

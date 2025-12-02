@@ -27,6 +27,7 @@ contextBridge.exposeInMainWorld("gnani", {
       "stream:start",
       "stream:stop",
       "stream:setEndpoint",
+      "stream:setSessionId", // New channel for setting session ID
       "stream:audio-frame", // New channel for sending audio frames
       "stream:start-file-test",
       "stream:sendText", // New channel for sending text input
@@ -72,6 +73,8 @@ contextBridge.exposeInMainWorld("gnani", {
       "tts:started",
       "tts:ended",
       "tts:error",
+      "hotkey:activate-mic",
+      "screenshot:captured",
     ];
     if (validReceiveChannels.includes(channel)) {
       const subscription = (event, ...args) => callback(...args);
@@ -192,6 +195,10 @@ contextBridge.exposeInMainWorld("gnani", {
       logger.info("Preload calling stream:setEndpoint with config:", { context: 'Preload', extra: cfg });
       ipcRenderer.send("stream:setEndpoint", cfg);
     },
+    setSessionId: (sessionId) => {
+      logger.info(`Preload calling stream:setSessionId with: ${sessionId}`, { context: 'Preload' });
+      ipcRenderer.send("stream:setSessionId", sessionId);
+    },
     getStatus: () => {
       logger.info("Preload invoking stream:getStatus", { context: 'Preload' });
       return ipcRenderer.invoke("stream:getStatus");
@@ -261,6 +268,18 @@ contextBridge.exposeInMainWorld("gnani", {
         logger.warn(`Unknown Device event channel: ${event}`, { context: 'Preload' });
         return () => { };
       }
+    },
+  },
+
+  // --- System IPC ---
+  system: {
+    updateHotkey: (hotkey) => {
+      logger.info(`Preload calling system:update-hotkey with: ${hotkey}`, { context: 'Preload' });
+      ipcRenderer.send('system:update-hotkey', hotkey);
+    },
+    getHotkey: () => {
+      logger.info("Preload invoking system:get-hotkey", { context: 'Preload' });
+      return ipcRenderer.invoke('system:get-hotkey');
     },
   },
 });

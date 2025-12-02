@@ -1,5 +1,5 @@
 // electron/main.js
-const { app, BrowserWindow, ipcMain } = require("electron");
+const { app, BrowserWindow, ipcMain, globalShortcut, Tray, Menu, desktopCapturer } = require("electron");
 const path = require("path");
 const Store = require('electron-store');
 const logger = require("./utils/logger");
@@ -15,6 +15,7 @@ const { setupVadIPC } = require("./ipc/vad");
 const { setupStreamIPC } = require("./ipc/stream");
 const { setupAuthIPC } = require("./ipc/auth");
 const { OSAwarenessManager } = require("./device");
+const NotificationManager = require("./notifications/manager");
 
 // Global Error Handlers
 process.on('uncaughtException', (error) => {
@@ -47,6 +48,138 @@ let ttsPlayer;
 let mockServer;
 let store;
 let osAwarenessManager; // Add variable
+let tray = null;
+let notificationManager;
+
+async function captureScreenshot() {
+  try {
+    const sources = await desktopCapturer.getSources({
+      types: ['screen'],
+      thumbnailSize: { width: 1920, height: 1080 }
+    });
+    
+    // Get primary screen
+    const primarySource = sources[0];
+    const screenshot = primarySource.thumbnail.toPNG();
+    
+    return screenshot;
+  } catch (error) {
+    logger.error(`Failed to capture screenshot: ${error.message}`, { context: 'MainProcess' });
+    return null;
+  }
+}
+
+function registerGlobalHotkey() {
+  const hotkey = store.get('globalHotkey') || 'CommandOrControl+Shift+Space';
+  const screenshotHotkey = 'CommandOrControl+Shift+S';
+  
+  // Unregister existing to avoid conflicts if changing
+  globalShortcut.unregisterAll();
+
+  try {
+    // Register Mic Activation Hotkey
+    const success = globalShortcut.register(hotkey, () => {
+      logger.info(`Global hotkey ${hotkey} pressed`, { context: 'MainProcess' });
+      
+      if (mainWindow) {
+        if (mainWindow.isMinimized()) mainWindow.restore();
+        mainWindow.show();
+        mainWindow.focus();
+        
+        // Trigger mic activation
+        mainWindow.webContents.send('hotkey:activate-mic');
+      }
+    });
+    
+    if (!success) {
+      logger.error(`Failed to register global hotkey: ${hotkey}`, { context: 'MainProcess' });
+    } else {
+      logger.info(`Global hotkey registered: ${hotkey}`, { context: 'MainProcess' });
+    }
+
+    // Register Screenshot Hotkey
+    const screenshotSuccess = globalShortcut.register(screenshotHotkey, async () => {
+      logger.info(`Screenshot hotkey ${screenshotHotkey} pressed`, { context: 'MainProcess' });
+      const screenshot = await captureScreenshot();
+      if (screenshot && mainWindow) {
+        mainWindow.show();
+        mainWindow.focus();
+        mainWindow.webContents.send('screenshot:captured', screenshot);
+        logger.info('Screenshot captured and sent to renderer', { context: 'MainProcess' });
+      }
+    });
+
+    if (!screenshotSuccess) {
+      logger.error(`Failed to register screenshot hotkey: ${screenshotHotkey}`, { context: 'MainProcess' });
+    } else {
+      logger.info(`Screenshot hotkey registered: ${screenshotHotkey}`, { context: 'MainProcess' });
+    }
+
+  } catch (error) {
+    logger.error(`Error registering hotkey: ${error.message}`, { context: 'MainProcess' });
+  }
+}
+
+function createTray() {
+  const iconPath = process.platform === 'darwin' 
+    ? path.join(__dirname, 'assets/tray-icon-mac.png')
+    : path.join(__dirname, 'assets/tray-icon.png');
+  
+  try {
+    tray = new Tray(iconPath);
+    
+    const contextMenu = Menu.buildFromTemplate([
+      {
+        label: 'Activate Mic',
+        click: () => {
+          if (mainWindow) {
+            mainWindow.show();
+            mainWindow.webContents.send('hotkey:activate-mic');
+          }
+        }
+      },
+      { type: 'separator' },
+      {
+        label: 'Show/Hide Window',
+        click: () => {
+          if (mainWindow) {
+            if (mainWindow.isVisible()) {
+              mainWindow.hide();
+            } else {
+              mainWindow.show();
+              mainWindow.focus();
+            }
+          }
+        }
+      },
+      { type: 'separator' },
+      {
+        label: 'Quit',
+        click: () => {
+          app.quit();
+        }
+      }
+    ]);
+    
+    tray.setContextMenu(contextMenu);
+    tray.setToolTip('Gnani AI Assistant');
+    
+    tray.on('click', () => {
+      if (mainWindow) {
+        if (mainWindow.isVisible()) {
+          mainWindow.hide();
+        } else {
+          mainWindow.show();
+          mainWindow.focus();
+        }
+      }
+    });
+    
+    logger.info('System tray created successfully', { context: 'MainProcess' });
+  } catch (error) {
+    logger.error(`Failed to create system tray: ${error.message}`, { context: 'MainProcess' });
+  }
+}
 
 function createWindow() {
   const { width, height } = store.get("windowBounds") || { width: 1200, height: 800 };
@@ -200,6 +333,12 @@ async function main() {
       logger.error('Failed to instantiate OS Awareness Manager:', error, { context: 'MainProcess' });
     }
 
+    try {
+      notificationManager = new NotificationManager(mainWindow);
+    } catch (error) {
+      logger.error('Failed to instantiate NotificationManager:', error, { context: 'MainProcess' });
+    }
+
     // Setup IPCs EARLY to ensure handlers are registered even if initialization fails or hangs
     logger.info("Setting up IPCs...", { context: 'MainProcess' });
     try {
@@ -298,6 +437,12 @@ async function main() {
     });
 
     logger.info("All managers initialized and IPCs are set up.", { context: 'MainProcess' });
+
+    // Register Global Hotkey
+    registerGlobalHotkey();
+    
+    // Create System Tray
+    createTray();
   } catch (error) {
     logger.error("CRITICAL ERROR IN MAIN:", error, { context: 'MainProcess' });
   }
@@ -329,6 +474,7 @@ app.on("window-all-closed", () => {
   if (process.platform !== "darwin") {
     app.quit();
   }
+  globalShortcut.unregisterAll();
 });
 
 app.on("activate", () => {
@@ -372,6 +518,18 @@ ipcMain.on("message", (event, channel, ...args) => {
   logger.warn(
     `Unhandled IPC message on channel: "${channel}" with args: ${args}`, { context: 'MainProcess' }
   );
+});
+
+ipcMain.on('system:update-hotkey', (event, newHotkey) => {
+  logger.info(`Received system:update-hotkey with: ${newHotkey}`, { context: 'MainProcess' });
+  store.set('globalHotkey', newHotkey);
+  registerGlobalHotkey(); // Re-register with new hotkey
+});
+
+ipcMain.on('notification:show', (event, { title, body, options }) => {
+  if (notificationManager) {
+    notificationManager.showNotification(title, body, options);
+  }
 });
 
 app.whenReady().then(main);

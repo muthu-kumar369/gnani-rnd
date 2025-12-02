@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useUser } from '../../../context/UserContext';
+import { useUserStore } from '../../../store/useUserStore';
 import { useToast } from '../../../context/ToastContext';
 import SectionHeader from '../SectionHeader';
 import { Smartphone, Laptop, Monitor, Speaker, Trash2, CheckCircle } from 'lucide-react';
@@ -7,7 +7,7 @@ import Loader from '../../ui/Loader';
 import Button from '../../ui/Button';
 
 const DevicesSection: React.FC = () => {
-    const { user, loading, removeDevice } = useUser();
+    const { user, loading, removeDevice } = useUserStore();
     const { addToast } = useToast();
     const [removingDeviceId, setRemovingDeviceId] = useState<string | null>(null);
 

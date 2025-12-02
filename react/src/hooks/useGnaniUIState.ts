@@ -1,6 +1,6 @@
 // react/src/hooks/useGnaniUIState.ts
 import { useEffect, useState, useCallback, useMemo } from 'react';
-import { useAuth } from '../context/AuthContext';
+import { useUserStore } from '../store/useUserStore';
 import { useIPC } from './useIPC';
 import useMicrophone from './useMicrophone';
 import errorLogger from '../utils/errorLogger';
@@ -63,7 +63,7 @@ type UIAction =
 
 
 export const useGnaniUIState = () => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated } = useUserStore();
   const { isMicActive } = useMicrophone();
   const ipcStates = useIPC();
 

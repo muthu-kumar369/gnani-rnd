@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useUser } from '../../../context/UserContext';
+import { useUserStore } from '../../../store/useUserStore';
 import { useToast } from '../../../context/ToastContext';
 import type { ISettings } from '../../../types/user';
 import SectionHeader from '../SectionHeader';
@@ -10,7 +10,7 @@ import Button from '../../ui/Button';
 import Card from '../../ui/Card';
 
 const AssistantSettingsSection: React.FC = () => {
-    const { user, updateSettings, loading } = useUser();
+    const { user, updateSettings, loading } = useUserStore();
     const { addToast } = useToast();
     const [settings, setSettings] = useState<Partial<ISettings>>(user?.settings || {});
     const [isSaving, setIsSaving] = useState(false);

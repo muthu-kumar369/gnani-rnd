@@ -1,12 +1,12 @@
 import { useState, useCallback } from 'react';
 import { oauthService } from '../api/oauthService';
-import { useUser } from '../context/UserContext';
+import { useUserStore } from '../store/useUserStore';
 import { useToast } from '../context/ToastContext';
 import errorLogger from '../utils/errorLogger';
 
 export const useOAuth = () => {
     const [isAuthenticating, setIsAuthenticating] = useState(false);
-    const { refreshUser } = useUser();
+    const { refreshUser } = useUserStore();
     const { addToast } = useToast();
 
     const linkProvider = useCallback(async (provider: string) => {

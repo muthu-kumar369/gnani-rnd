@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { useUser } from '../../../context/UserContext';
+import { useUserStore } from '../../../store/useUserStore';
 import { useToast } from '../../../context/ToastContext';
 import SectionHeader from '../SectionHeader';
 import { MessageSquare, Clock, Trash2 } from 'lucide-react';
 import Loader from '../../ui/Loader';
 
 const ActivityHistorySection: React.FC = () => {
-    const { user, loading, clearHistory, deleteHistoryItem } = useUser();
+    const { user, loading, clearHistory, deleteHistoryItem } = useUserStore();
     const { addToast } = useToast();
     const [isClearing, setIsClearing] = useState(false);
     const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -76,7 +76,7 @@ const ActivityHistorySection: React.FC = () => {
                         No activity history found.
                     </div>
                 ) : (
-                    user.history.map((item) => (
+                    user.history.map((item: any) => (
                         <div
                             key={item.id}
                             className="bg-cyan-900/5 border border-cyan-500/10 rounded-xl p-4 hover:bg-cyan-900/10 transition-colors group relative"

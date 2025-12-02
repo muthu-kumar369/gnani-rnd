@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useUser } from '../../../context/UserContext';
+import { useUserStore } from '../../../store/useUserStore';
 import { useToast } from '../../../context/ToastContext';
 import type { IProfile } from '../../../types/user';
 import SectionHeader from '../SectionHeader';
@@ -8,7 +8,7 @@ import Input from '../../ui/Input';
 import Button from '../../ui/Button';
 
 const ProfileSection: React.FC = () => {
-    const { user, updateProfile } = useUser();
+    const { user, updateProfile } = useUserStore();
     const { addToast } = useToast();
     const [formData, setFormData] = useState<Partial<IProfile>>({});
     const [isSaving, setIsSaving] = useState(false);

@@ -1,8 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Terminal, ChevronDown, Trash2, Maximize2, Minimize2, Keyboard } from 'lucide-react';
-import { useConversation } from '../../context/ConversationContext';
-import { useGnaniStateContext } from '../../context/GnaniStateContext';
+import { useConversationStore } from '../../store/useConversationStore';
+import { useGnaniStore } from '../../store/useGnaniStore';
 import { useDeviceAwareness } from '../../hooks/useDeviceAwareness';
 import MessageBubble from './MessageBubble';
 import StateIndicator from './StateIndicator';
@@ -15,8 +15,8 @@ interface TerminalPanelProps {
 }
 
 const TerminalPanel: React.FC<TerminalPanelProps> = ({ isVisible, onToggle }) => {
-    const { messages, clearMessages } = useConversation();
-    const { transition } = useGnaniStateContext();
+    const { messages, clearMessages, title } = useConversationStore();
+    const { transition } = useGnaniStore();
     const { systemStatus, connectivityStatus } = useDeviceAwareness();
     const scrollRef = useRef<HTMLDivElement>(null);
     const [isExpanded, setIsExpanded] = useState(false);
@@ -64,7 +64,9 @@ const TerminalPanel: React.FC<TerminalPanelProps> = ({ isVisible, onToggle }) =>
             <div className="relative z-10 flex items-center justify-between px-4 py-2 bg-cyan-950/50 border-b border-cyan-500/30">
                 <div className="flex items-center gap-2 text-cyan-400">
                     <Terminal size={14} />
-                    <span className="text-xs font-bold uppercase tracking-wider">Gnani Terminal</span>
+                    <span className="text-xs font-bold uppercase tracking-wider">
+                        {title ? (title.length > 30 ? `${title.substring(0, 30)}...` : title) : 'Gnani Terminal'}
+                    </span>
                 </div>
 
                 <div className="flex items-center gap-1">

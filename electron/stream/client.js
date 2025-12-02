@@ -69,9 +69,12 @@ class StreamingClient extends EventEmitter {
 
   async startSession(metadata) {
     const userId = this.store.get('userId') || "electron-user";
+    // Use the explicitly set session ID if available (for resumption), otherwise let backend generate one (or pass null)
+    const sessionIdToPass = this.currentSessionId;
+
     return new Promise((resolve, reject) => {
       this.grpcClient.StartSession(
-        { user_id: userId },
+        { user_id: userId, session_id: sessionIdToPass },
         metadata,
         (error, response) => {
           if (error) {
@@ -168,67 +171,43 @@ class StreamingClient extends EventEmitter {
     this.call = this.grpcClient.SendAudioStream(metadata);
     this.isConnected = true;
     this.backoff.reset();
-    this.emit("stream:connected", { sessionId: this.currentSessionId });
-    logger.info(
-      `gRPC stream connected with Session ID: ${this.currentSessionId}`,
-      { context: "StreamingClient" }
-    );
 
-    this.call.on("data", (response) => {
-      logger.info('[gRPC] Received data:', response, { context: 'StreamingClient' }); // DEBUG LOG
-      if (response.partial_text && response.partial_text.trim() !== '') {
-        this.emit("stream:partial", { text: response.partial_text });
+    this.call.on('data', (data) => {
+      // Handle backpressure: if main window is not available or destroyed, pause stream
+      if (!this.options.mainWindow || this.options.mainWindow.isDestroyed()) {
+        logger.warn('Main window not available. Pausing stream.', { context: 'StreamingClient' });
+        this.pause();
+        return;
       }
 
-      // Handle LLM text chunks
-      if (response.llm_chunk) {
-        console.log(`[StreamingClient] Received LLM chunk: "${response.llm_chunk}"`);
-        if (response.llm_chunk.trim() !== '') {
-          this.emit("stream:llm_chunk", { chunk: response.llm_chunk });
-        } else {
-          console.log('[StreamingClient] Ignored empty LLM chunk');
+      if (data.partial_text) {
+        this.emit('stream:partial', { text: data.partial_text, segment_id: data.segment_id });
+        this.metrics.recordTranscriptPartial();
+      }
+      if (data.final_text) {
+        this.emit('stream:final', { text: data.final_text, segment_id: data.segment_id });
+        this.metrics.recordTranscriptFinal();
+      }
+      if (data.llm_chunk) {
+        try {
+          // Parse if it's a string, otherwise use as is
+          const chunk = typeof data.llm_chunk === 'string' ? JSON.parse(data.llm_chunk) : data.llm_chunk;
+          this.emit('stream:llm_chunk', { chunk });
+          this.metrics.recordTtsChunkReceived(); // Reusing metric for now
+        } catch (e) {
+          logger.error('Failed to parse LLM chunk:', e, { context: 'StreamingClient' });
         }
       }
-
-      if (response.final_text && response.final_text.trim() !== '') {
-        this.emit("stream:final", { text: response.final_text });
+      if (data.tool_status) {
+        this.emit('stream:tool_status', { tool_status: data.tool_status });
       }
-
-      if (response.error_message && response.error_message.trim() !== '') {
-        this.emit("stream:error", { message: response.error_message });
-      }
+      
+      this.metrics.recordBytesReceived(JSON.stringify(data).length); // Approx size
     });
 
-    this.call.on("error", async (error) => {
-      logger.error(
-        `gRPC stream error: ${error.details || error.message} (Code: ${error.code
-        })`,
-        { context: "StreamingClient" }
-      );
-      this.handleDisconnect();
-      if (
-        error.code === grpc.status.UNAUTHENTICATED &&
-        !this.isRefreshingToken
-      ) {
-        this.isRefreshingToken = true;
-        logger.info("Attempting to refresh token due to UNAUTHENTICATED error...", { context: "StreamingClient" });
-        try {
-          const newTokens = await this.refreshTokensAndReconnect();
-          if (newTokens) {
-            logger.info("Tokens refreshed. A new connection will be attempted on next audio start.", { context: "StreamingClient" });
-          } else {
-            this.emit("stream:error", { message: "Session expired. Please log in again." });
-            if (this.options.mainWindow) {
-              this.options.mainWindow.webContents.send("auth:force-logout");
-            }
-          }
-        } catch (refreshError) {
-          logger.error("Error during token refresh:", refreshError, { context: "StreamingClient" });
-          this.emit("stream:error", { message: "Failed to refresh session." });
-        } finally {
-          this.isRefreshingToken = false;
-        }
-      }
+    this.call.on('error', (error) => {
+      logger.error('gRPC stream error:', error, { context: 'StreamingClient' });
+      this.handleDisconnect(true);
     });
 
     this.call.on("end", () => {
@@ -239,30 +218,17 @@ class StreamingClient extends EventEmitter {
     });
   }
 
-  async refreshTokensAndReconnect() {
-    const refreshToken = this.store.get("refreshToken");
-    if (!refreshToken) {
-      logger.error("No refresh token available.", {
-        context: "StreamingClient",
-      });
-      return null;
+  pause() {
+    if (this.call && !this.call.isPaused()) {
+      logger.info('Pausing gRPC stream.', { context: 'StreamingClient' });
+      this.call.pause();
     }
-    try {
-      const newTokens = await this.options.callRefreshTokenApiFromMain(refreshToken);
-      if (newTokens && newTokens.accessToken && newTokens.refreshToken) {
-        this.store.set("accessToken", newTokens.accessToken);
-        this.store.set("refreshToken", newTokens.refreshToken);
-        logger.info("New tokens stored after successful refresh.", {
-          context: "StreamingClient",
-        });
-        return newTokens;
-      }
-      return null;
-    } catch (error) {
-      logger.error("callRefreshTokenApiFromMain failed:", error, {
-        context: "StreamingClient",
-      });
-      return null;
+  }
+
+  resume() {
+    if (this.call && this.call.isPaused()) {
+      logger.info('Resuming gRPC stream.', { context: 'StreamingClient' });
+      this.call.resume();
     }
   }
 
@@ -404,6 +370,21 @@ class StreamingClient extends EventEmitter {
       });
       this.emit("stream:error", { message: "Failed to send audio data." });
     }
+  }
+
+  async setSessionId(sessionId) {
+    logger.info(`Switching to session ID: ${sessionId}`, { context: 'StreamingClient' });
+    if (this.currentSessionId === sessionId) return;
+
+    // If we are currently connected/streaming, we need to restart the session
+    if (this.isConnected) {
+      logger.info('Disconnecting current session to switch...', { context: 'StreamingClient' });
+      await this.handleDisconnect();
+    }
+
+    this.currentSessionId = sessionId;
+    // We don't automatically connect here; we wait for the next interaction (mic start or text input)
+    // to trigger connection, which will now use this new sessionId.
   }
 
   setEndpoint(cfg) {

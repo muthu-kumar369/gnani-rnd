@@ -1,47 +1,28 @@
 // /react/src/App.tsx
-import { useState, useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import GnaniCore from './components/gnani/GnaniCore';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
-import { useAuth } from './context/AuthContext';
+import { useUserStore } from './store/useUserStore';
 import { ToastProvider } from './context/ToastContext';
-import { UserProvider } from './context/UserContext';
-import { GnaniStateProvider } from './context/GnaniStateContext';
-import { ConversationProvider } from './context/ConversationContext';
 import LoadingScreen from './components/common/LoadingScreen';
 
 // Protected Route Wrapper - only renders when authenticated
 function ProtectedRoute() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated } = useUserStore();
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
 
-  return (
-    <UserProvider>
-      <GnaniStateProvider>
-        <ConversationProvider>
-          <GnaniCore />
-        </ConversationProvider>
-      </GnaniStateProvider>
-    </UserProvider>
-  );
+  return <GnaniCore />;
 }
 
 function App() {
-  const { isAuthenticated, loading } = useAuth();
-  const [minLoadComplete, setMinLoadComplete] = useState(false);
+  const { isAuthenticated, loading } = useUserStore();
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setMinLoadComplete(true);
-    }, 2000); // Minimum 2 seconds loading screen
-    return () => clearTimeout(timer);
-  }, []);
-
-  if (loading || !minLoadComplete) {
+  // Show loading screen only while checking authentication
+  if (loading) {
     return <LoadingScreen />;
   }
 

@@ -1,5 +1,5 @@
 import React from 'react';
-import { useAuth } from '../../context/AuthContext';
+import { useUserStore } from '../../store/useUserStore';
 import {
     User,
     Settings,
@@ -9,7 +9,8 @@ import {
     Clock,
     Sliders,
     Info,
-    LogOut
+    LogOut,
+    Keyboard
 } from 'lucide-react';
 
 export type SettingsTab =
@@ -20,6 +21,7 @@ export type SettingsTab =
     | 'accounts'
     | 'history'
     | 'preferences'
+    | 'hotkey'
     | 'about'
     | 'avatar';
 
@@ -36,12 +38,13 @@ const MENU_ITEMS: { id: SettingsTab; label: string; icon: React.ElementType }[] 
     { id: 'accounts', label: 'Linked Accounts', icon: LinkIcon },
     { id: 'history', label: 'Activity History', icon: Clock },
     { id: 'preferences', label: 'Preferences', icon: Sliders },
+    { id: 'hotkey', label: 'Hotkey', icon: Keyboard }, // Add Hotkey tab
     { id: 'about', label: 'About', icon: Info },
     { id: 'avatar', label: 'Avatar', icon: User }, // Using User icon for Avatar as well
 ];
 
 const SettingsSidebar: React.FC<SettingsSidebarProps> = ({ activeTab, onTabChange }) => {
-    const { logout } = useAuth();
+    const { logout } = useUserStore();
 
     return (
         <div className="w-64 bg-jarvis-panel border-r border-jarvis-border flex flex-col h-full">

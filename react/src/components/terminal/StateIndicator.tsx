@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Mic, Brain, MessageSquare, Power, ArrowRight } from 'lucide-react';
-import type { ConversationMessage } from '../../context/ConversationContext';
+import type { ConversationMessage } from '../../store/useConversationStore';
 
 interface StateIndicatorProps {
     message: ConversationMessage;

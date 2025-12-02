@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Command, Globe, FolderOpen, Settings, Play } from 'lucide-react';
-import type { ConversationMessage } from '../../context/ConversationContext';
+import type { ConversationMessage } from '../../store/useConversationStore';
 
 interface ActionIndicatorProps {
     message: ConversationMessage;
