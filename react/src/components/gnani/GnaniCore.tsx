@@ -19,7 +19,6 @@ import IntelligencePanel from "./IntelligencePanel";
 import SpokenTextDisplay from "./SpokenTextDisplay";
 import SettingsModal from "../settings/SettingsModal";
 import AnimationWrapper from "./animations/AnimationWrapper";
-// import AvatarContainer from "./avatar/AvatarContainer";
 import StatusDisplay from "./StatusDisplay";
 import TerminalPanel from "../terminal/TerminalPanel";
 import SystemIndicators from "../device/SystemIndicators";
@@ -37,7 +36,7 @@ const GnaniCore: React.FC = () => {
   const streamingTTSRef = useRef<StreamingTTS | null>(null);
 
   const [showIntelligencePanel, setShowIntelligencePanel] = useState(false);
-  const [showTerminal, setShowTerminal] = useState(true);
+  const [showTerminal, setShowTerminal] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const lastProcessedFinalSTT = useRef<string | null>(null);
 
@@ -341,16 +340,6 @@ const GnaniCore: React.FC = () => {
         <div className="relative flex items-center justify-center">
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             <AnimationWrapper state={currentUIStatus} audioLevel={audioLevel} />
-            {!loading && (
-              // AvatarContainer hidden by request
-              null
-              /* <AvatarContainer
-               status={currentUIStatus}
-               isSpeaking={isSpeaking}
-               avatarEnabled={uiState.avatarEnabled}
-               avatarGender={uiState.avatarGender}
-             /> */
-            )}
           </div>
 
           <div className="relative z-10">

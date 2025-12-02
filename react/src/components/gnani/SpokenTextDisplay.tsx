@@ -44,8 +44,8 @@ const SpokenTextDisplay: React.FC<SpokenTextDisplayProps> = ({ words, isVisible 
                     </div>
 
                     {/* Spoken Text */}
-                    <div className="text-center min-h-[60px] flex items-center justify-center">
-                        <motion.p className="text-2xl md:text-3xl font-display leading-relaxed">
+                    <div className="min-h-[60px] flex items-start">
+                        <motion.p className="text-2xl md:text-3xl font-display leading-[1.6] text-left">
                             {words.map((word, index) => (
                                 <motion.span
                                     key={`${word.text}-${index}`}
@@ -75,6 +75,11 @@ const SpokenTextDisplay: React.FC<SpokenTextDisplayProps> = ({ words, isVisible 
                                     {word.text}
                                 </motion.span>
                             ))}
+                            <motion.span
+                                className="inline-block w-2 h-6 bg-cyan-400 ml-1 align-middle"
+                                animate={{ opacity: [1, 0] }}
+                                transition={{ duration: 0.8, repeat: Infinity }}
+                            />
                         </motion.p>
                     </div>
 

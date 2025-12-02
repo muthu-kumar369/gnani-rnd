@@ -7,6 +7,16 @@ interface StatusDisplayProps {
 }
 
 const StatusDisplay: React.FC<StatusDisplayProps> = ({ status, subtext }) => {
+    const getDisplayText = (s: string) => {
+        switch (s) {
+            case 'THINKING': return 'PROCESSING...';
+            case 'LISTENING': return 'LISTENING...';
+            case 'SPEAKING': return 'SPEAKING';
+            case 'ERROR': return 'SYSTEM ERROR';
+            default: return s;
+        }
+    };
+
     return (
         <div className="flex flex-col items-center justify-center gap-2">
             <AnimatePresence mode="wait">
@@ -19,7 +29,7 @@ const StatusDisplay: React.FC<StatusDisplayProps> = ({ status, subtext }) => {
                     className="text-3xl font-bold tracking-widest text-cyan-100 uppercase"
                     style={{ textShadow: "0 0 10px rgba(6,182,212,0.8)" }}
                 >
-                    {status}
+                    {getDisplayText(status)}
                 </motion.h2>
             </AnimatePresence>
 

@@ -50,7 +50,7 @@ let osAwarenessManager; // Add variable
 
 function createWindow() {
   const { width, height } = store.get("windowBounds") || { width: 1200, height: 800 };
-  
+
   mainWindow = new BrowserWindow({
     width,
     height,
@@ -62,6 +62,8 @@ function createWindow() {
     titleBarStyle: 'default', // Restore default title bar
     backgroundColor: '#000000',
   });
+
+  mainWindow.setMenu(null);
 
   const startUrl = process.env.NODE_ENV === "development"
     ? "http://localhost:5173"
@@ -93,7 +95,7 @@ const callRefreshTokenApiFromMain = async (refreshToken) => {
   try {
     const API_BASE_URL = "http://localhost:3000/api/auth";
     logger.info('Attempting to refresh token from main process...', { context: 'MainProcess' });
-    
+
     const response = await fetch(`${API_BASE_URL}/refresh`, {
       method: "POST",
       headers: {
@@ -123,13 +125,40 @@ const callRefreshTokenApiFromMain = async (refreshToken) => {
 async function main() {
   try {
     logger.info("Starting main function...", { context: 'MainProcess' });
+    // Single Instance Lock
+    const gotTheLock = app.requestSingleInstanceLock();
+    if (!gotTheLock) {
+      logger.info("Another instance is already running. Quitting...", { context: 'MainProcess' });
+      app.quit();
+      return;
+    }
+
+    app.on('second-instance', (event, commandLine, workingDirectory) => {
+      // Someone tried to run a second instance, we should focus our window.
+      if (mainWindow) {
+        if (mainWindow.isMinimized()) mainWindow.restore();
+        mainWindow.focus();
+      }
+    });
+
+    // Content Security Policy (CSP)
+    const { session } = require('electron');
+    session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
+      callback({
+        responseHeaders: {
+          ...details.responseHeaders,
+          'Content-Security-Policy': ["default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: ws: http://localhost:3000 https://fonts.googleapis.com https://fonts.gstatic.com; img-src 'self' data: blob: https:; media-src 'self' data: blob:;"]
+        }
+      });
+    });
+
     store = new Store();
 
     logger.info("Creating window...", { context: 'MainProcess' });
     createWindow();
 
     logger.info("Initializing managers...", { context: 'MainProcess' });
-    
+
     try {
       micCapture = new MicCapture();
     } catch (error) {
@@ -178,25 +207,25 @@ async function main() {
     } catch (error) {
       logger.error('Failed to setup Audio IPC:', error, { context: 'MainProcess' });
     }
-    
+
     try {
       setupSystemIPC(osAwarenessManager); // Pass manager
     } catch (error) {
       logger.error('Failed to setup System IPC:', error, { context: 'MainProcess' });
     }
-    
+
     try {
       setupWakeIPC(wakeManager);
     } catch (error) {
       logger.error('Failed to setup Wake IPC:', error, { context: 'MainProcess' });
     }
-    
+
     try {
       setupVadIPC(vadManager);
     } catch (error) {
       logger.error('Failed to setup VAD IPC:', error, { context: 'MainProcess' });
     }
-    
+
     try {
       setupStreamIPC(streamingClient, ttsPlayer);
     } catch (error) {
@@ -208,7 +237,7 @@ async function main() {
     } catch (error) {
       logger.error('Failed to setup Auth IPC:', error, { context: 'MainProcess' });
     }
-    
+
     // Initialize OS Awareness (Async)
     if (osAwarenessManager) {
       try {
@@ -223,22 +252,22 @@ async function main() {
 
     logger.info("Initializing Wake Manager...", { context: 'MainProcess' });
     try {
-        await wakeManager.initialize();
+      await wakeManager.initialize();
     } catch (error) {
-        logger.error('Failed to initialize Wake Manager:', error, { context: 'MainProcess' });
+      logger.error('Failed to initialize Wake Manager:', error, { context: 'MainProcess' });
     }
 
     logger.info("Initializing VAD Manager...", { context: 'MainProcess' });
     try {
-        await vadManager.init();
+      await vadManager.init();
     } catch (error) {
-        logger.error('Failed to initialize VAD Manager:', error, { context: 'MainProcess' });
+      logger.error('Failed to initialize VAD Manager:', error, { context: 'MainProcess' });
     }
 
     logger.info("Setting up VAD listeners...", { context: 'MainProcess' });
     vadManager.on('speech:start', () => {
       logger.info('VAD detected speech.', { context: 'MainProcess' });
-      
+
       // Barge-in logic: If TTS is playing, stop it immediately
       if (isFrontendSpeaking) {
         logger.info('Barge-in detected! Stopping TTS.', { context: 'MainProcess' });

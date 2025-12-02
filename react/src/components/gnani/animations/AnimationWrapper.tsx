@@ -1,6 +1,6 @@
 import React from 'react';
 
-import AdvancedAvatar from '../AdvancedAvatar';
+import CoreOrb from './CoreOrb';
 import type { GnaniAppStatus } from '../../../hooks/useGnaniUIState';
 
 interface AnimationWrapperProps {
@@ -11,7 +11,7 @@ interface AnimationWrapperProps {
 const AnimationWrapper: React.FC<AnimationWrapperProps> = ({ state, audioLevel }) => {
     return (
         <div className="relative w-80 h-80 flex items-center justify-center">
-            <AdvancedAvatar status={state} audioLevel={audioLevel} />
+            <CoreOrb status={state} audioLevel={audioLevel} />
         </div>
     );
 };
