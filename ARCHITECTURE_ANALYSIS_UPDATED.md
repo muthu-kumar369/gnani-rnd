@@ -258,11 +258,19 @@ Cross-platform desktop support with single codebase.
 
 1. **Conversation History**: Does the terminal show only current session, or can users view/search past conversations?
 
+    Answer: we can show the past conversation as well, for that we need to develop the api and backend development as well. So we need to implemnet this in both places.
+
 2. **Tool Execution**: Would you like to show which tool is running (e.g., "🔍 Searching web...") during "PROCESSING..." state?
+
+    Answer: Yes this would be better while we can't broke the existing flow.
 
 3. **Offline Mode**: Is local Whisper (Whisper.cpp) a priority for offline STT?
 
+    Answer: For now we can skip that while we need to create the prompt for offline stt. That time you can create prompt for this as well
+
 4. **Memory System**: Are you satisfied with current response quality, or should we optimize vector search latency?
+
+    Answer: Currently we have improved that that i need test that, if you feel still it's lack the we can do that.
 
 ---
 
