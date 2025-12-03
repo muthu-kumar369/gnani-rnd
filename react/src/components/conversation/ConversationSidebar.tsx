@@ -118,7 +118,7 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
 
                         {/* List */}
                         <div
-                            className="flex-1 overflow-y-auto p-4 space-y-1 scrollbar-thin scrollbar-thumb-jarvis-blue/30 scrollbar-track-transparent"
+                            className="flex-1 overflow-y-auto p-4 space-y-1 custom-scrollbar"
                             onScroll={handleScroll}
                         >
                             {conversations.length === 0 && !isLoading ? (

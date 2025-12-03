@@ -37,6 +37,21 @@ function setupVadIPC(vadManager) {
     }
   });
 
+  // Forward VAD calibration events
+  vadManager.on('vad:calibrated', (data) => {
+    logger.info('VAD calibration complete, notifying renderer', data);
+    if (global.mainWindow && !global.mainWindow.isDestroyed()) {
+      global.mainWindow.webContents.send('vad:calibrated', data);
+    }
+  });
+
+  vadManager.on('vad:recalibrating', () => {
+    logger.info('VAD recalibration started, notifying renderer');
+    if (global.mainWindow && !global.mainWindow.isDestroyed()) {
+      global.mainWindow.webContents.send('vad:recalibrating');
+    }
+  });
+
   // Renderer -> Main
   ipcMain.on('vad:start', () => {
     logger.info('Received vad:start from renderer.');
@@ -56,6 +71,11 @@ function setupVadIPC(vadManager) {
   ipcMain.on('vad:setAggressiveness', (event, level) => {
     logger.info(`Received vad:setAggressiveness from renderer: ${level}`);
     vadManager.setAggressiveness(level);
+  });
+
+  ipcMain.on('vad:recalibrate', () => {
+    logger.info('Received vad:recalibrate from renderer.');
+    vadManager.recalibrate();
   });
 }
 

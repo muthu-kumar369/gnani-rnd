@@ -217,12 +217,12 @@ const GnaniCore: React.FC = () => {
   // Timeout guard for thinking state (10 seconds)
   useEffect(() => {
     if (isThinking) {
-      console.log('[GnaniCore] Thinking state entered, setting 10s timeout guard');
+      console.log('[GnaniCore] Thinking state entered, setting 30s timeout guard');
       const timeout = setTimeout(() => {
-        errorLogger.error('Thinking state timeout (10s), recovering to idle', null, { context: 'GnaniCore' });
+        errorLogger.error('Thinking state timeout (30s), recovering to idle', null, { context: 'GnaniCore' });
         showNotification('Error', 'Response timeout - returning to idle');
         transition('error');
-      }, 10000);
+      }, 30000);
 
       return () => {
         console.log('[GnaniCore] Thinking state exited, clearing timeout');

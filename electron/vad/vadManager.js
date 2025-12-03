@@ -20,6 +20,15 @@ class VadManager extends EventEmitter {
       speechEndThreshold: 20, // Frames of silence needed to end (~600ms, reduced from 1.35s for faster response)
       hysteresisMargin: 2, // Additional frames needed to change state (prevents flapping)
     };
+    
+    // Adaptive VAD with noise profiling
+    this.noiseProfile = null;
+    this.adaptiveThreshold = 0.5; // Default threshold
+    this.calibrationSamples = [];
+    this.isCalibrated = false;
+    this.calibrationFramesNeeded = 100; // 2 seconds at 50fps
+    this.energyHistory = [];
+    
     logger.info("VadManager initialized.", { context: 'VadManager' });
   }
 
@@ -33,9 +42,20 @@ class VadManager extends EventEmitter {
       return;
     }
 
+    // Perform noise calibration if not yet calibrated
+    if (!this.isCalibrated && this.state === "monitoring") {
+      this.calibrateNoise(frame);
+    }
+
     this.vadEngine
       .processAudioFrame(frame)
       .then(({ speech }) => {
+        // Use adaptive threshold if calibrated
+        let isSpeech = speech;
+        if (this.isCalibrated && this.energyHistory.length > 0) {
+          const currentEnergy = this.calculateEnergy(frame);
+          isSpeech = currentEnergy > this.adaptiveThreshold;
+        }
         // Emit frame if we're in speech segment
         if (this.state === "speech_started") {
           this.emit("audio:frame", frame);
@@ -46,7 +66,7 @@ class VadManager extends EventEmitter {
           this.emit("vad:speech-frame", { speech });
         }
 
-        if (speech) {
+        if (isSpeech) {
           this.nonSpeechFramesCount = 0;
           this.speechFramesCount++;
 
@@ -164,6 +184,97 @@ class VadManager extends EventEmitter {
     logger.info(`VAD config updated from ${JSON.stringify(oldConfig)} to ${JSON.stringify(this.config)}`, { context: 'VadManager' });
   }
 
+  /**
+   * Calibrate noise floor using audio samples
+   * Automatically called during first 2 seconds of monitoring
+   */
+  calibrateNoise(audioFrame) {
+    if (this.calibrationSamples.length < this.calibrationFramesNeeded) {
+      this.calibrationSamples.push(audioFrame);
+      
+      // Log progress every 25 frames (~0.5 seconds)
+      if (this.calibrationSamples.length % 25 === 0) {
+        logger.debug(`VAD calibration progress: ${this.calibrationSamples.length}/${this.calibrationFramesNeeded}`, { context: 'VadManager' });
+      }
+      return;
+    }
+
+    // Calculate noise floor from calibration samples
+    const noiseEnergies = this.calibrationSamples.map(sample => this.calculateEnergy(sample));
+    
+    const avgNoise = noiseEnergies.reduce((a, b) => a + b, 0) / noiseEnergies.length;
+    const stdNoise = this.calculateStdDev(noiseEnergies, avgNoise);
+    
+    // Set adaptive threshold: 3 standard deviations above noise floor
+    this.adaptiveThreshold = avgNoise + (3 * stdNoise);
+    this.noiseProfile = { avgNoise, stdNoise };
+    this.isCalibrated = true;
+    
+    logger.info('VAD calibrated successfully', { 
+      context: 'VadManager',
+      avgNoise: avgNoise.toFixed(4), 
+      stdNoise: stdNoise.toFixed(4), 
+      threshold: this.adaptiveThreshold.toFixed(4)
+    });
+    
+    // Emit calibration complete event
+    this.emit('vad:calibrated', {
+      avgNoise,
+      stdNoise,
+      threshold: this.adaptiveThreshold
+    });
+  }
+
+  /**
+   * Calculate energy of audio frame
+   */
+  calculateEnergy(audioFrame) {
+    if (!audioFrame || audioFrame.length === 0) return 0;
+    
+    let sum = 0;
+    for (let i = 0; i < audioFrame.length; i += 2) {
+      // Convert bytes to 16-bit PCM sample
+      const sample = audioFrame.readInt16LE(i);
+      sum += sample * sample;
+    }
+    
+    const energy = Math.sqrt(sum / (audioFrame.length / 2));
+    this.energyHistory.push(energy);
+    
+    // Keep only last 100 energy values
+    if (this.energyHistory.length > 100) {
+      this.energyHistory.shift();
+    }
+    
+    return energy;
+  }
+
+  /**
+   * Calculate standard deviation
+   */
+  calculateStdDev(values, mean) {
+    if (values.length === 0) return 0;
+    
+    const squareDiffs = values.map(value => Math.pow(value - mean, 2));
+    const avgSquareDiff = squareDiffs.reduce((a, b) => a + b, 0) / values.length;
+    return Math.sqrt(avgSquareDiff);
+  }
+
+  /**
+   * Manually trigger recalibration
+   * Useful when environment noise changes
+   */
+  recalibrate() {
+    logger.info('Manual VAD recalibration triggered', { context: 'VadManager' });
+    this.isCalibrated = false;
+    this.calibrationSamples = [];
+    this.energyHistory = [];
+    this.adaptiveThreshold = 0.5; // Reset to default
+    this.noiseProfile = null;
+    
+    this.emit('vad:recalibrating');
+  }
+
   getStatus() {
     return {
       state: this.state,
@@ -171,6 +282,10 @@ class VadManager extends EventEmitter {
       config: this.config,
       speechFramesCount: this.speechFramesCount,
       nonSpeechFramesCount: this.nonSpeechFramesCount,
+      isCalibrated: this.isCalibrated,
+      calibrationProgress: this.isCalibrated ? 100 : Math.floor((this.calibrationSamples.length / this.calibrationFramesNeeded) * 100),
+      noiseProfile: this.noiseProfile,
+      adaptiveThreshold: this.adaptiveThreshold,
     };
   }
 
