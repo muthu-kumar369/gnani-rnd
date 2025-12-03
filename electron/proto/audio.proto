@@ -1,0 +1,41 @@
+syntax = "proto3";
+
+package gnani;
+
+service GnaniService {
+  rpc StartSession(StartSessionRequest) returns (StartSessionResponse);
+  rpc SendAudioStream(stream AudioStreamRequest) returns (stream AudioResponse);
+  rpc EndSession(EndSessionRequest) returns (EndSessionResponse);
+}
+
+message StartSessionRequest {
+  string user_id = 1;
+}
+
+message StartSessionResponse {
+  string session_id = 1;
+}
+
+message AudioStreamRequest {
+  string session_id = 1;
+  bytes audio_chunk = 2;
+  bool end_of_stream = 3;
+  string text_input = 4;
+}
+
+message AudioResponse {
+  oneof event {
+    string partial_text = 1;
+    string llm_chunk = 2;
+    string final_text = 3;
+    string error_message = 4;
+  }
+}
+
+message EndSessionRequest {
+  string session_id = 1;
+}
+
+message EndSessionResponse {
+  string message = 1;
+}
