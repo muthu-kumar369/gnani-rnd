@@ -56,8 +56,29 @@ const GnaniCore: React.FC = () => {
 
   // Initialize Gnani Store (State Machine)
   useEffect(() => {
+    console.log('[GnaniCore] Initializing Gnani Store');
     initGnaniStore();
   }, [initGnaniStore]);
+
+  // Debug: Log state changes
+  useEffect(() => {
+    console.log('[GnaniCore] State changed:', state, {
+      isIdle,
+      isListening,
+      isThinking,
+      isSpeaking
+    });
+  }, [state, isIdle, isListening, isThinking, isSpeaking]);
+
+  // Debug: Log IPC state
+  useEffect(() => {
+    console.log('[GnaniCore] IPC State:', {
+      isWakeWordTriggered,
+      isTtsStarted,
+      isTtsEnded,
+      latestFinalSTT: latestFinalSTT?.substring(0, 50)
+    });
+  }, [isWakeWordTriggered, isTtsStarted, isTtsEnded, latestFinalSTT]);
 
   useEffect(() => {
     streamingTTSRef.current = new StreamingTTS();
@@ -193,6 +214,60 @@ const GnaniCore: React.FC = () => {
     }
   }, [isTtsEnded, isSpeaking, transition]);
 
+  // Timeout guard for thinking state (10 seconds)
+  useEffect(() => {
+    if (isThinking) {
+      console.log('[GnaniCore] Thinking state entered, setting 10s timeout guard');
+      const timeout = setTimeout(() => {
+        errorLogger.error('Thinking state timeout (10s), recovering to idle', null, { context: 'GnaniCore' });
+        showNotification('Error', 'Response timeout - returning to idle');
+        transition('error');
+      }, 10000);
+
+      return () => {
+        console.log('[GnaniCore] Thinking state exited, clearing timeout');
+        clearTimeout(timeout);
+      };
+    }
+  }, [isThinking, transition]);
+
+  // Timeout guard for speaking state (30 seconds)
+  useEffect(() => {
+    if (isSpeaking) {
+      console.log('[GnaniCore] Speaking state entered, setting 30s timeout guard');
+      const timeout = setTimeout(() => {
+        errorLogger.error('Speaking state timeout (30s), recovering to idle', null, { context: 'GnaniCore' });
+        showNotification('Error', 'TTS timeout - stopping playback');
+        if (streamingTTSRef.current) {
+          streamingTTSRef.current.stop();
+        }
+        transition('error');
+      }, 30000);
+
+      return () => {
+        console.log('[GnaniCore] Speaking state exited, clearing timeout');
+        clearTimeout(timeout);
+      };
+    }
+  }, [isSpeaking, transition]);
+
+  // Timeout guard for listening state (60 seconds)
+  useEffect(() => {
+    if (isListening) {
+      console.log('[GnaniCore] Listening state entered, setting 60s timeout guard');
+      const timeout = setTimeout(() => {
+        errorLogger.warn('Listening state timeout (60s), transitioning to thinking', { context: 'GnaniCore' });
+        showNotification('Info', 'Listening timeout - processing input');
+        transition('manual-stop');
+      }, 60000);
+
+      return () => {
+        console.log('[GnaniCore] Listening state exited, clearing timeout');
+        clearTimeout(timeout);
+      };
+    }
+  }, [isListening, transition]);
+
   useEffect(() => {
     const handleInterruption = () => {
       errorLogger.info('TTS Interrupted event received', { context: 'GnaniCore' });
@@ -223,6 +298,28 @@ const GnaniCore: React.FC = () => {
   };
 
   const bargeIn = useBargeIn(state, handleBargeIn);
+
+  // Connect VAD to barge-in for automatic interruption
+  useEffect(() => {
+    const handleVadSpeechFrame = (_event: any, data: { speech: boolean }) => {
+      if (isSpeaking || isThinking) {
+        console.log('[GnaniCore] VAD speech frame:', data.speech, 'State:', state);
+        bargeIn.handleVADSpeech(data.speech);
+      }
+    };
+
+    if (window.electron?.ipcRenderer) {
+      console.log('[GnaniCore] Registering VAD speech frame listener for barge-in');
+      window.electron.ipcRenderer.on('vad:speech-frame', handleVadSpeechFrame);
+    }
+
+    return () => {
+      if (window.electron?.ipcRenderer) {
+        console.log('[GnaniCore] Removing VAD speech frame listener');
+        window.electron.ipcRenderer.removeAllListeners('vad:speech-frame');
+      }
+    };
+  }, [isSpeaking, isThinking, bargeIn, state]);
 
   useEffect(() => {
     if (isSpeaking) {

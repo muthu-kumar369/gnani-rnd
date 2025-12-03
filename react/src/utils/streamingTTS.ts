@@ -18,8 +18,10 @@ class StreamingTTS {
     private isPlaying: boolean = false;
     private isStopped: boolean = false;
     private isStreamActive: boolean = false;
+    private streamExplicitlyEnded: boolean = false; // Track explicit stream end
     private bufferingTimeout: NodeJS.Timeout | null = null;
     private watchdogTimer: NodeJS.Timeout | null = null;
+    private activeUtterances: Set<SpeechSynthesisUtterance> = new Set(); // Track active utterances for cleanup
 
     // Configuration
     private readonly BUFFERING_TIMEOUT_MS = 200; // 200ms for real-time speech like Google Assistant
@@ -45,13 +47,13 @@ class StreamingTTS {
         }
 
         errorLogger.debug(`addTextChunk (raw): "${text}"`, { context: 'StreamingTTS' });
-        
+
         // Clean text: remove markdown bold/italic markers (*, _), headers (#), and code blocks (`)
         // Also remove emojis using a broad regex range
         const cleanText = text
             .replace(/[*_#`]/g, '')
             .replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '');
-        
+
         errorLogger.debug(`addTextChunk (clean): "${cleanText}"`, { context: 'StreamingTTS' });
 
         // CRITICAL: Skip empty chunks to prevent infinite timeout reset
@@ -62,10 +64,10 @@ class StreamingTTS {
 
         // Add to buffer
         this.textBuffer += cleanText;
-        
+
         // Implicitly active if receiving data
         this.isStreamActive = true;
-        
+
         this.processBuffer();
         this.resetBufferingTimeout();
     }
@@ -164,19 +166,19 @@ class StreamingTTS {
         let selectedVoice: SpeechSynthesisVoice | undefined;
 
         if (this.preferredGender === 'male') {
-             selectedVoice = voices.find(v => 
-                v.name.includes('Google US English Male') || 
-                v.name.includes('David') || 
+            selectedVoice = voices.find(v =>
+                v.name.includes('Google US English Male') ||
+                v.name.includes('David') ||
                 v.name.includes('Male')
             );
         } else {
-             selectedVoice = voices.find(v => 
-                v.name.includes('Google US English Female') || 
-                v.name.includes('Zira') || 
+            selectedVoice = voices.find(v =>
+                v.name.includes('Google US English Female') ||
+                v.name.includes('Zira') ||
                 v.name.includes('Female')
             );
         }
-        
+
         if (selectedVoice) {
             utterance.voice = selectedVoice;
             errorLogger.debug(`Selected voice: ${selectedVoice.name} (${this.preferredGender})`, { context: 'StreamingTTS' });
@@ -193,26 +195,33 @@ class StreamingTTS {
 
         utterance.onend = () => {
             errorLogger.info(`TTS onend: "${text}", queue length before playNext: ${this.utteranceQueue.length}`, { context: 'StreamingTTS' });
+            this.activeUtterances.delete(utterance); // Remove from active set
             this.playNextUtterance();
-            // Notify main process that ALL playback has ended (queue is empty)
-            errorLogger.debug(`After playNext - queue: ${this.utteranceQueue.length}, isPlaying: ${this.isPlaying}, isStreamActive: ${this.isStreamActive}`, { context: 'StreamingTTS' });
-            
-            // Only send tts:ended if queue is empty AND stream is NOT active (meaning no more chunks are coming)
-            if (this.utteranceQueue.length === 0 && !this.isPlaying && !this.isStreamActive) {
-                errorLogger.info('All TTS playback finished and stream ended, dispatching tts:ended event', { context: 'StreamingTTS' });
-                window.dispatchEvent(new CustomEvent('tts:ended', { detail: { text } }));
-            } else if (this.utteranceQueue.length === 0 && !this.isPlaying && this.isStreamActive) {
-                errorLogger.info('Queue empty but stream active, waiting for more chunks...', { context: 'StreamingTTS' });
+
+            // Only send tts:ended if:
+            // 1. Queue is empty
+            // 2. Not currently playing
+            // 3. Stream has been explicitly ended (not just inactive)
+            if (this.utteranceQueue.length === 0 && !this.isPlaying) {
+                if (!this.isStreamActive || this.streamExplicitlyEnded) {
+                    errorLogger.info('All TTS playback finished and stream ended, dispatching tts:ended event', { context: 'StreamingTTS' });
+                    window.dispatchEvent(new CustomEvent('tts:ended', { detail: { text } }));
+                } else {
+                    errorLogger.info('Queue empty but stream active and not explicitly ended, waiting for more chunks...', { context: 'StreamingTTS' });
+                }
             }
         };
 
         utterance.onerror = (event) => {
             errorLogger.error(`TTS error for text "${text}":`, event.error, { context: 'StreamingTTS' });
+            this.activeUtterances.delete(utterance); // Remove from active set
             this.playNextUtterance();
             // Send tts:ended on error to prevent VAD from getting stuck
-            if (this.utteranceQueue.length === 0 && !this.isPlaying && !this.isStreamActive) {
-                errorLogger.warn('TTS error and queue empty, dispatching tts:ended event', { context: 'StreamingTTS' });
-                window.dispatchEvent(new CustomEvent('tts:ended', { detail: { text } }));
+            if (this.utteranceQueue.length === 0 && !this.isPlaying) {
+                if (!this.isStreamActive || this.streamExplicitlyEnded) {
+                    errorLogger.warn('TTS error and queue empty, dispatching tts:ended event', { context: 'StreamingTTS' });
+                    window.dispatchEvent(new CustomEvent('tts:ended', { detail: { text } }));
+                }
             }
         };
 
@@ -223,20 +232,21 @@ class StreamingTTS {
                 const charIndex = event.charIndex;
                 const charLength = event.charLength || 0;
                 const word = text.substring(charIndex, charIndex + charLength);
-                
+
                 // Dispatch event for UI/Avatar to consume
-                window.dispatchEvent(new CustomEvent('tts:word', { 
-                    detail: { 
+                window.dispatchEvent(new CustomEvent('tts:word', {
+                    detail: {
                         word,
                         charIndex,
                         elapsedTime: event.elapsedTime
-                    } 
+                    }
                 }));
             }
         };
 
         // Add to queue
         this.utteranceQueue.push(utterance);
+        this.activeUtterances.add(utterance); // Track active utterance
         errorLogger.debug(`Queued utterance: "${text}". Queue length: ${this.utteranceQueue.length}`, { context: 'StreamingTTS' });
 
         // Start playing if not already playing
@@ -271,7 +281,7 @@ class StreamingTTS {
             // Send tts:started only when transitioning from idle to playing
             const wasPlaying = this.isPlaying;
             this.isPlaying = true;
-            
+
             if (!wasPlaying) {
                 errorLogger.info('Starting TTS playback, dispatching tts:started event', { context: 'StreamingTTS' });
                 window.dispatchEvent(new CustomEvent('tts:started'));
@@ -287,7 +297,7 @@ class StreamingTTS {
             // Minimum 3s
             const wordCount = utterance.text.split(/\s+/).length;
             const estimatedDurationMs = Math.max(3000, (wordCount * 300) + 3000);
-            
+
             this.watchdogTimer = setTimeout(() => {
                 errorLogger.warn(`TTS Watchdog triggered for: "${utterance.text.substring(0, 20)}..."`, { context: 'StreamingTTS' });
                 window.speechSynthesis.cancel(); // Force cancel current
@@ -324,20 +334,21 @@ class StreamingTTS {
             return;
         }
 
+        this.streamExplicitlyEnded = true; // Mark stream as explicitly ended
         this.isStreamActive = false; // Stream ended
-        errorLogger.info('Stream ended (flush called), setting isStreamActive to false', { context: 'StreamingTTS' });
+        errorLogger.info('Stream ended (flush called), setting isStreamActive to false and streamExplicitlyEnded to true', { context: 'StreamingTTS' });
 
         if (this.textBuffer.trim().length > 0) {
             errorLogger.info(`Flushing remaining text: "${this.textBuffer}"`, { context: 'StreamingTTS' });
             this.queueUtterance(this.textBuffer.trim());
             this.textBuffer = '';
         } else {
-             // If buffer is empty, we might need to trigger tts:ended if queue is also empty
-             // This handles the case where the last chunk was a complete sentence and queue emptied before flush
-             if (this.utteranceQueue.length === 0 && !this.isPlaying) {
+            // If buffer is empty, we might need to trigger tts:ended if queue is also empty
+            // This handles the case where the last chunk was a complete sentence and queue emptied before flush
+            if (this.utteranceQueue.length === 0 && !this.isPlaying) {
                 errorLogger.info('Flush called with empty buffer and queue, dispatching tts:ended event', { context: 'StreamingTTS' });
                 window.dispatchEvent(new CustomEvent('tts:ended', { detail: { text: '' } }));
-             }
+            }
         }
     }
 
@@ -357,9 +368,19 @@ class StreamingTTS {
             this.watchdogTimer = null;
         }
 
+        // Clean up all active utterances
+        this.activeUtterances.forEach(utterance => {
+            utterance.onstart = null;
+            utterance.onend = null;
+            utterance.onerror = null;
+            utterance.onboundary = null;
+        });
+        this.activeUtterances.clear();
+
         this.isStopped = true;
         this.isPlaying = false;
         this.isStreamActive = false;
+        this.streamExplicitlyEnded = false;
         this.textBuffer = ''; // CRITICAL: Clear buffer to prevent repetition
         this.utteranceQueue = [];
 
@@ -379,8 +400,18 @@ class StreamingTTS {
         this.utteranceQueue = [];
         this.isStopped = false;
         this.isStreamActive = false;
-        // Don't necessarily cancel speech here if we just want to clear future buffer
-        // But for a full reset, we probably should:
+        this.streamExplicitlyEnded = false; // Reset explicit end flag
+
+        // Clean up active utterances
+        this.activeUtterances.forEach(utterance => {
+            utterance.onstart = null;
+            utterance.onend = null;
+            utterance.onerror = null;
+            utterance.onboundary = null;
+        });
+        this.activeUtterances.clear();
+
+        // Cancel speech
         if (window.speechSynthesis) {
             window.speechSynthesis.cancel();
         }

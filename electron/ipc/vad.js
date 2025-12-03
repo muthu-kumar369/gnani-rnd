@@ -30,6 +30,13 @@ function setupVadIPC(vadManager) {
     }
   });
 
+  // Forward VAD speech frame events for barge-in detection
+  vadManager.on('vad:speech-frame', (data) => {
+    if (global.mainWindow && !global.mainWindow.isDestroyed()) {
+      global.mainWindow.webContents.send('vad:speech-frame', data);
+    }
+  });
+
   // Renderer -> Main
   ipcMain.on('vad:start', () => {
     logger.info('Received vad:start from renderer.');

@@ -44,14 +44,14 @@ export const useIPC = () => {
       errorLogger.debug('IPC: Wake triggered', { context: 'useIPC' });
       setIsWakeWordTriggered(true);
       // Reset after a short delay to allow state machine to process
-      setTimeout(() => setIsWakeWordTriggered(false), 100); 
+      setTimeout(() => setIsWakeWordTriggered(false), 100);
     }));
-    
+
     unsubs.push(window.gnani.on('audio:listening', (isListening: boolean) => {
       errorLogger.debug(`IPC: Audio listening: ${isListening}`, { context: 'useIPC' });
       setIsAudioListening(isListening);
     }));
-    
+
     unsubs.push(window.gnani.on('audio:ended', () => {
       errorLogger.debug('IPC: Audio ended', { context: 'useIPC' });
       setIsAudioEnded(true);
@@ -79,22 +79,26 @@ export const useIPC = () => {
       const handleTtsStarted = () => {
         errorLogger.debug('CustomEvent: TTS started', { context: 'useIPC' });
         setIsTtsStarted(true);
+        // Don't reset here - let the state machine handle the transition first
         window.gnani?.send('tts:started');
       };
-      
+
       const handleTtsEnded = () => {
         errorLogger.debug('CustomEvent: TTS ended', { context: 'useIPC' });
         setIsTtsEnded(true);
-        setIsTtsStarted(false);
-        setLatestFinalSTT(null);
-        setLatestLLMChunk(null);
-        setTimeout(() => setIsTtsEnded(false), 100);
+        // Reset isTtsStarted AFTER a delay to ensure state transition completes
+        setTimeout(() => {
+          setIsTtsStarted(false);
+          setIsTtsEnded(false);
+          setLatestFinalSTT(null);
+          setLatestLLMChunk(null);
+        }, 150); // Increased from 100ms to 150ms for safety
         window.gnani?.send('tts:ended');
       };
-      
+
       window.addEventListener('tts:started', handleTtsStarted);
       window.addEventListener('tts:ended', handleTtsEnded);
-      
+
       unsubs.push(() => {
         window.removeEventListener('tts:started', handleTtsStarted);
         window.removeEventListener('tts:ended', handleTtsEnded);
@@ -126,7 +130,7 @@ export const useIPC = () => {
         errorLogger.info('IPC: TTS Stop received', { context: 'useIPC' });
         window.dispatchEvent(new CustomEvent('tts:interrupted'));
       }));
-      
+
       // Queue for LLM chunks to prevent React state update flooding
       const llmChunkQueue: any[] = [];
       let isProcessingQueue = false;
@@ -138,7 +142,7 @@ export const useIPC = () => {
         }
 
         isProcessingQueue = true;
-        
+
         // Process up to 5 chunks per frame to balance responsiveness and performance
         // or just take the latest one if we only care about the latest?
         // Actually, for TTS we might need all of them, but here we are just setting 'latestLLMChunk'.
@@ -147,37 +151,37 @@ export const useIPC = () => {
         // If the consumer depends on *every* chunk triggering a useEffect, we might have a problem if we batch them.
         // However, the previous implementation was: setLatestLLMChunk({ payload: data, _t: Date.now() });
         // This suggests the consumer listens to changes.
-        
+
         // Let's try to process one by one but throttled by RAF?
         // Or better: expose the queue itself? No, that changes the API.
-        
+
         // If we receive 10 chunks in 16ms, we want to trigger 10 updates? 
         // React might batch them anyway.
-        
+
         // The goal of backpressure on frontend is to NOT block the main thread.
         // If we just set state 100 times a second, React will try to re-render.
-        
+
         // Let's shift one chunk from the queue and update state.
         // If there are more, request another frame.
-        
+
         const chunk = llmChunkQueue.shift();
         if (chunk) {
-             setLatestLLMChunk({ payload: chunk, _t: Date.now() });
+          setLatestLLMChunk({ payload: chunk, _t: Date.now() });
         }
 
         if (llmChunkQueue.length > 0) {
-           requestAnimationFrame(processQueue);
+          requestAnimationFrame(processQueue);
         } else {
-           isProcessingQueue = false;
+          isProcessingQueue = false;
         }
       };
 
       unsubs.push(window.gnani.stream.on('stream:llm_chunk', (data: any) => {
-          // console.log('[IPC] RAW stream:llm_chunk received:', data); // Verbose log
-          llmChunkQueue.push(data);
-          if (!isProcessingQueue) {
-            processQueue();
-          }
+        // console.log('[IPC] RAW stream:llm_chunk received:', data); // Verbose log
+        llmChunkQueue.push(data);
+        if (!isProcessingQueue) {
+          processQueue();
+        }
       }));
 
       // Tool Status Listener
@@ -191,12 +195,12 @@ export const useIPC = () => {
     return () => {
       unsubs.forEach(unsub => {
         if (typeof unsub === 'function') {
-            unsub();
+          unsub();
         }
       });
     };
   }, []);
-  
+
   return {
     isWakeWordReady,
     isVADReady,

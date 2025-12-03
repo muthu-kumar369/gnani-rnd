@@ -14,10 +14,14 @@ function AppWrapper() {
   return <App />;
 }
 
+import ErrorBoundary from "./components/ErrorBoundary";
+
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <HashRouter>
-      <AppWrapper />
-    </HashRouter>
+    <ErrorBoundary>
+      <HashRouter>
+        <AppWrapper />
+      </HashRouter>
+    </ErrorBoundary>
   </StrictMode>
 );

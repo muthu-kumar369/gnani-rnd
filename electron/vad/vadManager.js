@@ -17,7 +17,7 @@ class VadManager extends EventEmitter {
       frameSize: 480,
       aggressiveness: 3,
       speechStartThreshold: 3, // Frames of speech needed to start
-      speechEndThreshold: 45, // Frames of silence needed to end (increased to ~1.35s for natural pauses)
+      speechEndThreshold: 20, // Frames of silence needed to end (~600ms, reduced from 1.35s for faster response)
       hysteresisMargin: 2, // Additional frames needed to change state (prevents flapping)
     };
     logger.info("VadManager initialized.", { context: 'VadManager' });
@@ -39,6 +39,11 @@ class VadManager extends EventEmitter {
         // Emit frame if we're in speech segment
         if (this.state === "speech_started") {
           this.emit("audio:frame", frame);
+        }
+
+        // Emit speech frame for barge-in detection (frontend needs this)
+        if (this.state === "speech_started" || this.state === "monitoring") {
+          this.emit("vad:speech-frame", { speech });
         }
 
         if (speech) {

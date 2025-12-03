@@ -71,6 +71,24 @@ export interface AudioDevices {
 
 declare global {
   interface Window {
+    // Electron IPC Renderer API
+    electron?: {
+      ipcRenderer: {
+        send: (channel: string, ...args: any[]) => void;
+        on: (channel: string, listener: (event: any, ...args: any[]) => void) => void;
+        once: (channel: string, listener: (event: any, ...args: any[]) => void) => void;
+        removeListener: (channel: string, listener: (...args: any[]) => void) => void;
+        removeAllListeners: (channel: string) => void;
+        invoke: (channel: string, ...args: any[]) => Promise<any>;
+      };
+      grpc?: {
+        reconnect: () => void;
+      };
+      audio?: {
+        reset: () => void;
+      };
+    };
+
     gnani?: {
       // Methods for general IPC communication
       send: (channel: string, data?: any) => void;
@@ -101,6 +119,7 @@ declare global {
         stopStream: () => void;
         startFileStream: () => void;
         sendText: (text: string) => void;
+        setSessionId: (sessionId: string) => void;
       };
 
       // Device Awareness API

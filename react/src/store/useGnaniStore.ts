@@ -10,10 +10,10 @@ interface GnaniStore {
   isListening: boolean;
   isThinking: boolean;
   isSpeaking: boolean;
-  
+
   // Actions
   transition: (trigger: StateTrigger) => void;
-  
+
   // Internal (used for initialization)
   _init: () => void;
   _cleanup: () => void;
@@ -21,8 +21,10 @@ interface GnaniStore {
 
 // Singleton instance outside the store to persist across re-renders
 let stateMachine: GnaniStateMachine | null = null;
+let stateChangeListener: ((event: StateChangeEvent) => void) | null = null;
+let isListenerRegistered = false;
 
-export const useGnaniStore = create<GnaniStore>((set) => ({
+export const useGnaniStore = create<GnaniStore>((set, get) => ({
   state: 'idle',
   previousState: null,
   isIdle: true,
@@ -32,6 +34,7 @@ export const useGnaniStore = create<GnaniStore>((set) => ({
 
   transition: (trigger: StateTrigger) => {
     if (stateMachine) {
+      console.log('[useGnaniStore] Calling transition:', trigger, 'from state:', get().state);
       stateMachine.transition(trigger);
     } else {
       errorLogger.warn('Attempted to transition before state machine initialized', { context: 'useGnaniStore' });
@@ -39,13 +42,22 @@ export const useGnaniStore = create<GnaniStore>((set) => ({
   },
 
   _init: () => {
+    // Create state machine if it doesn't exist
     if (!stateMachine) {
-      console.log('[useGnaniStore] Initializing state machine');
+      console.log('[useGnaniStore] Creating new state machine');
       stateMachine = new GnaniStateMachine();
       errorLogger.info('GnaniStateMachine initialized', { context: 'useGnaniStore' });
     }
 
-    const handleStateChange = (event: StateChangeEvent) => {
+    // Remove old listener if it exists to prevent duplicates
+    if (stateChangeListener && isListenerRegistered) {
+      console.log('[useGnaniStore] Removing old state change listener');
+      stateMachine.removeListener('stateChange', stateChangeListener);
+      isListenerRegistered = false;
+    }
+
+    // Create new listener with current 'set' closure
+    stateChangeListener = (event: StateChangeEvent) => {
       console.log('[useGnaniStore] State change event received:', event);
       set({
         state: event.to,
@@ -58,12 +70,20 @@ export const useGnaniStore = create<GnaniStore>((set) => ({
       errorLogger.debug(`State changed: ${event.from} -> ${event.to}`, { context: 'useGnaniStore' });
     };
 
-    stateMachine.on('stateChange', handleStateChange);
+    // Register the listener
+    console.log('[useGnaniStore] Registering state change listener');
+    stateMachine.on('stateChange', stateChangeListener);
+    isListenerRegistered = true;
+
+    // Log current state for debugging
+    console.log('[useGnaniStore] Current state machine state:', stateMachine.getState());
   },
 
   _cleanup: () => {
-    // In a global store, we might not want to fully cleanup the machine itself,
-    // but we should handle listener cleanup if necessary.
-    // For now, we'll leave the machine active as it's a singleton.
+    if (stateMachine && stateChangeListener && isListenerRegistered) {
+      console.log('[useGnaniStore] Cleaning up state change listener');
+      stateMachine.removeListener('stateChange', stateChangeListener);
+      isListenerRegistered = false;
+    }
   }
 }));
