@@ -1,8 +1,8 @@
 // react/src/api/fileApi.ts
-import axios from 'axios';
+import { apiClient } from './apiClient';
 import type { FileUploadResponse } from '../types/file.types';
 
-const API_BASE_URL = 'http://localhost:5000/api';
+const API_BASE_URL = 'http://localhost:3000/api'; // Updated to match apiClient base URL
 
 export const fileApi = {
     /**
@@ -13,31 +13,47 @@ export const fileApi = {
         formData.append('file', file);
         formData.append('userId', userId);
 
-        const response = await axios.post<FileUploadResponse>(
-            `${API_BASE_URL}/files/upload`,
-            formData,
-            {
-                headers: {
-                    'Content-Type': 'multipart/form-data'
-                },
-                onUploadProgress: (progressEvent: any) => {
-                    if (progressEvent.total && onProgress) {
-                        const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-                        onProgress(progress);
-                    }
-                }
+        // Using XMLHttpRequest for upload progress since fetch doesn't support it natively yet
+        return new Promise((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', `${API_BASE_URL}/files/upload`);
+            
+            // Add auth token if available
+            const token = localStorage.getItem('accessToken');
+            if (token) {
+                xhr.setRequestHeader('x-auth-token', token);
             }
-        );
 
-        return response.data;
+            xhr.upload.onprogress = (event) => {
+                if (event.lengthComputable && onProgress) {
+                    const progress = Math.round((event.loaded * 100) / event.total);
+                    onProgress(progress);
+                }
+            };
+
+            xhr.onload = () => {
+                if (xhr.status >= 200 && xhr.status < 300) {
+                    try {
+                        const response = JSON.parse(xhr.responseText);
+                        resolve(response);
+                    } catch (e) {
+                        reject(new Error('Invalid JSON response'));
+                    }
+                } else {
+                    reject(new Error(`Upload failed with status ${xhr.status}`));
+                }
+            };
+
+            xhr.onerror = () => reject(new Error('Upload network error'));
+
+            xhr.send(formData);
+        });
     },
 
     /**
      * Delete a file
      */
-    async deleteFile(fileId: string, userId: string): Promise<void> {
-        await axios.delete(`${API_BASE_URL}/files/${fileId}`, {
-            data: { userId }
-        });
+    async deleteFile(fileId: string, _userId: string): Promise<void> {
+        return apiClient.delete(`/files/${fileId}`);
     }
 };

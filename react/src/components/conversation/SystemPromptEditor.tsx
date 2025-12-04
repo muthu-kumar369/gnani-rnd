@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useToast } from '../../context/ToastContext';
-import axios from 'axios';
+import { apiClient } from '../../api/apiClient';
 import { Save } from 'lucide-react';
 import Button from '../ui/Button';
 
@@ -31,8 +31,8 @@ const SystemPromptEditor: React.FC<SystemPromptEditorProps> = ({
     useEffect(() => {
         const fetchTemplates = async () => {
             try {
-                const response = await axios.get('http://localhost:3000/api/conversations/prompt-templates');
-                setTemplates(response.data.templates || []);
+                const response = await apiClient.get<{ templates: PromptTemplate[] }>('/conversations/prompt-templates');
+                setTemplates(response.templates || []);
             } catch (error) {
                 console.error('Failed to fetch templates:', error);
             }
@@ -52,7 +52,7 @@ const SystemPromptEditor: React.FC<SystemPromptEditorProps> = ({
 
         setSaving(true);
         try {
-            await axios.patch(`http://localhost:3000/api/conversations/${sessionId}/system-prompt`, {
+            await apiClient.patch(`/conversations/${sessionId}/system-prompt`, {
                 systemPrompt: prompt
             });
             onUpdate(prompt);
@@ -113,7 +113,7 @@ const SystemPromptEditor: React.FC<SystemPromptEditorProps> = ({
                     onClick={handleSave}
                     disabled={saving || prompt.length > 2000}
                     isLoading={saving}
-                    icon={<Save size={18} />}
+                    leftIcon={<Save size={18} />}
                 >
                     Save Prompt
                 </Button>

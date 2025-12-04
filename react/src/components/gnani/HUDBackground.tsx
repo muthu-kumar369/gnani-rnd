@@ -95,7 +95,7 @@ const HUDBackground: React.FC<HUDBackgroundProps> = ({ status }) => {
   else if (status === 'mic-recording' || status === 'streaming' || status === 'receiving-stt') currentStatusVariant = 'micRecording';
 
   return (
-    <div className="absolute inset-0 z-0 overflow-hidden bg-black">
+    <div className="absolute inset-0 z-0 overflow-hidden bg-jarvis-bg transition-colors duration-300">
       {/* Dynamic Grid */}
       <motion.div
         className="absolute inset-0 bg-repeat"

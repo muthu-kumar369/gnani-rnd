@@ -107,7 +107,9 @@ function setupStreamIPC(streamingClient, ttsPlayer) {
   ipcMain.on('stream:stop', () => {
     logger.info('Received stream:stop from renderer.');
     streamingClient.stopAudioStreaming();
-    streamingClient.disconnect();
+    // Do NOT disconnect here. We need to keep the connection open to receive the response.
+    // The backend will close the stream when it's done, or we can disconnect later if needed.
+    // streamingClient.disconnect(); 
   });
 
   ipcMain.handle('stream:getStatus', async () => {

@@ -93,7 +93,7 @@ const DevicesSection: React.FC = () => {
                                 onClick={() => handleRemoveDevice(device.deviceId)}
                                 disabled={removingDeviceId === device.deviceId}
                                 isLoading={removingDeviceId === device.deviceId}
-                                icon={!removingDeviceId && <Trash2 size={16} />}
+                                leftIcon={!removingDeviceId && <Trash2 size={16} />}
                             >
                                 {removingDeviceId !== device.deviceId && "REMOVE"}
                             </Button>

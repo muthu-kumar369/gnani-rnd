@@ -4,6 +4,9 @@ import { Search, Plus, X, History } from 'lucide-react';
 import { useConversationHistory } from '../../hooks/useConversationHistory';
 import ConversationListItem from './ConversationListItem';
 import { useConversationStore } from '../../store/useConversationStore';
+import TemplateGallery from '../templates/TemplateGallery';
+import { useUserStore } from '../../store/useUserStore';
+import Button from '../ui/Button';
 
 interface ConversationSidebarProps {
     isOpen: boolean;
@@ -56,6 +59,30 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
         }
     };
 
+    const [showTemplates, setShowTemplates] = React.useState(false);
+    const { createConversation } = useConversationStore();
+    const { accessToken } = useUserStore(); // Assuming useUserStore is imported or available
+
+    const handleNewConversation = () => {
+        setShowTemplates(true);
+        onClose(); // Close sidebar immediately to prevent blocking
+    };
+
+    const handleTemplateSelect = async (template: any) => {
+        if (accessToken) {
+            try {
+                await createConversation(accessToken, template.systemPrompt);
+                onNewConversation(); // This might need adjustment if onNewConversation just clears state
+                // Actually, createConversation already sets the session ID.
+                // We just need to close the sidebar and templates.
+                setShowTemplates(false);
+                onClose();
+            } catch (error) {
+                console.error('Failed to create conversation from template:', error);
+            }
+        }
+    };
+
     return (
         <AnimatePresence>
             {isOpen && (
@@ -93,13 +120,14 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                                 </button>
                             </div>
 
-                            <button
-                                onClick={() => { onNewConversation(); onClose(); }}
-                                className="w-full flex items-center justify-center py-2 px-4 bg-jarvis-blue/20 hover:bg-jarvis-blue/30 border border-jarvis-cyan/50 rounded text-jarvis-cyan transition-all duration-200 group"
+                            <Button
+                                onClick={handleNewConversation}
+                                variant="primary"
+                                className="w-full justify-center"
+                                leftIcon={<Plus size={16} className="group-hover:rotate-90 transition-transform" />}
                             >
-                                <Plus size={16} className="mr-2 group-hover:rotate-90 transition-transform" />
                                 New Conversation
-                            </button>
+                            </Button>
                         </div>
 
                         {/* Search */}
@@ -151,6 +179,13 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                         </div>
                     </motion.div>
                 </>
+            )}
+
+            {showTemplates && (
+                <TemplateGallery
+                    onSelect={handleTemplateSelect}
+                    onClose={() => setShowTemplates(false)}
+                />
             )}
         </AnimatePresence>
     );

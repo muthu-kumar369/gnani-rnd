@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { User, Bot, Volume2, Terminal, Activity, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useConversationStore, type ConversationMessage } from '../../store/useConversationStore';
@@ -8,9 +8,8 @@ import EditMessageModal from './EditMessageModal';
 import DeleteConfirmDialog from './DeleteConfirmDialog';
 import TokenBadge from '../token-usage/TokenBadge';
 import MessageTimestamp from './MessageTimestamp';
-import { renderMarkdown } from '../../utils/markdown-renderer';
+import MessageContent from './MessageContent';
 import '../../styles/messageActions.css';
-import '../../styles/markdown.css';
 
 interface MessageBubbleProps {
     message: ConversationMessage;
@@ -22,38 +21,13 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isLatest, showTi
     const { navigateToBranch, sessionId } = useConversationStore();
     const actions = useMessageActions(sessionId);
 
-    const [displayedText, setDisplayedText] = useState('');
     const [isHovered, setIsHovered] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
     const isGnani = message.type === 'gnani';
-    const isTTS = message.type === 'tts';
     const isUser = message.type === 'user';
     const isSystem = message.type === 'system';
-
-    // Typing effect for Gnani messages
-    useEffect(() => {
-        if (isGnani && isLatest) {
-            let i = 0;
-            const speed = 15; // ms per char
-            const text = message.message;
-            setDisplayedText('');
-
-            const interval = setInterval(() => {
-                if (i < text.length) {
-                    i++;
-                    setDisplayedText(text.substring(0, i));
-                } else {
-                    clearInterval(interval);
-                }
-            }, speed);
-
-            return () => clearInterval(interval);
-        } else {
-            setDisplayedText(message.message);
-        }
-    }, [message.message, isGnani, isLatest]);
 
     const getIcon = () => {
         switch (message.type) {
@@ -161,20 +135,11 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isLatest, showTi
                             </div>
                         </div>
 
-                        <div className={`font-mono text-sm leading-relaxed ${isTTS ? 'text-cyan-100' : 'text-cyan-200/90'} markdown-content`}>
-                            {isGnani && isLatest ? (
-                                <>
-                                    <div className="markdown-content">
-                                        {renderMarkdown(displayedText)}
-                                    </div>
-                                    <span className="inline-block w-2 h-4 ml-1 align-middle bg-cyan-500 animate-pulse" />
-                                </>
-                            ) : (
-                                <div className="markdown-content">
-                                    {renderMarkdown(message.message)}
-                                </div>
-                            )}
-                        </div>
+                        <MessageContent
+                            content={message.message}
+                            type={message.type}
+                            isLatest={isLatest}
+                        />
                     </div>
                 </div>
 

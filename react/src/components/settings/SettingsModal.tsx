@@ -14,6 +14,9 @@ import AvatarSettings from './AvatarSettings';
 import HotkeySettings from './HotkeySettings';
 import { useUserStore } from '../../store/useUserStore';
 import Loader from '../ui/Loader';
+import ThemeToggle from './ThemeToggle';
+import ToolMarketplace from '../tools/ToolMarketplace';
+import { useFocusTrap } from '../../hooks/useFocusTrap';
 
 interface SettingsModalProps {
     isOpen: boolean;
@@ -23,6 +26,7 @@ interface SettingsModalProps {
 const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
     const [activeTab, setActiveTab] = useState<SettingsTab>('profile');
     const { user, loading, logout } = useUserStore();
+    const modalRef = useFocusTrap(isOpen);
 
     // Reset tab when modal opens
     useEffect(() => {
@@ -43,6 +47,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
             case 'hotkey': return <HotkeySettings />;
             case 'about': return <AboutSection />;
             case 'avatar': return <AvatarSettings />;
+            case 'tools': return <ToolMarketplace />;
             default: return <ProfileSection />;
         }
     };
@@ -62,19 +67,27 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
 
                     {/* Modal Content */}
                     <motion.div
+                        ref={modalRef}
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="settings-modal-title"
                         initial={{ opacity: 0, scale: 0.95, y: 20 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: 20 }}
                         transition={{ duration: 0.2 }}
-                        className="relative w-full max-w-6xl h-[85vh] glass-panel rounded-xl overflow-hidden flex"
+                        className="relative w-full max-w-6xl h-[85vh] glass-panel rounded-xl overflow-hidden flex focus:outline-none"
+                        tabIndex={-1}
                     >
-                        {/* Close Button */}
-                        <button
-                            onClick={onClose}
-                            className="absolute top-4 right-4 z-10 p-2 text-cyan-400/60 hover:text-cyan-300 hover:bg-cyan-500/10 rounded-full transition-colors"
-                        >
-                            <X size={24} />
-                        </button>
+                        {/* Header Actions */}
+                        <div className="absolute top-4 right-4 z-10 flex items-center gap-2">
+                            <ThemeToggle />
+                            <button
+                                onClick={onClose}
+                                className="p-2 text-cyan-400/60 hover:text-cyan-300 hover:bg-cyan-500/10 rounded-full transition-colors"
+                            >
+                                <X size={24} />
+                            </button>
+                        </div>
 
                         {loading ? (
                             <div className="w-full h-full flex items-center justify-center">

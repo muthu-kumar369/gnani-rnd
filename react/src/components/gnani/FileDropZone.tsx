@@ -1,4 +1,6 @@
 import React, { useState, useCallback } from 'react';
+import { Upload } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface FileDropZoneProps {
     children: React.ReactNode;
@@ -47,27 +49,25 @@ export const FileDropZone: React.FC<FileDropZoneProps> = ({ children, onFileDrop
             onDrop={handleDrop}
             style={{ position: 'relative', width: '100%', height: '100%' }}
         >
-            {isDragging && (
-                <div style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-                    zIndex: 9999,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    pointerEvents: 'none', // Allow drops to pass through if needed, but we handle on parent
-                    border: '2px dashed #00ffcc',
-                    borderRadius: '8px',
-                }}>
-                    <div style={{ color: '#00ffcc', fontSize: '1.5rem', fontWeight: 'bold' }}>
-                        Drop files to analyze
-                    </div>
-                </div>
-            )}
+            <AnimatePresence>
+                {isDragging && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm border-2 border-dashed border-jarvis-cyan rounded-lg m-4"
+                    >
+                        <div className="flex flex-col items-center gap-4 text-jarvis-cyan animate-pulse">
+                            <div className="p-4 rounded-full bg-jarvis-cyan/10 shadow-jarvis-glow">
+                                <Upload size={48} />
+                            </div>
+                            <div className="text-2xl font-mono tracking-widest uppercase text-shadow-glow">
+                                Drop files to analyze
+                            </div>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
             {children}
         </div>
     );

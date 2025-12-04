@@ -1,12 +1,14 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Terminal, ChevronDown, Trash2, Maximize2, Minimize2, Keyboard } from 'lucide-react';
+import { Virtuoso, type VirtuosoHandle } from 'react-virtuoso';
+import { motion } from 'framer-motion';
+import { Terminal, ChevronDown, Trash2, Maximize2, Minimize2 } from 'lucide-react';
 import { useConversationStore } from '../../store/useConversationStore';
 import { useGnaniStore } from '../../store/useGnaniStore';
 import { useDeviceAwareness } from '../../hooks/useDeviceAwareness';
 import { useFileUpload } from '../../hooks/useFileUpload';
 import { useImageUpload } from '../../hooks/useImageUpload';
 import { useUserStore } from '../../store/useUserStore';
+import { useAudioStream } from '../../hooks/useAudioStream';
 import MessageBubble from './MessageBubble';
 import DateSeparator from './DateSeparator';
 import { isSameDate } from '../../utils/date-formatter';
@@ -27,8 +29,9 @@ interface TerminalPanelProps {
 }
 
 const TerminalPanel: React.FC<TerminalPanelProps> = ({ isVisible, onToggle }) => {
-    const { messages, clearMessages, title } = useConversationStore();
-    const { user } = useUserStore();
+    const { sendText } = useAudioStream();
+    const { messages, clearMessages, title, sendMessage } = useConversationStore();
+    const { user, accessToken } = useUserStore();
     const {
         transition,
         attachedFiles,
@@ -41,9 +44,10 @@ const TerminalPanel: React.FC<TerminalPanelProps> = ({ isVisible, onToggle }) =>
         typingMessage
     } = useGnaniStore();
     const { systemStatus, connectivityStatus } = useDeviceAwareness();
-    const scrollRef = useRef<HTMLDivElement>(null);
+    const virtuosoRef = useRef<VirtuosoHandle>(null);
     const [isExpanded, setIsExpanded] = useState(false);
-    const [showInput, setShowInput] = useState(false);
+    // showInput is now always true by default for better UX
+    const [showInput] = useState(true);
 
     // File upload hook
     const { uploadFile, isUploading: isUploadingFile } = useFileUpload('default-user');
@@ -69,37 +73,44 @@ const TerminalPanel: React.FC<TerminalPanelProps> = ({ isVisible, onToggle }) =>
         }
     };
 
-    const handleSendText = (text: string) => {
-        if (window.gnani && window.gnani.stream && window.gnani.stream.sendText) {
-            // Include file IDs and image IDs if attachments exist
-            const fileIds = attachedFiles.map(f => f.id);
-            const imageIds = attachedImages.map(img => img.id);
-
-            // Send text to backend (you may need to modify backend to accept fileIds and imageIds)
-            console.log('Sending attachments:', fileIds, imageIds);
-            window.gnani.stream.sendText(text);
-
-            // Clear attached files and images after sending
-            if (attachedFiles.length > 0) {
-                clearAttachedFiles();
-            }
-            if (attachedImages.length > 0) {
-                clearAttachedImages();
-            }
-
-            // Trigger state transition to 'thinking'
-            transition('text-input');
-        } else {
-            console.error("gnani.stream.sendText is not available");
+    const handleSendText = async (text: string) => {
+        if (!accessToken) {
+            console.error("No access token available");
+            return;
         }
+
+        // Include file IDs and image IDs if attachments exist
+        const fileIds = attachedFiles.map(f => f.id);
+        const imageIds = attachedImages.map(img => img.id);
+
+        console.log('Sending attachments:', fileIds, imageIds);
+
+        // Use the unified sendMessage action
+        // Always pass sendText if available, the store handles the fallback logic
+        await sendMessage(text, accessToken, sendText);
+
+        // Clear attached files and images after sending
+        if (attachedFiles.length > 0) {
+            clearAttachedFiles();
+        }
+        if (attachedImages.length > 0) {
+            clearAttachedImages();
+        }
+
+        // Trigger state transition to 'thinking'
+        transition('text-input');
     };
 
     // Auto-scroll to bottom
+    // Auto-scroll handled by Virtuoso's followOutput
     useEffect(() => {
-        if (scrollRef.current) {
-            scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+        if (messages.length > 0) {
+            // Small delay to ensure content is rendered
+            setTimeout(() => {
+                virtuosoRef.current?.scrollToIndex({ index: messages.length - 1, align: 'end', behavior: 'smooth' });
+            }, 100);
         }
-    }, [messages, isVisible, isExpanded]);
+    }, [messages.length, isVisible, isExpanded]);
 
     if (!isVisible) return null;
 
@@ -133,13 +144,7 @@ const TerminalPanel: React.FC<TerminalPanelProps> = ({ isVisible, onToggle }) =>
                             <Trash2 size={12} />
                         </button>
 
-                        <button
-                            onClick={() => setShowInput(!showInput)}
-                            className={`p-1.5 rounded transition-colors ${showInput ? 'text-cyan-300 bg-cyan-900/40' : 'text-cyan-400/60 hover:text-cyan-300 hover:bg-cyan-900/20'}`}
-                            title="Toggle Keyboard Input"
-                        >
-                            <Keyboard size={12} />
-                        </button>
+                        {/* Keyboard toggle removed as input is now always visible/accessible via bottom area */}
 
                         <button
                             onClick={() => setIsExpanded(!isExpanded)}
@@ -160,50 +165,50 @@ const TerminalPanel: React.FC<TerminalPanelProps> = ({ isVisible, onToggle }) =>
                 </div>
 
                 {/* Messages Area */}
-                <div
-                    ref={scrollRef}
-                    className="relative z-10 flex-1 overflow-y-auto p-4 custom-scrollbar scroll-smooth"
-                >
-                    <AnimatePresence initial={false}>
-                        {messages.length === 0 ? (
-                            <motion.div
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                className="h-full flex flex-col items-center justify-center text-cyan-500/30 gap-2"
-                            >
-                                <Terminal size={32} />
-                                <p className="text-xs font-mono">System Ready. Waiting for input...</p>
-                            </motion.div>
-                        ) : (
-                            messages.map((msg, index) => {
+                <div className="relative z-10 flex-1 overflow-hidden p-4">
+                    {messages.length === 0 ? (
+                        <div className="h-full flex flex-col items-center justify-center text-cyan-500/30 gap-2">
+                            <Terminal size={32} />
+                            <p className="text-xs font-mono">System Ready. Waiting for input...</p>
+                        </div>
+                    ) : (
+                        <Virtuoso
+                            ref={virtuosoRef}
+                            style={{ height: '100%' }}
+                            className="custom-scrollbar"
+                            data={messages}
+                            followOutput={'auto'}
+                            itemContent={(index, msg) => {
                                 const isLatest = index === messages.length - 1;
                                 const prevMsg = index > 0 ? messages[index - 1] : null;
                                 const showDateSeparator = !prevMsg || !isSameDate(msg.timestamp, prevMsg.timestamp);
 
-                                if (msg.type === 'system') {
-                                    return <StateIndicator key={msg.id} message={msg} />;
-                                }
-
-                                if (msg.type === 'action') {
-                                    return <ActionIndicator key={msg.id} message={msg} />;
-                                }
-
                                 return (
-                                    <React.Fragment key={msg.id}>
+                                    <div className="pb-2">
                                         {showDateSeparator && <DateSeparator timestamp={msg.timestamp} />}
-                                        <MessageBubble
-                                            message={msg}
-                                            isLatest={isLatest}
-                                            showTimestamp={user?.settings?.showTimestamps !== false}
-                                        />
-                                    </React.Fragment>
+                                        {msg.type === 'system' ? (
+                                            <StateIndicator message={msg} />
+                                        ) : msg.type === 'action' ? (
+                                            <ActionIndicator message={msg} />
+                                        ) : (
+                                            <MessageBubble
+                                                message={msg}
+                                                isLatest={isLatest}
+                                                showTimestamp={user?.settings?.showTimestamps !== false}
+                                            />
+                                        )}
+                                    </div>
                                 );
-                            })
-                        )}
-
-                        {/* Typing Indicator */}
-                        <TypingIndicator status={typingStatus} message={typingMessage} />
-                    </AnimatePresence>
+                            }}
+                            components={{
+                                Footer: () => (
+                                    <div className="pb-4">
+                                        <TypingIndicator status={typingStatus} message={typingMessage} />
+                                    </div>
+                                )
+                            }}
+                        />
+                    )}
                 </div>
 
                 {/* Attached Files List */}
@@ -242,7 +247,7 @@ const TerminalPanel: React.FC<TerminalPanelProps> = ({ isVisible, onToggle }) =>
                     )}
                     <TextInput
                         isVisible={showInput}
-                        onClose={() => setShowInput(false)}
+                        onClose={() => { /* No-op or maybe minimize? For now, keep it open */ }}
                         onSend={handleSendText}
                     />
                 </div>

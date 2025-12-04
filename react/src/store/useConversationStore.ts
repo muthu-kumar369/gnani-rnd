@@ -48,6 +48,8 @@ interface ConversationStore {
   regenerateResponse: (messageId: string, accessToken: string) => Promise<void>;
   editMessage: (messageId: string, newContent: string, accessToken: string) => Promise<void>;
   refreshConversation: (accessToken: string) => Promise<void>;
+  createConversation: (accessToken: string, systemPrompt?: string) => Promise<string>;
+  sendMessage: (text: string, accessToken: string, sendViaGrpc?: (text: string) => void) => Promise<void>;
   navigateToBranch: (messageId: string, direction: 'prev' | 'next') => void;
 
   // Helpers
@@ -209,6 +211,108 @@ export const useConversationStore = create<ConversationStore>()(
           errorLogger.info('Refreshed conversation', { count: mappedMessages.length });
         } catch (error) {
           errorLogger.error('Error refreshing conversation', error as Error, { context: 'useConversationStore' });
+        }
+      },
+
+      createConversation: async (accessToken, systemPrompt) => {
+        try {
+          const response = await fetch(`${API_BASE_URL}/conversations`, {
+            method: 'POST',
+            headers: {
+              'x-auth-token': accessToken,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ systemPrompt })
+          });
+
+          if (!response.ok) throw new Error('Failed to create conversation');
+
+          const data = await response.json();
+          const sessionId = data.sessionId;
+
+          set({
+            sessionId,
+            messages: [],
+            allMessages: [],
+            currentLeafId: null,
+            title: data.title
+          });
+
+          return sessionId;
+        } catch (error) {
+          errorLogger.error('Error creating conversation', error as Error, { context: 'useConversationStore' });
+          throw error;
+        }
+      },
+
+      sendMessage: async (text, accessToken, sendViaGrpc) => {
+        const { sessionId, addMessage } = get();
+
+        // 1. Optimistic UI Update
+        addMessage({
+          type: 'user',
+          message: text
+        });
+
+        // 2. Try gRPC if available (always try if function is provided)
+        if (sendViaGrpc) {
+          try {
+            errorLogger.info('Attempting to send via gRPC', { context: 'useConversationStore' });
+            sendViaGrpc(text);
+            // gRPC will handle the response via stream events
+            return;
+          } catch (error) {
+            errorLogger.warn('gRPC send failed, falling back to REST', { context: 'useConversationStore', error });
+            // Fall through to REST
+          }
+        } else {
+          errorLogger.info('gRPC not available, using REST', { context: 'useConversationStore' });
+        }
+
+        // 3. Fallback to REST
+        try {
+          const response = await fetch(`${API_BASE_URL}/chat`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-auth-token': accessToken
+            },
+            body: JSON.stringify({
+              message: text,
+              sessionId: sessionId,
+            })
+          });
+
+          if (!response.ok) throw new Error('Failed to send message via REST');
+
+          const data = await response.json();
+
+          // If backend returns a new session ID, update it
+          if (data.sessionId && data.sessionId !== sessionId) {
+            set({ sessionId: data.sessionId });
+          }
+
+          // If backend returns the assistant response immediately (REST style), add it and trigger TTS
+          if (data.message) {
+            addMessage({
+              type: 'gnani',
+              message: data.message
+            });
+
+            // Trigger TTS for REST response
+            errorLogger.info('Triggering TTS for REST response', { context: 'useConversationStore', messageLength: data.message.length });
+
+            // Dispatch custom event to trigger TTS
+            window.dispatchEvent(new CustomEvent('tts:speak', {
+              detail: {
+                text: data.message,
+                type: 'complete_response'
+              }
+            }));
+          }
+        } catch (error) {
+          errorLogger.error('Failed to send message via REST', error as Error, { context: 'useConversationStore' });
+          // TODO: Mark message as failed in UI?
         }
       },
 

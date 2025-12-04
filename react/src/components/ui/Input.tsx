@@ -1,34 +1,48 @@
 import React from 'react';
 
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
-    label?: string;
+    leftIcon?: React.ReactNode;
+    rightIcon?: React.ReactNode;
     error?: string;
-    icon?: React.ReactNode;
+    containerClassName?: string;
 }
 
-const Input: React.FC<InputProps> = ({ label, error, icon, className = '', ...props }) => {
+const Input: React.FC<InputProps> = ({
+    leftIcon,
+    rightIcon,
+    error,
+    className = '',
+    containerClassName = '',
+    disabled,
+    ...props
+}) => {
     return (
-        <div className={`flex flex-col gap-1 ${className}`}>
-            {label && (
-                <label className="text-xs font-mono text-jarvis-cyan/70 uppercase tracking-wider ml-1">
-                    {label}
-                </label>
-            )}
-            <div className="relative group">
-                {icon && (
-                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-jarvis-cyan/50 group-focus-within:text-jarvis-blue transition-colors">
-                        {icon}
+        <div className={`flex flex-col gap-1 ${containerClassName}`}>
+            <div className={`relative flex items-center bg-black/30 border rounded-full transition-all duration-300 group ${error
+                    ? 'border-red-500/50 focus-within:border-red-500'
+                    : 'border-jarvis-border focus-within:border-jarvis-blue focus-within:shadow-jarvis-border-glow'
+                } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}>
+
+                {leftIcon && (
+                    <div className="pl-3 text-jarvis-text/50 group-focus-within:text-jarvis-blue transition-colors">
+                        {leftIcon}
                     </div>
                 )}
+
                 <input
-                    className={`w-full bg-jarvis-panel border-b-2 border-jarvis-border px-4 py-2 text-sm text-jarvis-text placeholder-jarvis-cyan/30 focus:outline-none focus:border-jarvis-blue focus:shadow-[0_4px_10px_-4px_rgba(0,240,255,0.3)] transition-all duration-300 rounded-t-sm ${icon ? 'pl-10' : ''} ${error ? 'border-red-500/50 focus:border-red-500' : ''}`}
+                    className={`w-full bg-transparent border-none py-2 px-3 text-sm text-jarvis-text placeholder:text-jarvis-text/30 focus:outline-none focus:ring-0 disabled:cursor-not-allowed ${className}`}
+                    disabled={disabled}
                     {...props}
                 />
-                {/* Animated Underline */}
-                <div className="absolute bottom-0 left-0 w-0 h-[2px] bg-jarvis-blue group-focus-within:w-full transition-all duration-500 ease-out" />
+
+                {rightIcon && (
+                    <div className="pr-3 text-jarvis-text/50">
+                        {rightIcon}
+                    </div>
+                )}
             </div>
             {error && (
-                <span className="text-xs text-red-400 font-mono mt-1 ml-1">{error}</span>
+                <span className="text-xs text-red-400 pl-2">{error}</span>
             )}
         </div>
     );

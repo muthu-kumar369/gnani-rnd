@@ -1,7 +1,12 @@
+// @ts-ignore
 import ReactMarkdown from 'react-markdown';
+// @ts-ignore
 import remarkGfm from 'remark-gfm';
+// @ts-ignore
 import remarkMath from 'remark-math';
+// @ts-ignore
 import rehypeKatex from 'rehype-katex';
+// @ts-ignore
 import rehypeRaw from 'rehype-raw';
 import CodeBlock from '../components/terminal/CodeBlock';
 import MermaidDiagram from '../components/terminal/MermaidDiagram';
@@ -133,12 +138,12 @@ export const renderMarkdown = (content: string) => {
                 ul: CustomList,
                 ol: CustomList,
                 li: CustomListItem,
-                h1: ({ children }) => <h1 className="text-2xl font-bold text-cyan-400 mt-4 mb-2 tracking-wide">{children}</h1>,
-                h2: ({ children }) => <h2 className="text-xl font-bold text-cyan-400 mt-4 mb-2 tracking-wide">{children}</h2>,
-                h3: ({ children }) => <h3 className="text-lg font-bold text-cyan-400 mt-4 mb-2 tracking-wide">{children}</h3>,
-                h4: ({ children }) => <h4 className="text-base font-bold text-cyan-400 mt-4 mb-2 tracking-wide">{children}</h4>,
-                h5: ({ children }) => <h5 className="text-sm font-bold text-cyan-400 mt-4 mb-2 tracking-wide">{children}</h5>,
-                h6: ({ children }) => <h6 className="text-xs font-bold text-cyan-400 mt-4 mb-2 tracking-wide">{children}</h6>,
+                h1: ({ children }: any) => <h1 className="text-2xl font-bold text-cyan-400 mt-4 mb-2 tracking-wide">{children}</h1>,
+                h2: ({ children }: any) => <h2 className="text-xl font-bold text-cyan-400 mt-4 mb-2 tracking-wide">{children}</h2>,
+                h3: ({ children }: any) => <h3 className="text-lg font-bold text-cyan-400 mt-4 mb-2 tracking-wide">{children}</h3>,
+                h4: ({ children }: any) => <h4 className="text-base font-bold text-cyan-400 mt-4 mb-2 tracking-wide">{children}</h4>,
+                h5: ({ children }: any) => <h5 className="text-sm font-bold text-cyan-400 mt-4 mb-2 tracking-wide">{children}</h5>,
+                h6: ({ children }: any) => <h6 className="text-xs font-bold text-cyan-400 mt-4 mb-2 tracking-wide">{children}</h6>,
                 p: CustomParagraph,
                 hr: CustomHr,
             }}

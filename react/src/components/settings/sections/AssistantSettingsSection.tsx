@@ -72,12 +72,14 @@ const AssistantSettingsSection: React.FC = () => {
                 {/* Voice & Audio */}
                 <Card title="Voice & Audio" action={<Volume2 size={18} className="text-jarvis-cyan/70" />}>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <Input
-                            label="Wake Word"
-                            name="wakeWord"
-                            value={settings.wakeWord || ''}
-                            onChange={handleChange}
-                        />
+                        <div className="space-y-1">
+                            <label className="text-xs font-mono text-jarvis-cyan/70 uppercase tracking-wider ml-1">Wake Word</label>
+                            <Input
+                                name="wakeWord"
+                                value={settings.wakeWord || ''}
+                                onChange={handleChange}
+                            />
+                        </div>
                         <div className="space-y-1">
                             <label className="text-xs font-mono text-jarvis-cyan/70 uppercase tracking-wider ml-1">Preferred Voice</label>
                             <select
@@ -210,7 +212,7 @@ const AssistantSettingsSection: React.FC = () => {
                     onClick={handleSave}
                     disabled={isSaving}
                     isLoading={isSaving}
-                    icon={<Save size={18} />}
+                    leftIcon={<Save size={18} />}
                 >
                     Save Changes
                 </Button>

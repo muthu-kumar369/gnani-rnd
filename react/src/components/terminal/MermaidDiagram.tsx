@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+// @ts-ignore
 import mermaid from 'mermaid';
 
 interface MermaidDiagramProps {
@@ -53,11 +54,11 @@ const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ chart }) => {
                 elementRef.current.innerHTML = '';
 
                 // Render the diagram
-                mermaid.render(idRef.current, chart).then(({ svg }) => {
+                mermaid.render(idRef.current, chart).then(({ svg }: { svg: string }) => {
                     if (elementRef.current) {
                         elementRef.current.innerHTML = svg;
                     }
-                }).catch((error) => {
+                }).catch((error: any) => {
                     console.error('Mermaid rendering error:', error);
                     if (elementRef.current) {
                         elementRef.current.innerHTML = `

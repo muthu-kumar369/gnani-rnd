@@ -6,11 +6,13 @@ import { login } from '../../api/authService';
 import { oauthService } from '../../api/oauthService';
 import errorLogger from '../../utils/errorLogger';
 import { useToast } from '../../context/ToastContext';
+import LoginLoader from '../ui/LoginLoader';
 
 const LoginForm: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [localLoading, setLocalLoading] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState('Authenticating...');
   const { loginStart, loginFailure, setAuth, refreshUser, error } = useUserStore();
   const { addToast } = useToast();
   const navigate = useNavigate();
@@ -18,18 +20,28 @@ const LoginForm: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLocalLoading(true);
+    setLoadingMessage('Authenticating...');
     loginStart();
 
     try {
       const response = await login(email, password);
+
+      setLoadingMessage('Loading profile...');
       // Set auth token first
       setAuth(true, response.accessToken);
+
       // Then fetch full user profile
       await refreshUser();
 
+      setLoadingMessage('Preparing workspace...');
+
       errorLogger.info('Login successful:', { context: 'LoginForm', extra: response });
       addToast('Login successful!', 'success');
-      navigate('/');
+
+      // Small delay to show final message
+      setTimeout(() => {
+        navigate('/');
+      }, 500);
     } catch (err: any) {
       errorLogger.error('Login error:', err, { context: 'LoginForm' });
       const errorMessage = err.message || 'An unknown error occurred during login';
@@ -38,6 +50,39 @@ const LoginForm: React.FC = () => {
       setLocalLoading(false);
     }
   };
+
+  const handleGoogleLogin = async () => {
+    setLocalLoading(true);
+    setLoadingMessage('Connecting to Google...');
+    loginStart();
+
+    try {
+      const response = await oauthService.initiateOAuth('google');
+
+      setLoadingMessage('Loading profile...');
+      setAuth(true, response.accessToken);
+      await refreshUser();
+
+      setLoadingMessage('Preparing workspace...');
+      errorLogger.info('Google Login successful:', { context: 'LoginForm', extra: response });
+      addToast('Login successful!', 'success');
+
+      setTimeout(() => {
+        navigate('/');
+      }, 500);
+    } catch (err: any) {
+      errorLogger.error('Google Login error:', err, { context: 'LoginForm' });
+      const errorMessage = err.message || 'An unknown error occurred during Google login';
+      addToast(errorMessage, 'error');
+      loginFailure(errorMessage);
+      setLocalLoading(false);
+    }
+  };
+
+  // Show loader during login process
+  if (localLoading) {
+    return <LoginLoader message={loadingMessage} />;
+  }
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-jarvis-bg text-jarvis-blue">
@@ -56,7 +101,6 @@ const LoginForm: React.FC = () => {
             className="w-full p-3 bg-black/40 border border-jarvis-blue/50 rounded-md focus:outline-none focus:ring-2 focus:ring-jarvis-blue text-cyan-100 placeholder-cyan-700"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            disabled={localLoading}
             required
             placeholder="Enter your email"
           />
@@ -72,7 +116,6 @@ const LoginForm: React.FC = () => {
             className="w-full p-3 bg-black/40 border border-jarvis-blue/50 rounded-md focus:outline-none focus:ring-2 focus:ring-jarvis-blue text-cyan-100 placeholder-cyan-700"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            disabled={localLoading}
             required
             placeholder="Enter your password"
           />
@@ -81,36 +124,15 @@ const LoginForm: React.FC = () => {
         <button
           type="submit"
           className="w-full bg-jarvis-blue text-black py-3 rounded-md font-bold hover:bg-cyan-300 transition-all duration-200 shadow-[0_0_15px_rgba(6,182,212,0.3)] hover:shadow-[0_0_25px_rgba(6,182,212,0.5)]"
-          disabled={localLoading}
         >
-          {localLoading ? 'Logging In...' : 'Login'}
+          Login
         </button>
 
         <div className="mt-6 border-t border-jarvis-blue/30 pt-6">
           <button
             type="button"
-            onClick={async () => {
-              setLocalLoading(true);
-              loginStart();
-              try {
-                const response = await oauthService.initiateOAuth('google');
-
-                setAuth(true, response.accessToken);
-                await refreshUser();
-
-                errorLogger.info('Google Login successful:', { context: 'LoginForm', extra: response });
-                addToast('Login successful!', 'success');
-                navigate('/');
-              } catch (err: any) {
-                errorLogger.error('Google Login error:', err, { context: 'LoginForm' });
-                const errorMessage = err.message || 'An unknown error occurred during Google login';
-                addToast(errorMessage, 'error');
-                loginFailure(errorMessage);
-                setLocalLoading(false);
-              }
-            }}
+            onClick={handleGoogleLogin}
             className="w-full bg-black/40 border border-jarvis-blue/50 text-jarvis-blue py-3 rounded-md font-semibold hover:bg-jarvis-blue/10 hover:border-jarvis-blue transition-all duration-200 flex items-center justify-center gap-3 group"
-            disabled={localLoading}
           >
             <svg className="w-5 h-5 transition-transform group-hover:scale-110" viewBox="0 0 24 24">
               <path

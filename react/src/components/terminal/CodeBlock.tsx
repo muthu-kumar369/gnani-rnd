@@ -4,6 +4,7 @@ import { jarvisCodeTheme, normalizeLanguage } from '../../styles/jarvisCodeTheme
 
 // Lazy load syntax highlighter for better performance
 const SyntaxHighlighter = lazy(() =>
+    // @ts-ignore
     import('react-syntax-highlighter').then(module => ({
         default: module.Prism
     }))
@@ -60,6 +61,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
                         {code}
                     </pre>
                 }>
+                    {/* @ts-ignore */}
                     <SyntaxHighlighter
                         language={normalizedLang}
                         style={jarvisCodeTheme}

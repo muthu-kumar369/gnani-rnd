@@ -89,28 +89,34 @@ const ProfileSection: React.FC = () => {
 
                 {/* Form Fields */}
                 <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <Input
-                        label="First Name"
-                        name="firstName"
-                        value={formData.firstName || ''}
-                        onChange={handleChange}
-                        placeholder="Enter first name"
-                    />
-                    <Input
-                        label="Last Name"
-                        name="lastName"
-                        value={formData.lastName || ''}
-                        onChange={handleChange}
-                        placeholder="Enter last name"
-                    />
-                    <Input
-                        label="Date of Birth"
-                        type="date"
-                        name="dob"
-                        value={formData.dob ? (typeof formData.dob === 'string' ? formData.dob.split('T')[0] : new Date(formData.dob).toISOString().split('T')[0]) : ''}
-                        onChange={handleChange}
-                        className="[color-scheme:dark]"
-                    />
+                    <div className="space-y-1">
+                        <label className="text-xs font-mono text-jarvis-cyan/70 uppercase tracking-wider ml-1">First Name</label>
+                        <Input
+                            name="firstName"
+                            value={formData.firstName || ''}
+                            onChange={handleChange}
+                            placeholder="Enter first name"
+                        />
+                    </div>
+                    <div className="space-y-1">
+                        <label className="text-xs font-mono text-jarvis-cyan/70 uppercase tracking-wider ml-1">Last Name</label>
+                        <Input
+                            name="lastName"
+                            value={formData.lastName || ''}
+                            onChange={handleChange}
+                            placeholder="Enter last name"
+                        />
+                    </div>
+                    <div className="space-y-1">
+                        <label className="text-xs font-mono text-jarvis-cyan/70 uppercase tracking-wider ml-1">Date of Birth</label>
+                        <Input
+                            type="date"
+                            name="dob"
+                            value={formData.dob ? (typeof formData.dob === 'string' ? formData.dob.split('T')[0] : new Date(formData.dob).toISOString().split('T')[0]) : ''}
+                            onChange={handleChange}
+                            className="[color-scheme:dark]"
+                        />
+                    </div>
                     <div className="space-y-1">
                         <label className="text-xs font-mono text-jarvis-cyan/70 uppercase tracking-wider ml-1">Language</label>
                         <select
@@ -135,7 +141,7 @@ const ProfileSection: React.FC = () => {
                     onClick={handleSave}
                     disabled={isSaving}
                     isLoading={isSaving}
-                    icon={<Save size={18} />}
+                    leftIcon={<Save size={18} />}
                 >
                     Save Changes
                 </Button>

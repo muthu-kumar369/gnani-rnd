@@ -64,6 +64,21 @@ class ApiClient {
         return this.handleResponse<T>(response);
     }
 
+    async patch<T>(endpoint: string, data?: any): Promise<T> {
+        const token = this.getAuthToken();
+
+        const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+                ...(token && { 'x-auth-token': token })
+            },
+            body: data ? JSON.stringify(data) : undefined
+        });
+
+        return this.handleResponse<T>(response);
+    }
+
     async put<T>(endpoint: string, data: any): Promise<T> {
         const token = this.getAuthToken();
 

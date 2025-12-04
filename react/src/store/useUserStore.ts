@@ -43,19 +43,23 @@ export const useUserStore = create<UserStore>((set, get) => ({
 
   // Initialize the store - check if user is authenticated
   initialize: () => {
+    // Ensure loading screen shows for at least 1 second for better UX
+    const minLoadingTime = new Promise(resolve => setTimeout(resolve, 1000));
+    
     // Try to load token from localStorage
     const storedToken = localStorage.getItem('accessToken');
     
     if (!storedToken) {
       // No token found, user needs to login
-      set({ loading: false, isAuthenticated: false, accessToken: null });
+      minLoadingTime.then(() => {
+        set({ loading: false, isAuthenticated: false, accessToken: null });
+      });
     } else {
       // Token found, set it and try to refresh user data
       set({ accessToken: storedToken, isAuthenticated: true, loading: true });
-      get().refreshUser().catch(() => {
+      Promise.all([get().refreshUser(), minLoadingTime]).catch(() => {
         // If refresh fails (expired token), logout and show login
         get().logout();
-        // logout() already sets loading to false, but being explicit here
       });
     }
   },

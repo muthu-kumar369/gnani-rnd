@@ -2,6 +2,7 @@ import React from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { MessageSquare, Trash2, Edit2, Play } from 'lucide-react';
 import type { Conversation } from '../../store/useConversationHistoryStore';
+import ExportButton from './ExportButton';
 
 interface ConversationListItemProps {
     conversation: Conversation;
@@ -64,6 +65,7 @@ const ConversationListItem: React.FC<ConversationListItemProps> = ({
                 </div>
 
                 <div className="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <ExportButton sessionId={conversation.sessionId} />
                     <button
                         onClick={(e) => { e.stopPropagation(); onResume(conversation.sessionId); }}
                         className="p-1 hover:bg-jarvis-cyan/20 rounded text-jarvis-cyan"

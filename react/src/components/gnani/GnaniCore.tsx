@@ -13,6 +13,8 @@ import errorLogger from "../../utils/errorLogger";
 import { useScreenshot } from "../../hooks/useScreenshot";
 import { useClipboard } from "../../hooks/useClipboard";
 import { FileDropZone } from "./FileDropZone";
+import { useDeviceAwareness } from "../../hooks/useDeviceAwareness";
+import { useAudioStream } from "../../hooks/useAudioStream";
 
 import HUDBackground from "./HUDBackground";
 import MicButton from "./MicButton";
@@ -42,6 +44,7 @@ const GnaniCore: React.FC = () => {
   const { addMessage, setSessionId, refreshConversation, clearMessages } = useConversationStore();
 
   const { latestLLMChunk, latestFinalSTT, isTtsEnded, isTtsStarted, isWakeWordTriggered, sessionId, toolStatus } = useIPC();
+  const { connectivityStatus } = useDeviceAwareness();
 
   const spokenText = useSpokenText();
   useConversationSync();
@@ -164,6 +167,13 @@ const GnaniCore: React.FC = () => {
         streamingTTSRef.current.flush();
         return;
       }
+
+      // Handle partial chunks (default case)
+      if (type === 'partial' || !type) {
+        // console.log('[GnaniCore] Received partial chunk:', text);
+        streamingTTSRef.current.addTextChunk(text);
+        return;
+      }
     } catch (error) {
       errorLogger.error('Error processing LLM chunk', error as Error, { context: 'GnaniCore' });
     }
@@ -279,6 +289,25 @@ const GnaniCore: React.FC = () => {
       window.removeEventListener('tts:interrupted', handleInterruption);
     };
   }, [state]);
+
+  useEffect(() => {
+    const handleTtsSpeak = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      const { text } = customEvent.detail;
+
+      if (streamingTTSRef.current) {
+        console.log('[GnaniCore] Handling tts:speak event:', text.substring(0, 50));
+        streamingTTSRef.current.reset();
+        streamingTTSRef.current.addTextChunk(text);
+        streamingTTSRef.current.flush();
+      }
+    };
+
+    window.addEventListener('tts:speak', handleTtsSpeak);
+    return () => {
+      window.removeEventListener('tts:speak', handleTtsSpeak);
+    };
+  }, []);
 
   const handleBargeIn = () => {
     errorLogger.info('Barge-in triggered', { context: 'GnaniCore', currentState: state });
@@ -398,6 +427,8 @@ const GnaniCore: React.FC = () => {
     }
   };
 
+  const { sendText, setSessionId: setStreamSessionId } = useAudioStream();
+
   const handleScreenshot = (base64: string) => {
     console.log('Screenshot captured:', base64.substring(0, 50) + '...');
     addMessage({
@@ -409,22 +440,18 @@ const GnaniCore: React.FC = () => {
       }
     });
 
-    if (window.gnani?.stream?.sendText) {
-      window.gnani.stream.sendText(JSON.stringify({
-        type: 'image',
-        content: base64,
-        mimeType: 'image/png'
-      }));
-    }
+    sendText(JSON.stringify({
+      type: 'image',
+      content: base64,
+      mimeType: 'image/png'
+    }));
   };
 
   const handleClipboardPaste = (content: { type: 'text' | 'image', data: string }) => {
     console.log('Clipboard paste:', content.type);
     if (content.type === 'text') {
       addMessage({ type: 'user', message: content.data });
-      if (window.gnani?.stream?.sendText) {
-        window.gnani.stream.sendText(content.data);
-      }
+      sendText(content.data);
     } else if (content.type === 'image') {
       handleScreenshot(content.data);
     }
@@ -443,9 +470,7 @@ const GnaniCore: React.FC = () => {
       } else if (file.type === 'text/plain' || file.name.endsWith('.md') || file.name.endsWith('.ts') || file.name.endsWith('.js')) {
         const text = await file.text();
         addMessage({ type: 'user', message: `File: ${file.name}\n\n${text}` });
-        if (window.gnani?.stream?.sendText) {
-          window.gnani.stream.sendText(`Content of file ${file.name}:\n${text}`);
-        }
+        sendText(`Content of file ${file.name}:\n${text}`);
       }
     }
   };
@@ -462,7 +487,7 @@ const GnaniCore: React.FC = () => {
 
   return (
     <FileDropZone onFileDrop={handleFileDrop}>
-      <div className="relative w-screen h-screen overflow-hidden font-sans text-white">
+      <div className="relative w-screen h-screen overflow-hidden font-sans text-jarvis-text">
         <HUDBackground status={currentUIStatus} />
 
         <motion.div
@@ -481,8 +506,10 @@ const GnaniCore: React.FC = () => {
                 GNANI
               </h1>
               <div className="flex items-center gap-2">
-                <div className="h-[1px] w-8 bg-jarvis-blue/50" />
-                <p className="text-xs text-jarvis-cyan/70 font-mono tracking-widest uppercase">System v2.0 Online</p>
+                <div className={`h-[1px] w-8 ${connectivityStatus?.online ? 'bg-jarvis-blue/50' : 'bg-red-500/50'}`} />
+                <p className={`text-xs font-mono tracking-widest uppercase ${connectivityStatus?.online ? 'text-jarvis-cyan/70' : 'text-red-400'}`}>
+                  {connectivityStatus?.online ? 'SYSTEM ONLINE' : 'SYSTEM OFFLINE'}
+                </p>
               </div>
             </div>
             <div className="text-right flex gap-4 items-center">
@@ -551,8 +578,8 @@ const GnaniCore: React.FC = () => {
           </footer>
         </motion.div>
 
-        {/* Mic Button Area - Fixed at top-mid (35% from top) */}
-        <div className="absolute left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-4" style={{ top: '35%' }}>
+        {/* Mic Button Area - Responsive Position */}
+        <div className="absolute left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-4 bottom-32 md:bottom-auto md:top-[35%]">
           <StatusDisplay status={animationState} subtext={uiState.streamErrorMessage || undefined} />
 
           <div className="relative flex items-center justify-center">
@@ -595,9 +622,7 @@ const GnaniCore: React.FC = () => {
               refreshConversation(accessToken);
             }
             // Notify Electron to switch session
-            if (window.gnani?.stream?.setSessionId) {
-              window.gnani.stream.setSessionId(sessionId);
-            }
+            setStreamSessionId(sessionId);
           }}
         />
 
