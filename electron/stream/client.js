@@ -36,6 +36,13 @@ class StreamingClient extends EventEmitter {
     this.isRefreshingToken = false;
     this.pendingAudioBuffer = [];
     this.isConnecting = false;
+
+    // NEW: Reconnection state management
+    this.isReconnecting = false;
+    this.reconnectBuffer = [];  // Buffer audio during reconnection
+    this.sessionState = null;   // Store session state for recovery
+    this.MAX_BUFFER_FRAMES = 480; // ~30s at 16kHz
+
     this.init();
   }
 
@@ -201,7 +208,7 @@ class StreamingClient extends EventEmitter {
       if (data.tool_status) {
         this.emit('stream:tool_status', { tool_status: data.tool_status });
       }
-      
+
       this.metrics.recordBytesReceived(JSON.stringify(data).length); // Approx size
     });
 
@@ -254,6 +261,21 @@ class StreamingClient extends EventEmitter {
     this.emit("stream:disconnected");
 
     if (forceReconnect && this.backoff.shouldRetry()) {
+      // NEW: Set reconnecting flag and preserve session state
+      if (this.currentSessionId) {
+        this.sessionState = {
+          sessionId: this.currentSessionId,
+          userId: this.store.get('userId'),
+          wasStreaming: this.isStreamingAudio
+        };
+        this.isReconnecting = true;
+        this.emit('stream:reconnecting');
+        logger.info('Preserved session state for reconnection', {
+          context: 'StreamingClient',
+          sessionId: this.currentSessionId
+        });
+      }
+
       logger.info("Scheduling gRPC stream reconnect...", {
         context: "StreamingClient",
       });
@@ -264,8 +286,42 @@ class StreamingClient extends EventEmitter {
   async _attemptReconnect() {
     logger.info("Attempting gRPC stream reconnect...", {
       context: "StreamingClient",
+      bufferedFrames: this.reconnectBuffer ? this.reconnectBuffer.length : 0
     });
-    await this.connect();
+
+    try {
+      // NEW: Restore session ID if preserved
+      if (this.sessionState && this.sessionState.sessionId) {
+        this.currentSessionId = this.sessionState.sessionId;
+      }
+
+      await this.connect();
+
+      // NEW: Replay buffered audio if reconnection successful
+      if (this.isConnected && this.reconnectBuffer && this.reconnectBuffer.length > 0) {
+        logger.info(`Replaying ${this.reconnectBuffer.length} buffered audio frames`, {
+          context: 'StreamingClient'
+        });
+
+        for (const { frame, isLast } of this.reconnectBuffer) {
+          if (this.call && this.isConnected) {
+            this.call.write({
+              session_id: this.currentSessionId,
+              audio_chunk: frame,
+              end_of_stream: isLast
+            });
+          }
+        }
+        this.reconnectBuffer = [];
+      }
+
+      this.isReconnecting = false;
+      this.sessionState = null;
+      this.emit('stream:reconnected');
+
+    } catch (error) {
+      logger.error('Reconnection attempt failed', { context: 'StreamingClient', error: error.message });
+    }
   }
 
   disconnect() {
@@ -328,6 +384,22 @@ class StreamingClient extends EventEmitter {
     if (this.isConnecting) {
       if (this.pendingAudioBuffer) {
         this.pendingAudioBuffer.push(pcmFrame);
+      }
+      return;
+    }
+
+    // NEW: If reconnecting, buffer the frame
+    if (this.isReconnecting) {
+      if (!this.reconnectBuffer) this.reconnectBuffer = [];
+
+      if (this.reconnectBuffer.length < this.MAX_BUFFER_FRAMES) {
+        this.reconnectBuffer.push({ frame: pcmFrame, isLast });
+      } else {
+        this.reconnectBuffer.shift(); // Drop oldest
+        this.reconnectBuffer.push({ frame: pcmFrame, isLast });
+        if (this.reconnectBuffer.length % 50 === 0) {
+          logger.warn('Reconnect buffer full, dropping oldest frame', { context: 'StreamingClient' });
+        }
       }
       return;
     }

@@ -6,6 +6,7 @@ import RegisterPage from './pages/RegisterPage';
 import { useUserStore } from './store/useUserStore';
 import { ToastProvider } from './context/ToastContext';
 import LoadingScreen from './components/common/LoadingScreen';
+import { ErrorBoundary } from './components/common/ErrorBoundary';
 
 // Protected Route Wrapper - only renders when authenticated
 function ProtectedRoute() {
@@ -15,7 +16,11 @@ function ProtectedRoute() {
     return <Navigate to="/login" replace />;
   }
 
-  return <GnaniCore />;
+  return (
+    <ErrorBoundary componentName="GnaniCore">
+      <GnaniCore />
+    </ErrorBoundary>
+  );
 }
 
 function App() {

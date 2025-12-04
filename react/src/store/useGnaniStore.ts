@@ -17,6 +17,10 @@ interface GnaniStore {
   // Internal (used for initialization)
   _init: () => void;
   _cleanup: () => void;
+
+  // Queue state
+  transitionQueue: StateTrigger[];
+  isTransitioning: boolean;
 }
 
 // Singleton instance outside the store to persist across re-renders
@@ -31,11 +35,43 @@ export const useGnaniStore = create<GnaniStore>((set, get) => ({
   isListening: false,
   isThinking: false,
   isSpeaking: false,
+  transitionQueue: [],
+  isTransitioning: false,
 
   transition: (trigger: StateTrigger) => {
+    const { isTransitioning } = get();
+
+    // Queue transition if currently transitioning
+    if (isTransitioning) {
+      console.log('[useGnaniStore] Queuing transition:', trigger);
+      // Store the trigger in a queue to be processed later
+      // We need to extend the store interface to hold this queue
+      // For now, we'll just log a warning and return if we can't queue effectively without major refactor
+      // But let's try to implement a simple queue in the store state
+      set((state) => ({
+        transitionQueue: [...state.transitionQueue, trigger]
+      }));
+      return;
+    }
+
     if (stateMachine) {
       console.log('[useGnaniStore] Calling transition:', trigger, 'from state:', get().state);
-      stateMachine.transition(trigger);
+      set({ isTransitioning: true });
+
+      try {
+        stateMachine.transition(trigger);
+      } finally {
+        // Process next item in queue
+        setTimeout(() => {
+          set({ isTransitioning: false });
+          const currentQueue = get().transitionQueue;
+          if (currentQueue.length > 0) {
+            const [nextTrigger, ...rest] = currentQueue;
+            set({ transitionQueue: rest });
+            get().transition(nextTrigger);
+          }
+        }, 0);
+      }
     } else {
       errorLogger.warn('Attempted to transition before state machine initialized', { context: 'useGnaniStore' });
     }
