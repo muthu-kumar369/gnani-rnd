@@ -8,7 +8,7 @@ Implement a complete file attachment system for document uploads (PDF, TXT, DOC,
 - Parse document content and inject into conversation context
 - Support PDF, TXT, DOC, DOCX, and Markdown files
 - Implement drag-and-drop and file picker UI
-- Store files efficiently (local storage or S3)
+- Store files efficiently ( S3 and fallback to local as well)
 - Display attached files in conversation UI
 - Allow file removal and re-upload
 
@@ -44,7 +44,7 @@ Create `/src/modules/file/file.service.ts`:
    async uploadFile(file: Express.Multer.File, userId: string): Promise<FileDocument> {
      // 1. Validate file type and size
      // 2. Generate unique filename (UUID + original extension)
-     // 3. Save to storage (local: /uploads or S3)
+     // 3. Save to storage ( S3 and fallback to local: /uploads when it s3 fails)
      // 4. Parse file content based on type
      // 5. Create file document in database
      // 6. Return file metadata

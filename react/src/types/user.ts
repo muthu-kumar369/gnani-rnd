@@ -7,6 +7,8 @@ export interface ISettings {
     speechSpeed: number; // Frontend only requirement
     avatarEnabled: boolean;
     avatarGender: 'male' | 'female';
+    preferredModel?: string; // User's preferred LLM model
+    showTimestamps?: boolean; // Show/hide message timestamps
 }
 
 export interface IProfile {

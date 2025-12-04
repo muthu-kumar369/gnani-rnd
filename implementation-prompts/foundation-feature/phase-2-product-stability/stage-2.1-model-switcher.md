@@ -1,92 +1,82 @@
-# Stage 2.1: Model Switcher with Resource Management
+# Stage 2.1: User-Preferred Model Routing
 
 ## Summary
-Enable users to switch between different LLM models per conversation while managing limited GPU/RAM resources through intelligent model loading/unloading.
+Implement a persistent, user-centric model selection system. Instead of dynamic loading/unloading per conversation, users select their preferred model (e.g., "Llama 3", "Mistral", "GPT-4") in their settings. This preference is stored in the user profile and dictates the routing logic for all subsequent interactions.
 
 ## Goals
-- Add model selection dropdown in conversation settings
-- Implement model loading/unloading service
-- Show loading progress during model switches (30-60s)
-- Persist model choice per conversation
-- Handle model loading failures gracefully
+- **User Persistence:** Store `preferredModel` in the User Profile.
+- **Backend Routing:** Update LLM Service to route requests to the specific model provider/endpoint based on the user's preference.
+- **UI Integration:** Add a "Default Model" selector in the Assistant Settings (and optionally a quick-switcher in the header).
+- **Seamless Experience:** Ensure the selected model is used across app restarts without manual reselections.
 
 ## Files to Modify / Create
 
 ### Backend
-- `/src/modules/model/model-manager.service.ts` → **[NEW]** Service to manage model lifecycle
-- `/src/modules/model/model.controller.ts` → **[NEW]** Endpoints for model switching
-- `/src/modules/conversation/conversation.schema.ts` → Add `modelId` field
-- `/src/config/models.config.ts` → **[NEW]** Configuration for available models
+- `/src/modules/user/user.model.ts` → Add `preferredModel` field to schema.
+- `/src/modules/user/dto/update-user.dto.ts` → Add validation for model updates.
+- `/src/modules/llm/llm.service.ts` → Modify `generateResponse` to accept/lookup model preference.
+- `/src/modules/llm/llm.factory.ts` or `router.ts` → **[NEW]** Logic to select correct provider (Ollama, OpenAI, etc.) based on model ID.
+- `/src/config/llm.config.ts` → Define available models and their providers.
 
 ### Frontend
-- `/src/components/ModelSwitcher/ModelSwitcher.tsx` → **[NEW]** UI component for switching models
-- `/src/stores/modelStore.ts` → **[NEW]** State management for models
-- `/src/components/ConversationHeader.tsx` → Integrate ModelSwitcher
+- `/src/components/Settings/AssistantSettings.tsx` → Add Model Selector dropdown.
+- `/src/store/useUserStore.ts` → Ensure `preferredModel` is synced.
+- `/src/types/user.types.ts` → Update User interface.
 
 ## Detailed Implementation Instructions
 
 ### Backend Implementation
 
-#### Step 1: Create Model Manager Service
-In `/src/modules/model/model-manager.service.ts`:
+#### Step 1: Update User Schema
+In `/src/modules/user/user.model.ts`:
+```typescript
+@Prop({ default: 'llama3' }) // or a sensible default
+preferredModel: string;
+```
+
+#### Step 2: Define Model Configuration
+In `/src/config/llm.config.ts`, define the registry of supported models:
+```typescript
+export const AVAILABLE_MODELS = {
+  'llama3': { provider: 'ollama', modelName: 'llama3:latest' },
+  'mistral': { provider: 'ollama', modelName: 'mistral:latest' },
+  'gpt-4': { provider: 'openai', modelName: 'gpt-4-turbo' },
+  // ...
+};
+```
+
+#### Step 3: Implement Routing Logic
+In `/src/modules/llm/llm.service.ts`:
+- When processing a message, retrieve the user's `preferredModel`.
+- Look up the provider configuration.
+- Instantiate or use the correct client (OllamaClient, OpenAIClient, etc.).
 
 ```typescript
-class ModelManager {
-  private currentModel: LoadedModel | null = null;
-  private modelRegistry: Map<string, ModelConfig>;
+async generateResponse(userId: string, prompt: string) {
+  const user = await this.userService.findById(userId);
+  const modelConfig = AVAILABLE_MODELS[user.preferredModel];
   
-  async switchModel(modelId: string): Promise<void> {
-    // 1. Unload current model (free RAM/VRAM)
-    if (this.currentModel) {
-      await this.unloadModel(this.currentModel.id);
-      this.emitProgress('unloading', 25);
-    }
-    
-    // 2. Load new model
-    this.emitProgress('loading', 50);
-    this.currentModel = await this.loadModel(modelId);
-    this.emitProgress('ready', 100);
+  // Route to appropriate provider
+  if (modelConfig.provider === 'ollama') {
+    return this.ollamaService.chat(modelConfig.modelName, prompt);
   }
-  
-  async loadModel(modelId: string): Promise<LoadedModel> {
-    const config = this.modelRegistry.get(modelId);
-    // Use Ollama, LM Studio, or vLLM API
-    // Return loaded model handle
-  }
-  
-  async unloadModel(modelId: string): Promise<void> {
-    // Call model server unload endpoint
-    // Free resources
-  }
+  // ...
 }
 ```
 
-#### Step 2: Create Model Controller
-In `/src/modules/model/model.controller.ts`:
-
-- `GET /api/models`: List available models
-- `POST /api/models/switch`: Switch active model
-- `GET /api/models/status`: Get current model loading status
-
 ### Frontend Implementation
 
-#### Step 3: Create Model Switcher UI
-In `/src/components/ModelSwitcher/ModelSwitcher.tsx`:
+#### Step 4: Settings UI
+In `/src/components/Settings/AssistantSettings.tsx`:
+- Fetch available models from an endpoint (or hardcode if static).
+- Render a `<Select>` component for "Default Model".
+- On change, call `updateUser({ preferredModel: newValue })`.
 
-- Dropdown in conversation header or settings
-- Display model name, size, quantization level
-- Show loading bar during switch
-- Disable input during model loading
-- Fallback to previous model on failure
-
-#### Step 4: Integrate into Conversation Header
-In `/src/components/ConversationHeader.tsx`:
-
-- Add `ModelSwitcher` component
-- Ensure it reflects the current conversation's model
+#### Step 5: Store Updates
+- Ensure `useUserStore` updates the local state immediately upon successful API call so the UI reflects the change instantly.
 
 ## Acceptance Criteria
-- [ ] Users can switch models without app restart
-- [ ] Loading progress is shown
-- [ ] Model choice is persisted per conversation
-- [ ] System handles loading failures gracefully
+- [ ] User can select a model in Settings.
+- [ ] Selection persists after refreshing/restarting the app.
+- [ ] Backend correctly routes the request to the selected model.
+- [ ] If the selected model is unavailable (e.g., local Ollama model missing), fallback gracefully (e.g., to a default model) and notify user.

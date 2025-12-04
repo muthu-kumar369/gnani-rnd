@@ -127,7 +127,7 @@ In `/src/components/ConversationSidebar.tsx`:
 1. **Caching:** Cache the title generation prompt template
 2. **Async Execution:** Never block message flow for title generation
 3. **Retry Logic:** Don't retry failed title generation to avoid wasting resources
-4. **Token Efficiency:** Use smallest model available for title generation (e.g., GPT-3.5-turbo or local small model)
+4. **Token Efficiency:** Use smallest model available for title generation (e.g., ollama local small model)
 
 ## Acceptance Criteria
 

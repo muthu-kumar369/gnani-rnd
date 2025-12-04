@@ -24,6 +24,13 @@ export interface ConversationMessage {
     image?: string;
     mimeType?: string;
   };
+  tokenUsage?: {
+    inputTokens: number;
+    outputTokens: number;
+    totalTokens: number;
+    estimatedCost: number;
+    model: string;
+  };
 }
 
 interface ConversationStore {
@@ -42,7 +49,7 @@ interface ConversationStore {
   editMessage: (messageId: string, newContent: string, accessToken: string) => Promise<void>;
   refreshConversation: (accessToken: string) => Promise<void>;
   navigateToBranch: (messageId: string, direction: 'prev' | 'next') => void;
-  
+
   // Helpers
   _deriveVisibleMessages: () => void;
 }
@@ -87,7 +94,7 @@ export const useConversationStore = create<ConversationStore>()(
           allMessages: updatedAllMessages,
           currentLeafId: newMessage.id
         });
-        
+
         get()._deriveVisibleMessages();
 
         errorLogger.debug('Added message to conversation', {
@@ -131,25 +138,25 @@ export const useConversationStore = create<ConversationStore>()(
         // 2. Check for broken chains or missing parents
         // If we have multiple messages but the path only has 1 (and it's not the only message),
         // or if we have messages with null parentId that are not at the start of the path.
-        
+
         // Fallback: If the path length is significantly smaller than allMessages length,
         // and we suspect broken links (e.g. multiple roots), let's try to be smart.
-        
+
         // For now, if we have a broken tree (assistant message with null parent), 
         // the path will be just the assistant message.
-        
+
         // Heuristic: If path has 1 item, but allMessages has > 1, and the item in path is NOT the oldest message,
         // then we likely have a broken link.
-        
+
         const isBrokenChain = path.length < allMessages.length && path.length === 1;
-        
+
         if (isBrokenChain) {
-           // Fallback to linear sort by timestamp for this branch
-           // This is a simplification but handles the "broken parentId" case
-           const sortedMessages = [...allMessages].sort((a, b) => a.timestamp - b.timestamp);
-           set({ messages: sortedMessages });
+          // Fallback to linear sort by timestamp for this branch
+          // This is a simplification but handles the "broken parentId" case
+          const sortedMessages = [...allMessages].sort((a, b) => a.timestamp - b.timestamp);
+          set({ messages: sortedMessages });
         } else {
-           set({ messages: path });
+          set({ messages: path });
         }
       },
 
@@ -165,7 +172,7 @@ export const useConversationStore = create<ConversationStore>()(
           if (!response.ok) throw new Error('Failed to fetch conversation');
 
           const data = await response.json();
-          
+
           set({ title: data.title });
 
           const mappedMessages: ConversationMessage[] = data.messages.map((msg: any) => ({
@@ -220,11 +227,11 @@ export const useConversationStore = create<ConversationStore>()(
           });
 
           if (!response.ok) throw new Error('Failed to regenerate response');
-          
+
           const newAssistantMessage = await response.json();
           // Update currentLeafId to the new message to switch to this branch
           set({ currentLeafId: newAssistantMessage._id || newAssistantMessage.id });
-          
+
           await get().refreshConversation(accessToken);
         } catch (error) {
           errorLogger.error('Error regenerating response', error as Error, { context: 'useConversationStore' });
@@ -247,11 +254,11 @@ export const useConversationStore = create<ConversationStore>()(
           });
 
           if (!response.ok) throw new Error('Failed to edit message');
-          
+
           const { newAssistantMessage } = await response.json();
           // Update currentLeafId to the new assistant response to switch to this branch
           set({ currentLeafId: newAssistantMessage._id || newAssistantMessage.id });
-          
+
           await get().refreshConversation(accessToken);
         } catch (error) {
           errorLogger.error('Error editing message', error as Error, { context: 'useConversationStore' });
@@ -296,7 +303,7 @@ export const useConversationStore = create<ConversationStore>()(
         };
 
         findLeaf(targetId);
-        
+
         set({ currentLeafId: bestLeafId });
         get()._deriveVisibleMessages();
       }

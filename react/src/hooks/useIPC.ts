@@ -189,6 +189,26 @@ export const useIPC = () => {
         console.log('[IPC] Tool Status received:', status);
         setToolStatus(status);
       }));
+
+      // Title Update Listener
+      unsubs.push(window.gnani.stream.on('stream:title_update', ({ session_id, title }: { session_id: string, title: string }) => {
+        console.log(`[IPC] Title Update received for session ${session_id}: "${title}"`);
+        errorLogger.debug(`IPC: Title Update: ${title}`, { context: 'useIPC', sessionId: session_id });
+        // Import and call the conversation history store's updateConversationTitle method
+        import('../store/useConversationHistoryStore').then(({ useConversationHistoryStore }) => {
+          useConversationHistoryStore.getState().updateConversationTitle(session_id, title);
+        });
+      }));
+
+      // Typing Status Listener
+      unsubs.push(window.gnani.stream.on('stream:typing_status', ({ status, message }: { status: string, message?: string }) => {
+        console.log(`[IPC] Typing Status received: ${status}`, message ? `(${message})` : '');
+        errorLogger.debug(`IPC: Typing Status: ${status}`, { context: 'useIPC', message });
+        // Import and call the gnani store's setTypingStatus method
+        import('../store/useGnaniStore').then(({ useGnaniStore }) => {
+          useGnaniStore.getState().setTypingStatus(status as any, message);
+        });
+      }));
     }
 
     // Cleanup on unmount

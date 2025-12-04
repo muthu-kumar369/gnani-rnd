@@ -1,25 +1,36 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { User, Bot, Volume2, Terminal, Activity, RefreshCw, Edit2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { User, Bot, Volume2, Terminal, Activity, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useConversationStore, type ConversationMessage } from '../../store/useConversationStore';
-import { useUserStore } from '../../store/useUserStore';
+import { useMessageActions } from '../../hooks/useMessageActions';
+import MessageActions from './MessageActions';
+import EditMessageModal from './EditMessageModal';
+import DeleteConfirmDialog from './DeleteConfirmDialog';
+import TokenBadge from '../token-usage/TokenBadge';
+import MessageTimestamp from './MessageTimestamp';
+import { renderMarkdown } from '../../utils/markdown-renderer';
+import '../../styles/messageActions.css';
+import '../../styles/markdown.css';
 
 interface MessageBubbleProps {
     message: ConversationMessage;
     isLatest: boolean;
+    showTimestamp?: boolean;
 }
 
-const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isLatest }) => {
-    const { regenerateResponse, editMessage, navigateToBranch } = useConversationStore();
-    const { accessToken } = useUserStore();
+const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isLatest, showTimestamp = true }) => {
+    const { navigateToBranch, sessionId } = useConversationStore();
+    const actions = useMessageActions(sessionId);
+
     const [displayedText, setDisplayedText] = useState('');
-    const [isEditing, setIsEditing] = useState(false);
-    const [editContent, setEditContent] = useState(message.message);
-    const [isRegenerating, setIsRegenerating] = useState(false);
+    const [isHovered, setIsHovered] = useState(false);
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
     const isGnani = message.type === 'gnani';
     const isTTS = message.type === 'tts';
     const isUser = message.type === 'user';
+    const isSystem = message.type === 'system';
 
     // Typing effect for Gnani messages
     useEffect(() => {
@@ -43,15 +54,6 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isLatest }) => {
             setDisplayedText(message.message);
         }
     }, [message.message, isGnani, isLatest]);
-
-    const formatTime = (timestamp: number) => {
-        return new Date(timestamp).toLocaleTimeString([], {
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit',
-            hour12: false
-        });
-    };
 
     const getIcon = () => {
         switch (message.type) {
@@ -83,144 +85,121 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isLatest }) => {
         }
     };
 
-    const handleRegenerate = async () => {
-        if (isRegenerating) return;
-        setIsRegenerating(true);
-        try {
-            await regenerateResponse(message.id, accessToken || '');
-        } catch (error) {
-            console.error('Failed to regenerate:', error);
-        } finally {
-            setIsRegenerating(false);
-        }
+    const handleCopy = () => {
+        navigator.clipboard.writeText(message.message);
+        // Could add toast here
     };
 
-    const handleEditSave = async () => {
-        if (editContent.trim() === message.message) {
-            setIsEditing(false);
-            return;
-        }
-        try {
-            await editMessage(message.id, editContent, accessToken || '');
-            setIsEditing(false);
-        } catch (error) {
-            console.error('Failed to edit:', error);
-        }
-    };
+
+
+    // Determine role for actions
+    const actionRole = isUser ? 'user' : (isGnani ? 'assistant' : 'system');
 
     return (
-        <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className={`relative mb-3 p-3 rounded-lg border ${getBorderColor()} ${getBgColor()} backdrop-blur-sm overflow-hidden group`}
-        >
-            {/* Holographic scanline effect for active/latest messages */}
-            {isLatest && (
-                <div className="absolute inset-0 pointer-events-none opacity-10 bg-gradient-to-b from-transparent via-cyan-400 to-transparent animate-scanline" />
-            )}
+        <>
+            <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                className={`relative mb-3 p-3 rounded-lg border ${getBorderColor()} ${getBgColor()} backdrop-blur-sm overflow-visible group`}
+                onMouseEnter={() => setIsHovered(true)}
+                onMouseLeave={() => setIsHovered(false)}
+            >
+                {/* Holographic scanline effect for active/latest messages */}
+                {isLatest && (
+                    <div className="absolute inset-0 pointer-events-none opacity-10 bg-gradient-to-b from-transparent via-cyan-400 to-transparent animate-scanline rounded-lg" />
+                )}
 
-            <div className="flex items-start gap-3">
-                {/* Avatar/Icon Box */}
-                <div className="shrink-0 w-6 h-6 rounded border border-cyan-500/30 flex items-center justify-center bg-black/40 shadow-[0_0_10px_rgba(6,182,212,0.1)]">
-                    {getIcon()}
-                </div>
+                {/* Message Actions Hover Menu */}
+                {!isSystem && (
+                    <MessageActions
+                        role={actionRole as any}
+                        isVisible={isHovered}
+                        onCopy={handleCopy}
+                        onRegenerate={isGnani ? () => actions.regenerateMessage(message.id) : undefined}
+                        onEdit={isUser ? () => setIsEditModalOpen(true) : undefined}
+                        onDelete={() => setIsDeleteDialogOpen(true)}
+                        isRegenerating={actions.isLoading}
+                    />
+                )}
 
-                {/* Content */}
-                <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between mb-1">
-                        <div className="flex items-center gap-2">
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-cyan-500">
-                                {message.type}
-                            </span>
-                            <span className="text-[10px] text-cyan-700 font-mono">
-                                [{formatTime(message.timestamp)}]
-                            </span>
-                            {/* Branch Info */}
-                            {(message.children && message.children.length > 1) && (
-                                <span className="text-[10px] text-cyan-600 font-mono flex items-center gap-1">
-                                    <ChevronLeft
-                                        size={10}
-                                        className="cursor-pointer hover:text-cyan-400"
-                                        onClick={() => navigateToBranch(message.id, 'prev')}
-                                    />
-                                    {(message.branchIndex || 0) + 1}/{message.children.length}
-                                    <ChevronRight
-                                        size={10}
-                                        className="cursor-pointer hover:text-cyan-400"
-                                        onClick={() => navigateToBranch(message.id, 'next')}
-                                    />
-                                </span>
-                            )}
-                        </div>
-
-                        {/* Actions */}
-                        <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                            {isGnani && (
-                                <button
-                                    onClick={handleRegenerate}
-                                    disabled={isRegenerating}
-                                    className="p-1 hover:bg-cyan-500/20 rounded text-cyan-600 hover:text-cyan-300 transition-colors"
-                                    title="Regenerate Response"
-                                >
-                                    <RefreshCw size={12} className={isRegenerating ? 'animate-spin' : ''} />
-                                </button>
-                            )}
-                            {isUser && !isEditing && (
-                                <button
-                                    onClick={() => setIsEditing(true)}
-                                    className="p-1 hover:bg-cyan-500/20 rounded text-cyan-600 hover:text-cyan-300 transition-colors"
-                                    title="Edit Message"
-                                >
-                                    <Edit2 size={12} />
-                                </button>
-                            )}
-                        </div>
+                <div className="flex items-start gap-3">
+                    {/* Avatar/Icon Box */}
+                    <div className="shrink-0 w-6 h-6 rounded border border-cyan-500/30 flex items-center justify-center bg-black/40 shadow-[0_0_10px_rgba(6,182,212,0.1)]">
+                        {getIcon()}
                     </div>
 
-                    <div className={`font-mono text-sm leading-relaxed ${isTTS ? 'text-cyan-100' : 'text-cyan-200/90'}`}>
-                        {isEditing ? (
-                            <div className="flex flex-col gap-2">
-                                <textarea
-                                    value={editContent}
-                                    onChange={(e) => setEditContent(e.target.value)}
-                                    className="w-full bg-black/50 border border-cyan-500/30 rounded p-2 text-cyan-200 focus:outline-none focus:border-cyan-500/70"
-                                    rows={3}
-                                />
-                                <div className="flex justify-end gap-2">
-                                    <button
-                                        onClick={() => setIsEditing(false)}
-                                        className="px-3 py-1 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 rounded text-xs text-red-400 transition-colors"
-                                    >
-                                        Cancel
-                                    </button>
-                                    <button
-                                        onClick={handleEditSave}
-                                        className="px-3 py-1 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 rounded text-xs text-cyan-400 transition-colors"
-                                    >
-                                        Send
-                                    </button>
-                                </div>
+                    {/* Content */}
+                    <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between mb-1">
+                            <div className="flex items-center gap-2">
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-cyan-500">
+                                    {message.type}
+                                </span>
+                                {showTimestamp && <MessageTimestamp timestamp={message.timestamp} />}
+                                {/* Branch Info */}
+                                {(message.children && message.children.length > 1) && (
+                                    <span className="text-[10px] text-cyan-600 font-mono flex items-center gap-1 select-none">
+                                        <ChevronLeft
+                                            size={10}
+                                            className="cursor-pointer hover:text-cyan-400"
+                                            onClick={() => navigateToBranch(message.id, 'prev')}
+                                        />
+                                        {(message.branchIndex || 0) + 1}/{message.children.length}
+                                        <ChevronRight
+                                            size={10}
+                                            className="cursor-pointer hover:text-cyan-400"
+                                            onClick={() => navigateToBranch(message.id, 'next')}
+                                        />
+                                    </span>
+                                )}
+
+
+                                {/* Token Usage Badge */}
+                                {message.tokenUsage && (
+                                    <TokenBadge usage={message.tokenUsage} />
+                                )}
                             </div>
-                        ) : (
-                            isGnani && isLatest ? (
+                        </div>
+
+                        <div className={`font-mono text-sm leading-relaxed ${isTTS ? 'text-cyan-100' : 'text-cyan-200/90'} markdown-content`}>
+                            {isGnani && isLatest ? (
                                 <>
-                                    {displayedText}
+                                    <div className="markdown-content">
+                                        {renderMarkdown(displayedText)}
+                                    </div>
                                     <span className="inline-block w-2 h-4 ml-1 align-middle bg-cyan-500 animate-pulse" />
                                 </>
                             ) : (
-                                message.message
-                            )
-                        )}
+                                <div className="markdown-content">
+                                    {renderMarkdown(message.message)}
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            {/* Corner Accents */}
-            <div className="absolute top-0 left-0 w-2 h-2 border-t border-l border-cyan-500/50" />
-            <div className="absolute top-0 right-0 w-2 h-2 border-t border-r border-cyan-500/50" />
-            <div className="absolute bottom-0 left-0 w-2 h-2 border-b border-l border-cyan-500/50" />
-            <div className="absolute bottom-0 right-0 w-2 h-2 border-b border-r border-cyan-500/50" />
-        </motion.div>
+                {/* Corner Accents */}
+                <div className="absolute top-0 left-0 w-2 h-2 border-t border-l border-cyan-500/50 rounded-tl-lg" />
+                <div className="absolute top-0 right-0 w-2 h-2 border-t border-r border-cyan-500/50 rounded-tr-lg" />
+                <div className="absolute bottom-0 left-0 w-2 h-2 border-b border-l border-cyan-500/50 rounded-bl-lg" />
+                <div className="absolute bottom-0 right-0 w-2 h-2 border-b border-r border-cyan-500/50 rounded-br-lg" />
+            </motion.div >
+
+            {/* Modals */}
+            < EditMessageModal
+                isOpen={isEditModalOpen}
+                onClose={() => setIsEditModalOpen(false)}
+                onSave={(newContent) => actions.editMessage(message.id, newContent)}
+                initialContent={message.message}
+            />
+
+            <DeleteConfirmDialog
+                isOpen={isDeleteDialogOpen}
+                onClose={() => setIsDeleteDialogOpen(false)}
+                onConfirm={() => actions.deleteMessage(message.id)}
+                messagePreview={message.message}
+            />
+        </>
     );
 };
 

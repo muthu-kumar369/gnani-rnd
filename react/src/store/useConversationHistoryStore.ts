@@ -20,6 +20,7 @@ interface ConversationHistoryStore {
     setHasMore: (hasMore: boolean) => void;
     setPage: (page: number) => void;
     setSearchQuery: (query: string) => void;
+    updateConversationTitle: (sessionId: string, title: string) => void;
 }
 
 export const useConversationHistoryStore = create<ConversationHistoryStore>((set) => ({
@@ -36,4 +37,9 @@ export const useConversationHistoryStore = create<ConversationHistoryStore>((set
     setHasMore: (hasMore) => set({ hasMore }),
     setPage: (page) => set({ page }),
     setSearchQuery: (searchQuery) => set({ searchQuery }),
+    updateConversationTitle: (sessionId, title) => set((state) => ({
+        conversations: state.conversations.map(conv =>
+            conv.sessionId === sessionId ? { ...conv, title } : conv
+        )
+    })),
 }));

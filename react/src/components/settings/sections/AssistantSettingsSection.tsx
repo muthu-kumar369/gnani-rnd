@@ -8,14 +8,40 @@ import Loader from '../../ui/Loader';
 import Input from '../../ui/Input';
 import Button from '../../ui/Button';
 import Card from '../../ui/Card';
+import axios from 'axios';
+
+interface ModelOption {
+    id: string;
+    displayName: string;
+    description?: string;
+    provider: string;
+}
 
 const AssistantSettingsSection: React.FC = () => {
     const { user, updateSettings, loading } = useUserStore();
     const { addToast } = useToast();
     const [settings, setSettings] = useState<Partial<ISettings>>(user?.settings || {});
     const [isSaving, setIsSaving] = useState(false);
+    const [models, setModels] = useState<ModelOption[]>([]);
+    const [loadingModels, setLoadingModels] = useState(true);
 
     if (loading || !user) return <div className="flex justify-center p-8"><Loader text="Loading settings..." /></div>;
+
+    // Fetch available models on mount
+    React.useEffect(() => {
+        const fetchModels = async () => {
+            try {
+                const response = await axios.get('http://localhost:3000/api/llm/models');
+                setModels(response.data.models || []);
+            } catch (error) {
+                console.error('Failed to fetch models:', error);
+                addToast('Failed to load available models', 'error');
+            } finally {
+                setLoadingModels(false);
+            }
+        };
+        fetchModels();
+    }, [addToast]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value, type } = e.target;
@@ -99,6 +125,58 @@ const AssistantSettingsSection: React.FC = () => {
                                 <option value="light">Light Mode</option>
                                 <option value="system">System Default</option>
                             </select>
+                        </div>
+
+                        {/* Timestamp Visibility Toggle */}
+                        <div className="space-y-1">
+                            <label className="flex items-center gap-3 cursor-pointer group">
+                                <input
+                                    type="checkbox"
+                                    name="showTimestamps"
+                                    checked={settings.showTimestamps !== false} // Default to true
+                                    onChange={(e) => setSettings(prev => ({ ...prev, showTimestamps: e.target.checked }))}
+                                    className="w-4 h-4 bg-jarvis-panel border-2 border-jarvis-border rounded checked:bg-jarvis-blue checked:border-jarvis-blue focus:outline-none focus:ring-2 focus:ring-jarvis-blue/50 cursor-pointer transition-all"
+                                />
+                                <span className="text-xs font-mono text-jarvis-cyan/70 uppercase tracking-wider group-hover:text-jarvis-cyan transition-colors">
+                                    Show Message Timestamps
+                                </span>
+                            </label>
+                            <p className="text-[10px] text-jarvis-text/50 ml-7 font-mono">
+                                Display relative timestamps on messages (e.g., "2 minutes ago")
+                            </p>
+                        </div>
+                    </div>
+                </Card>
+
+                {/* LLM Model Selection */}
+                <Card title="Language Model" action={<Mic size={18} className="text-jarvis-cyan/70" />}>
+                    <div className="space-y-4">
+                        <div className="space-y-1">
+                            <label className="text-xs font-mono text-jarvis-cyan/70 uppercase tracking-wider ml-1">Preferred Model</label>
+                            <select
+                                name="preferredModel"
+                                value={settings.preferredModel || 'llama3'}
+                                onChange={handleChange}
+                                disabled={loadingModels}
+                                className="w-full bg-jarvis-panel border-b-2 border-jarvis-border px-4 py-2 text-sm text-jarvis-text focus:outline-none focus:border-jarvis-blue focus:shadow-[0_4px_10px_-4px_rgba(0,240,255,0.3)] transition-all duration-300 rounded-t-sm disabled:opacity-50"
+                            >
+                                {loadingModels ? (
+                                    <option>Loading models...</option>
+                                ) : models.length > 0 ? (
+                                    models.map(model => (
+                                        <option key={model.id} value={model.id}>
+                                            {model.displayName} ({model.provider})
+                                        </option>
+                                    ))
+                                ) : (
+                                    <option value="llama3">Llama 3.1 8B (default)</option>
+                                )}
+                            </select>
+                            {settings.preferredModel && models.length > 0 && (
+                                <p className="text-xs text-jarvis-cyan/50 mt-2 ml-1">
+                                    {models.find(m => m.id === settings.preferredModel)?.description || 'Selected model'}
+                                </p>
+                            )}
                         </div>
                     </div>
                 </Card>

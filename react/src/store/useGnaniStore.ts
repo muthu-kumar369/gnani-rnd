@@ -2,6 +2,8 @@ import { create } from 'zustand';
 import GnaniStateMachine from '../state/GnaniStateMachine';
 import type { GnaniState, StateTrigger, StateChangeEvent } from '../state/GnaniStateMachine';
 import errorLogger from '../utils/errorLogger';
+import type { FileAttachment } from '../types/file.types';
+import type { ImageAttachment, AnalysisStatus } from '../types/vision.types';
 
 interface GnaniStore {
   state: GnaniState;
@@ -10,6 +12,27 @@ interface GnaniStore {
   isListening: boolean;
   isThinking: boolean;
   isSpeaking: boolean;
+
+  // File attachments
+  attachedFiles: FileAttachment[];
+  addAttachedFile: (file: FileAttachment) => void;
+  removeAttachedFile: (fileId: string) => void;
+  clearAttachedFiles: () => void;
+  updateFileProgress: (fileId: string, progress: number) => void;
+
+  // Image attachments
+  attachedImages: ImageAttachment[];
+  addAttachedImage: (image: ImageAttachment) => void;
+  removeAttachedImage: (imageId: string) => void;
+  clearAttachedImages: () => void;
+  updateImageProgress: (imageId: string, progress: number) => void;
+  imageAnalysisStatus: Map<string, AnalysisStatus>;
+  setImageAnalysisStatus: (imageId: string, status: AnalysisStatus) => void;
+
+  // Typing indicator
+  typingStatus: 'thinking' | 'generating' | 'idle';
+  typingMessage?: string;
+  setTypingStatus: (status: 'thinking' | 'generating' | 'idle', message?: string) => void;
 
   // Actions
   transition: (trigger: StateTrigger) => void;
@@ -38,16 +61,88 @@ export const useGnaniStore = create<GnaniStore>((set, get) => ({
   transitionQueue: [],
   isTransitioning: false,
 
+  // File attachments
+  attachedFiles: [],
+
+  addAttachedFile: (file: FileAttachment) => {
+    set((state) => ({
+      attachedFiles: [...state.attachedFiles, file]
+    }));
+  },
+
+  removeAttachedFile: (fileId: string) => {
+    set((state) => ({
+      attachedFiles: state.attachedFiles.filter(f => f.id !== fileId)
+    }));
+  },
+
+  clearAttachedFiles: () => {
+    set({ attachedFiles: [] });
+  },
+
+  updateFileProgress: (fileId: string, progress: number) => {
+    set((state) => ({
+      attachedFiles: state.attachedFiles.map(f =>
+        f.id === fileId ? { ...f, uploadProgress: progress } : f
+      )
+    }));
+  },
+
+  // Image attachments
+  attachedImages: [],
+  imageAnalysisStatus: new Map(),
+
+  addAttachedImage: (image: ImageAttachment) => {
+    set((state) => ({
+      attachedImages: [...state.attachedImages, image]
+    }));
+  },
+
+  removeAttachedImage: (imageId: string) => {
+    set((state) => {
+      const newStatus = new Map(state.imageAnalysisStatus);
+      newStatus.delete(imageId);
+      return {
+        attachedImages: state.attachedImages.filter(img => img.id !== imageId),
+        imageAnalysisStatus: newStatus
+      };
+    });
+  },
+
+  clearAttachedImages: () => {
+    set({ attachedImages: [], imageAnalysisStatus: new Map() });
+  },
+
+  updateImageProgress: (imageId: string, progress: number) => {
+    set((state) => ({
+      attachedImages: state.attachedImages.map(img =>
+        img.id === imageId ? { ...img, uploadProgress: progress } : img
+      )
+    }));
+  },
+
+  setImageAnalysisStatus: (imageId: string, status: AnalysisStatus) => {
+    set((state) => {
+      const newStatus = new Map(state.imageAnalysisStatus);
+      newStatus.set(imageId, status);
+      return { imageAnalysisStatus: newStatus };
+    });
+  },
+
+  // Typing indicator
+  typingStatus: 'idle',
+  typingMessage: undefined,
+
+  setTypingStatus: (status: 'thinking' | 'generating' | 'idle', message?: string) => {
+    set({ typingStatus: status, typingMessage: message });
+  },
+
   transition: (trigger: StateTrigger) => {
     const { isTransitioning } = get();
 
     // Queue transition if currently transitioning
     if (isTransitioning) {
       console.log('[useGnaniStore] Queuing transition:', trigger);
-      // Store the trigger in a queue to be processed later
-      // We need to extend the store interface to hold this queue
-      // For now, we'll just log a warning and return if we can't queue effectively without major refactor
-      // But let's try to implement a simple queue in the store state
       set((state) => ({
         transitionQueue: [...state.transitionQueue, trigger]
       }));

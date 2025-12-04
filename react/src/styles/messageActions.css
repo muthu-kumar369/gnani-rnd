@@ -1,0 +1,160 @@
+/* Message Actions Hover Menu */
+.message-actions {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    display: flex;
+    gap: 4px;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    border-radius: 6px;
+    padding: 4px;
+    z-index: 20;
+}
+
+.message-bubble:hover .message-actions,
+.message-actions.visible {
+    opacity: 1;
+}
+
+.message-actions button {
+    background: transparent;
+    border: none;
+    color: rgba(6, 182, 212, 0.7);
+    padding: 4px;
+    cursor: pointer;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.message-actions button:hover {
+    background: rgba(6, 182, 212, 0.15);
+    color: rgb(34, 211, 238);
+}
+
+/* Code Block Styles */
+.code-block-wrapper {
+    position: relative;
+    margin: 12px 0;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #0a0a0a;
+    border: 1px solid rgba(0, 255, 255, 0.2);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+}
+
+.code-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    background: rgba(0, 20, 20, 0.8);
+    border-bottom: 1px solid rgba(0, 255, 255, 0.2);
+}
+
+.code-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.file-name {
+    color: #9cdcfe;
+    font-size: 12px;
+    font-family: 'Fira Code', 'Consolas', monospace;
+    font-weight: 500;
+}
+
+.language-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    background: rgba(0, 255, 255, 0.1);
+    border: 1px solid rgba(0, 255, 255, 0.4);
+    border-radius: 4px;
+    color: #00ffff;
+    font-size: 10px;
+    text-transform: uppercase;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    font-family: 'Fira Code', 'Consolas', monospace;
+}
+
+.copy-code-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: transparent;
+    border: 1px solid rgba(0, 255, 255, 0.3);
+    color: rgba(0, 255, 255, 0.8);
+    padding: 4px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 11px;
+    font-family: 'Fira Code', 'Consolas', monospace;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.copy-code-btn:hover {
+    color: #00ffff;
+    background: rgba(0, 255, 255, 0.1);
+    border-color: rgba(0, 255, 255, 0.6);
+    transform: translateY(-1px);
+}
+
+.copy-code-btn:active {
+    transform: translateY(0);
+}
+
+.code-content {
+    position: relative;
+    overflow: hidden;
+}
+
+/* Custom scrollbar for code blocks */
+.code-block-wrapper pre::-webkit-scrollbar {
+    height: 8px;
+    width: 8px;
+}
+
+.code-block-wrapper pre::-webkit-scrollbar-track {
+    background: #0a0a0a;
+}
+
+.code-block-wrapper pre::-webkit-scrollbar-thumb {
+    background: rgba(0, 255, 255, 0.3);
+    border-radius: 4px;
+}
+
+.code-block-wrapper pre::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 255, 255, 0.5);
+}
+
+/* Inline code styling */
+.inline-code {
+    background: rgba(0, 255, 255, 0.1);
+    border: 1px solid rgba(0, 255, 255, 0.3);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: 'Fira Code', 'Consolas', monospace;
+    font-size: 0.9em;
+    color: #00ffff;
+}
+
+/* Loading state */
+.code-loading {
+    font-family: 'Fira Code', 'Consolas', monospace;
+    white-space: pre;
+    overflow-x: auto;
+}
+
+/* Modal Styles override/additions if needed */
+.modal-overlay {
+    background-color: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(4px);
+}
