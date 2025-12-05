@@ -5,9 +5,10 @@ import { downloadFile } from '../../utils/download';
 interface ExportButtonProps {
     sessionId: string;
     className?: string;
+    asMenuItem?: boolean;
 }
 
-const ExportButton: React.FC<ExportButtonProps> = ({ sessionId, className = '' }) => {
+const ExportButton: React.FC<ExportButtonProps> = ({ sessionId, className = '', asMenuItem = false }) => {
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -54,6 +55,50 @@ const ExportButton: React.FC<ExportButtonProps> = ({ sessionId, className = '' }
         }
     };
 
+    // Render as menu item (for use inside ConversationListItem menu)
+    if (asMenuItem) {
+        return (
+            <div className={`relative ${className}`} ref={dropdownRef}>
+                <button
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        setIsOpen(!isOpen);
+                    }}
+                    className="w-full px-3 py-2 text-left text-xs text-gray-300 hover:bg-jarvis-cyan/10 hover:text-jarvis-cyan transition-colors flex items-center gap-2"
+                >
+                    <Download size={12} />
+                    Export
+                </button>
+
+                {isOpen && (
+                    <div className="absolute left-full top-0 ml-1 w-32 bg-black/95 border border-jarvis-blue/40 rounded shadow-[0_0_15px_rgba(0,240,255,0.1)] z-50 overflow-hidden backdrop-blur-sm">
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                handleExport('markdown');
+                            }}
+                            className="w-full flex items-center px-3 py-2 text-xs text-gray-300 hover:bg-jarvis-blue/20 hover:text-jarvis-cyan transition-colors text-left"
+                        >
+                            <FileText size={12} className="mr-2" />
+                            Markdown
+                        </button>
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                handleExport('json');
+                            }}
+                            className="w-full flex items-center px-3 py-2 text-xs text-gray-300 hover:bg-jarvis-blue/20 hover:text-jarvis-cyan transition-colors text-left"
+                        >
+                            <FileJson size={12} className="mr-2" />
+                            JSON
+                        </button>
+                    </div>
+                )}
+            </div>
+        );
+    }
+
+    // Render as standalone button (original behavior)
     return (
         <div className={`relative ${className}`} ref={dropdownRef}>
             <button

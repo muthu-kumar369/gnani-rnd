@@ -1,14 +1,35 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, X } from 'lucide-react';
+import { Send } from 'lucide-react';
+import AttachmentMenu from './AttachmentMenu';
+import ModelSelector from './ModelSelector';
+import TemplateSelector from './TemplateSelector';
 
 interface TextInputProps {
     isVisible: boolean;
     onClose: () => void;
     onSend: (text: string) => void;
+    onFileSelect?: (file: File) => void;
+    onImageSelect?: (file: File) => void;
+    selectedModel?: string | null;
+    selectedTemplate?: string | null;
+    onModelChange?: (modelId: string) => void;
+    onTemplateChange?: (templateId: string) => void;
+    disabled?: boolean;
 }
 
-const TextInput: React.FC<TextInputProps> = ({ isVisible, onClose, onSend }) => {
+const TextInput: React.FC<TextInputProps> = ({
+    isVisible,
+    onClose,
+    onSend,
+    onFileSelect,
+    onImageSelect,
+    selectedModel,
+    selectedTemplate,
+    onModelChange,
+    onTemplateChange,
+    disabled
+}) => {
     const [text, setText] = useState('');
     const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -33,7 +54,7 @@ const TextInput: React.FC<TextInputProps> = ({ isVisible, onClose, onSend }) => 
     };
 
     const handleSend = () => {
-        if (text.trim()) {
+        if (text.trim() && !disabled) {
             onSend(text.trim());
             setText('');
             if (textareaRef.current) {
@@ -49,33 +70,56 @@ const TextInput: React.FC<TextInputProps> = ({ isVisible, onClose, onSend }) => 
                     initial={{ height: 0, opacity: 0 }}
                     animate={{ height: 'auto', opacity: 1 }}
                     exit={{ height: 0, opacity: 0 }}
-                    className="border-t border-cyan-500/30 bg-cyan-950/30 backdrop-blur-sm overflow-hidden"
+                    className="border-t border-cyan-500/30 bg-cyan-950/30 backdrop-blur-sm"
                 >
-                    <div className="p-3 flex items-end gap-2">
-                        <div className="relative flex-1">
+                    <div className="p-3">
+                        {/* Main textarea */}
+                        <div className="relative mb-2">
                             <textarea
                                 ref={textareaRef}
                                 value={text}
                                 onChange={handleInput}
                                 onKeyDown={handleKeyDown}
-                                placeholder="Type a message..."
-                                className="w-full bg-black/50 border border-cyan-500/30 rounded-lg p-3 pr-10 text-sm text-cyan-100 placeholder-cyan-500/50 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400/30 resize-none min-h-[44px] max-h-[150px] custom-scrollbar"
+                                placeholder="Message Gnani..."
+                                disabled={disabled}
+                                className="modern-input w-full p-3 text-sm text-cyan-100 placeholder-cyan-500/50 resize-none min-h-[44px] max-h-[150px] custom-scrollbar disabled:opacity-50 disabled:cursor-not-allowed"
                                 rows={1}
                             />
+                        </div>
+
+                        {/* Control row */}
+                        <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-2">
+                                {onFileSelect && onImageSelect && (
+                                    <AttachmentMenu
+                                        onFileSelect={onFileSelect}
+                                        onImageSelect={onImageSelect}
+                                        disabled={disabled}
+                                    />
+                                )}
+                                {onModelChange && (
+                                    <ModelSelector
+                                        selectedModel={selectedModel || null}
+                                        onModelChange={onModelChange}
+                                        disabled={disabled}
+                                    />
+                                )}
+                                {onTemplateChange && (
+                                    <TemplateSelector
+                                        selectedTemplate={selectedTemplate || null}
+                                        onTemplateChange={onTemplateChange}
+                                        disabled={disabled}
+                                    />
+                                )}
+                            </div>
                             <button
-                                onClick={onClose}
-                                className="absolute top-2 right-2 p-1 text-cyan-500/50 hover:text-cyan-300 transition-colors"
+                                onClick={handleSend}
+                                disabled={!text.trim() || disabled}
+                                className="h-10 w-10 flex items-center justify-center bg-cyan-600 hover:bg-cyan-500 disabled:bg-cyan-900/50 disabled:text-cyan-500/30 text-white rounded-lg transition-all shadow-[0_0_10px_rgba(6,182,212,0.3)] hover:shadow-[0_0_20px_rgba(6,182,212,0.5)] hover:scale-105 active:scale-100 disabled:hover:scale-100 disabled:shadow-none"
                             >
-                                <X size={14} />
+                                <Send size={18} />
                             </button>
                         </div>
-                        <button
-                            onClick={handleSend}
-                            disabled={!text.trim()}
-                            className="h-[46px] w-[46px] flex items-center justify-center bg-cyan-600 hover:bg-cyan-500 disabled:bg-cyan-900/50 disabled:text-cyan-500/30 text-white rounded-lg transition-colors shadow-[0_0_10px_rgba(6,182,212,0.3)] shrink-0 mb-[1px]"
-                        >
-                            <Send size={18} />
-                        </button>
                     </div>
                 </motion.div>
             )}

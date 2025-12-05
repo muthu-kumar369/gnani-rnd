@@ -39,6 +39,8 @@ interface ConversationStore {
   sessionId: string | null;
   currentLeafId: string | null;
   title: string | null;
+  selectedModel: string | null;
+  selectedTemplate: string | null;
 
   // Actions
   setSessionId: (id: string | null) => void;
@@ -51,6 +53,10 @@ interface ConversationStore {
   createConversation: (accessToken: string, systemPrompt?: string) => Promise<string>;
   sendMessage: (text: string, accessToken: string, sendViaGrpc?: (text: string) => void) => Promise<void>;
   navigateToBranch: (messageId: string, direction: 'prev' | 'next') => void;
+  setSelectedModel: (modelId: string) => void;
+  setSelectedTemplate: (templateId: string) => void;
+  updateConversationTemplate: (sessionId: string, templateId: string, accessToken: string) => Promise<void>;
+  updateConversationModel: (sessionId: string, modelId: string, accessToken: string) => Promise<void>;
 
   // Helpers
   _deriveVisibleMessages: () => void;
@@ -66,8 +72,54 @@ export const useConversationStore = create<ConversationStore>()(
       sessionId: null,
       currentLeafId: null,
       title: null,
+      selectedModel: null,
+      selectedTemplate: null,
 
       setSessionId: (id) => set({ sessionId: id }),
+
+      setSelectedModel: (modelId) => set({ selectedModel: modelId }),
+
+      setSelectedTemplate: (templateId) => set({ selectedTemplate: templateId }),
+
+      updateConversationTemplate: async (sessionId, templateId, accessToken) => {
+        try {
+          const response = await fetch(`${API_BASE_URL}/conversations/${sessionId}/template`, {
+            method: 'PATCH',
+            headers: {
+              'x-auth-token': accessToken,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ templateId })
+          });
+
+          if (!response.ok) throw new Error('Failed to update template');
+
+          set({ selectedTemplate: templateId });
+        } catch (error) {
+          errorLogger.error('Error updating conversation template', error as Error, { context: 'useConversationStore' });
+          throw error;
+        }
+      },
+
+      updateConversationModel: async (sessionId, modelId, accessToken) => {
+        try {
+          const response = await fetch(`${API_BASE_URL}/conversations/${sessionId}/model`, {
+            method: 'PATCH',
+            headers: {
+              'x-auth-token': accessToken,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ modelId })
+          });
+
+          if (!response.ok) throw new Error('Failed to update model');
+
+          set({ selectedModel: modelId });
+        } catch (error) {
+          errorLogger.error('Error updating conversation model', error as Error, { context: 'useConversationStore' });
+          throw error;
+        }
+      },
 
       addMessage: (message) => {
         const { currentLeafId, allMessages } = get();

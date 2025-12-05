@@ -19,8 +19,8 @@ const Input: React.FC<InputProps> = ({
     return (
         <div className={`flex flex-col gap-1 ${containerClassName}`}>
             <div className={`relative flex items-center bg-black/30 border rounded-full transition-all duration-300 group ${error
-                    ? 'border-red-500/50 focus-within:border-red-500'
-                    : 'border-jarvis-border focus-within:border-jarvis-blue focus-within:shadow-jarvis-border-glow'
+                ? 'border-red-500/50 focus-within:border-red-500'
+                : 'border-jarvis-border focus-within:border-jarvis-blue focus-within:shadow-jarvis-border-glow'
                 } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}>
 
                 {leftIcon && (

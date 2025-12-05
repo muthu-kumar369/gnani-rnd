@@ -3,6 +3,7 @@ import { Virtuoso, type VirtuosoHandle } from 'react-virtuoso';
 import { motion } from 'framer-motion';
 import { Terminal, ChevronDown, Trash2, Maximize2, Minimize2 } from 'lucide-react';
 import { useConversationStore } from '../../store/useConversationStore';
+import { usePreferencesStore } from '../../store/usePreferencesStore';
 import { useGnaniStore } from '../../store/useGnaniStore';
 import { useDeviceAwareness } from '../../hooks/useDeviceAwareness';
 import { useFileUpload } from '../../hooks/useFileUpload';
@@ -16,9 +17,7 @@ import StateIndicator from './StateIndicator';
 import ActionIndicator from './ActionIndicator';
 import TextInput from './TextInput';
 import FileUploadZone from './FileUploadZone';
-import FileAttachmentButton from './FileAttachmentButton';
 import AttachedFilesList from './AttachedFilesList';
-import ImageAttachmentButton from './ImageAttachmentButton';
 import ImageGallery from './ImageGallery';
 import TypingIndicator from './TypingIndicator';
 import '../../styles/typingIndicator.css';
@@ -30,7 +29,20 @@ interface TerminalPanelProps {
 
 const TerminalPanel: React.FC<TerminalPanelProps> = ({ isVisible, onToggle }) => {
     const { sendText } = useAudioStream();
-    const { messages, clearMessages, title, sendMessage } = useConversationStore();
+    const {
+        messages,
+        clearMessages,
+        title,
+        sendMessage,
+        sessionId,
+        selectedModel,
+        selectedTemplate,
+        setSelectedModel,
+        setSelectedTemplate,
+        updateConversationModel,
+        updateConversationTemplate
+    } = useConversationStore();
+    const { lastUsedModel, lastUsedTemplate, setLastUsedModel, setLastUsedTemplate, savePreferences } = usePreferencesStore();
     const { user, accessToken } = useUserStore();
     const {
         transition,
@@ -55,6 +67,16 @@ const TerminalPanel: React.FC<TerminalPanelProps> = ({ isVisible, onToggle }) =>
     // Image upload hook
     const { uploadImage, isUploading: isUploadingImage } = useImageUpload('default-user');
 
+    // Initialize from preferences on mount
+    useEffect(() => {
+        if (lastUsedModel && !selectedModel) {
+            setSelectedModel(lastUsedModel);
+        }
+        if (lastUsedTemplate && !selectedTemplate) {
+            setSelectedTemplate(lastUsedTemplate);
+        }
+    }, [lastUsedModel, lastUsedTemplate, selectedModel, selectedTemplate, setSelectedModel, setSelectedTemplate]);
+
     const handleFileSelect = async (file: File) => {
         try {
             await uploadFile(file);
@@ -70,6 +92,28 @@ const TerminalPanel: React.FC<TerminalPanelProps> = ({ isVisible, onToggle }) =>
         } catch (error) {
             console.error('Image upload failed:', error);
             alert('Failed to upload image. Please try again.');
+        }
+    };
+
+    const handleModelChange = async (modelId: string) => {
+        setSelectedModel(modelId);
+        setLastUsedModel(modelId);
+        if (sessionId && accessToken) {
+            await updateConversationModel(sessionId, modelId, accessToken);
+        }
+        if (accessToken) {
+            await savePreferences(accessToken);
+        }
+    };
+
+    const handleTemplateChange = async (templateId: string) => {
+        setSelectedTemplate(templateId);
+        setLastUsedTemplate(templateId);
+        if (sessionId && accessToken) {
+            await updateConversationTemplate(sessionId, templateId, accessToken);
+        }
+        if (accessToken) {
+            await savePreferences(accessToken);
         }
     };
 
@@ -120,7 +164,7 @@ const TerminalPanel: React.FC<TerminalPanelProps> = ({ isVisible, onToggle }) =>
                 initial={{ opacity: 0, y: 50 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 50 }}
-                className={`fixed left-4 bottom-4 z-40 flex flex-col glass-panel rounded-lg overflow-hidden transition-all duration-300 ${isExpanded ? 'w-[600px] h-[80vh]' : 'w-[400px] h-[300px]'
+                className={`fixed left-4 bottom-4 z-50 flex flex-col glass-panel rounded-lg overflow-hidden transition-all duration-300 ${isExpanded ? 'w-[600px] h-[80vh]' : 'w-[400px] h-[300px]'
                     }`}
             >
                 {/* Holographic Grid Background */}
@@ -231,24 +275,19 @@ const TerminalPanel: React.FC<TerminalPanelProps> = ({ isVisible, onToggle }) =>
                     </div>
                 )}
 
-                {/* Text Input Area with File and Image Attachment Buttons */}
-                <div className="relative z-10">
-                    {showInput && (
-                        <div className="flex items-center gap-2 px-2 py-1 bg-cyan-950/30 border-t border-cyan-500/20">
-                            <FileAttachmentButton
-                                onFileSelect={handleFileSelect}
-                                disabled={isUploadingFile || isUploadingImage}
-                            />
-                            <ImageAttachmentButton
-                                onImageSelect={handleImageSelect}
-                                disabled={isUploadingFile || isUploadingImage}
-                            />
-                        </div>
-                    )}
+                {/* Text Input Area with New Modern Design */}
+                <div className="relative">
                     <TextInput
                         isVisible={showInput}
                         onClose={() => { /* No-op or maybe minimize? For now, keep it open */ }}
                         onSend={handleSendText}
+                        onFileSelect={handleFileSelect}
+                        onImageSelect={handleImageSelect}
+                        selectedModel={selectedModel}
+                        selectedTemplate={selectedTemplate}
+                        onModelChange={handleModelChange}
+                        onTemplateChange={handleTemplateChange}
+                        disabled={isUploadingFile || isUploadingImage}
                     />
                 </div>
 

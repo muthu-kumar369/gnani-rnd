@@ -54,6 +54,7 @@ const GnaniCore: React.FC = () => {
   const [showIntelligencePanel, setShowIntelligencePanel] = useState(false);
   const [showTerminal, setShowTerminal] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [settingsInitialTab, setSettingsInitialTab] = useState<'profile' | 'assistant' | 'devices' | 'security' | 'accounts' | 'history' | 'preferences' | 'hotkey' | 'about' | 'avatar' | 'tools' | 'templates'>('profile');
   const [showHistory, setShowHistory] = useState(false);
   const lastProcessedFinalSTT = useRef<string | null>(null);
 
@@ -83,6 +84,22 @@ const GnaniCore: React.FC = () => {
       sessionId
     });
   }, [isWakeWordTriggered, isTtsStarted, isTtsEnded, latestFinalSTT]);
+
+  // Listen for custom event to open settings
+  useEffect(() => {
+    const handleOpenSettings = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      console.log('[GnaniCore] Received open-settings event:', customEvent.detail);
+      const tab = customEvent.detail?.tab || 'profile';
+      setSettingsInitialTab(tab);
+      setShowSettings(true);
+    };
+
+    window.addEventListener('open-settings', handleOpenSettings);
+    return () => {
+      window.removeEventListener('open-settings', handleOpenSettings);
+    };
+  }, []);
 
   useEffect(() => {
     streamingTTSRef.current = new StreamingTTS();
@@ -630,7 +647,7 @@ const GnaniCore: React.FC = () => {
 
         <IntelligencePanel isVisible={showIntelligencePanel} />
 
-        <SettingsModal isOpen={showSettings} onClose={() => setShowSettings(false)} />
+        <SettingsModal isOpen={showSettings} onClose={() => setShowSettings(false)} initialTab={settingsInitialTab} />
       </div>
     </FileDropZone>
   );

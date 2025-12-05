@@ -4,7 +4,6 @@ import { Search, Plus, X, History } from 'lucide-react';
 import { useConversationHistory } from '../../hooks/useConversationHistory';
 import ConversationListItem from './ConversationListItem';
 import { useConversationStore } from '../../store/useConversationStore';
-import TemplateGallery from '../templates/TemplateGallery';
 import { useUserStore } from '../../store/useUserStore';
 import Button from '../ui/Button';
 
@@ -32,7 +31,8 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
         hasMore
     } = useConversationHistory();
 
-    const { sessionId: currentConversationId } = useConversationStore();
+    const { sessionId: currentConversationId, createConversation } = useConversationStore();
+    const { accessToken } = useUserStore();
     const [searchQuery, setSearchQuery] = React.useState('');
     const sidebarRef = useRef<HTMLDivElement>(null);
 
@@ -59,26 +59,15 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
         }
     };
 
-    const [showTemplates, setShowTemplates] = React.useState(false);
-    const { createConversation } = useConversationStore();
-    const { accessToken } = useUserStore(); // Assuming useUserStore is imported or available
-
-    const handleNewConversation = () => {
-        setShowTemplates(true);
-        onClose(); // Close sidebar immediately to prevent blocking
-    };
-
-    const handleTemplateSelect = async (template: any) => {
+    const handleNewConversation = async () => {
         if (accessToken) {
             try {
-                await createConversation(accessToken, template.systemPrompt);
-                onNewConversation(); // This might need adjustment if onNewConversation just clears state
-                // Actually, createConversation already sets the session ID.
-                // We just need to close the sidebar and templates.
-                setShowTemplates(false);
+                // Create conversation without template - user can select template in the input area
+                await createConversation(accessToken);
+                onNewConversation();
                 onClose();
             } catch (error) {
-                console.error('Failed to create conversation from template:', error);
+                console.error('Failed to create conversation:', error);
             }
         }
     };
@@ -179,13 +168,6 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                         </div>
                     </motion.div>
                 </>
-            )}
-
-            {showTemplates && (
-                <TemplateGallery
-                    onSelect={handleTemplateSelect}
-                    onClose={() => setShowTemplates(false)}
-                />
             )}
         </AnimatePresence>
     );

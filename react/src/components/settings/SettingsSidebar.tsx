@@ -12,7 +12,8 @@ import {
     Info,
     LogOut,
     Keyboard,
-    Box
+    Box,
+    FileText
 } from 'lucide-react';
 
 export type SettingsTab =
@@ -26,7 +27,8 @@ export type SettingsTab =
     | 'hotkey'
     | 'about'
     | 'avatar'
-    | 'tools';
+    | 'tools'
+    | 'templates';
 
 interface SettingsSidebarProps {
     activeTab: SettingsTab;
@@ -36,7 +38,8 @@ interface SettingsSidebarProps {
 const MENU_ITEMS: { id: SettingsTab; label: string; icon: React.ElementType }[] = [
     { id: 'profile', label: 'Profile', icon: User },
     { id: 'assistant', label: 'Assistant', icon: Settings },
-    { id: 'tools', label: 'Tools', icon: Box }, // Add Tools tab
+    { id: 'templates', label: 'Templates', icon: FileText },
+    { id: 'tools', label: 'Tools', icon: Box },
     { id: 'devices', label: 'Devices', icon: Smartphone },
     { id: 'security', label: 'Security', icon: Shield },
     { id: 'accounts', label: 'Linked Accounts', icon: LinkIcon },

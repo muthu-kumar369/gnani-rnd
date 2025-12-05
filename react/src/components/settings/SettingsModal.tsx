@@ -10,6 +10,7 @@ import LinkedAccountsSection from './sections/LinkedAccountsSection';
 import ActivityHistorySection from './sections/ActivityHistorySection';
 import PreferencesSection from './sections/PreferencesSection';
 import AboutSection from './sections/AboutSection';
+import TemplatesSection from './sections/TemplatesSection';
 import AvatarSettings from './AvatarSettings';
 import HotkeySettings from './HotkeySettings';
 import { useUserStore } from '../../store/useUserStore';
@@ -21,24 +22,26 @@ import { useFocusTrap } from '../../hooks/useFocusTrap';
 interface SettingsModalProps {
     isOpen: boolean;
     onClose: () => void;
+    initialTab?: SettingsTab;
 }
 
-const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
+const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, initialTab }) => {
     const [activeTab, setActiveTab] = useState<SettingsTab>('profile');
     const { user, loading, logout } = useUserStore();
     const modalRef = useFocusTrap(isOpen);
 
-    // Reset tab when modal opens
+    // Set initial tab when modal opens
     useEffect(() => {
         if (isOpen) {
-            setActiveTab('profile');
+            setActiveTab(initialTab || 'profile');
         }
-    }, [isOpen]);
+    }, [isOpen, initialTab]);
 
     const renderContent = () => {
         switch (activeTab) {
             case 'profile': return <ProfileSection />;
             case 'assistant': return <AssistantSettingsSection />;
+            case 'templates': return <TemplatesSection />;
             case 'devices': return <DevicesSection />;
             case 'security': return <SecuritySection />;
             case 'accounts': return <LinkedAccountsSection />;

@@ -128,3 +128,75 @@ body {
 .custom-scrollbar {
     scroll-behavior: smooth;
 }
+
+/* ============================================
+   CONTROL BUTTONS
+   ============================================ */
+.control-button {
+    @apply px-3 py-1.5 rounded transition-all duration-200 border border-transparent;
+    background: rgba(0, 240, 255, 0.05);
+    color: var(--jarvis-text);
+}
+
+.control-button:hover:not(:disabled) {
+    background: rgba(0, 240, 255, 0.1);
+    border-color: var(--jarvis-border);
+    box-shadow: 0 0 10px var(--jarvis-glow-inset);
+}
+
+.control-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* ============================================
+   DROPDOWN POPUPS
+   ============================================ */
+.dropdown-popup {
+    background: rgba(10, 25, 47, 0.95);
+    border: 1px solid var(--jarvis-border);
+    backdrop-filter: blur(12px);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5), 0 0 10px var(--jarvis-glow);
+    border-radius: 8px;
+    padding: 4px;
+    z-index: 99999;
+}
+
+.dropdown-item {
+    @apply w-full text-left px-3 py-2 rounded text-xs transition-colors;
+    color: var(--jarvis-text);
+}
+
+.dropdown-item:hover {
+    background: rgba(0, 240, 255, 0.1);
+}
+
+.dropdown-item.selected {
+    background: rgba(0, 240, 255, 0.15);
+}
+
+/* Specific scrollbar styling for dropdowns to override defaults if needed */
+.dropdown-popup::-webkit-scrollbar,
+.dropdown-popup *::-webkit-scrollbar,
+.custom-scrollbar::-webkit-scrollbar {
+    width: 4px;
+}
+
+.dropdown-popup::-webkit-scrollbar-track,
+.dropdown-popup *::-webkit-scrollbar-track,
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.dropdown-popup::-webkit-scrollbar-thumb,
+.dropdown-popup *::-webkit-scrollbar-thumb,
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(0, 240, 255, 0.2);
+    border-radius: 2px;
+}
+
+.dropdown-popup::-webkit-scrollbar-thumb:hover,
+.dropdown-popup *::-webkit-scrollbar-thumb:hover,
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 240, 255, 0.4);
+}
