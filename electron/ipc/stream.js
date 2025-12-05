@@ -43,9 +43,16 @@ function setupStreamIPC(streamingClient, ttsPlayer) {
   });
 
   streamingClient.on('stream:llm_chunk', (payload) => {
-    logger.debug(`Received stream:llm_chunk from client. Passing to renderer.`);
+    if (payload.chunk && payload.chunk.type === 'complete_response') {
+        logger.info(`[TRACE] [ELECTRON-IPC] Passing complete_response to renderer.`);
+    } else {
+        logger.debug(`Received stream:llm_chunk from client. Passing to renderer.`);
+    }
+    
     if (global.mainWindow && !global.mainWindow.isDestroyed()) {
       global.mainWindow.webContents.send('stream:llm_chunk', payload.chunk);
+    } else {
+        logger.error(`[TRACE] [ELECTRON-IPC-ERROR] MainWindow not available to send stream:llm_chunk`);
     }
   });
 

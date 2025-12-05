@@ -79,7 +79,8 @@ const GnaniCore: React.FC = () => {
       isWakeWordTriggered,
       isTtsStarted,
       isTtsEnded,
-      latestFinalSTT: latestFinalSTT?.substring(0, 50)
+      latestFinalSTT: latestFinalSTT?.substring(0, 50),
+      sessionId
     });
   }, [isWakeWordTriggered, isTtsStarted, isTtsEnded, latestFinalSTT]);
 
@@ -161,19 +162,19 @@ const GnaniCore: React.FC = () => {
       }
 
       if (type === 'complete_response') {
-        console.log('[GnaniCore] Received COMPLETE response:', text);
+        console.log('[TRACE] [FRONTEND] Received COMPLETE response:', text);
         streamingTTSRef.current.reset();
+        streamingTTSRef.current.setStreamActive(true);
         streamingTTSRef.current.addTextChunk(text);
         streamingTTSRef.current.flush();
         return;
       }
 
-      // Handle partial chunks (default case)
-      if (type === 'partial' || !type) {
-        // console.log('[GnaniCore] Received partial chunk:', text);
-        streamingTTSRef.current.addTextChunk(text);
-        return;
-      }
+      // Handle partial chunks (default case) - DISABLED: Only speak complete responses
+      // if (type === 'partial' || !type) {
+      //   streamingTTSRef.current.addTextChunk(text);
+      //   return;
+      // }
     } catch (error) {
       errorLogger.error('Error processing LLM chunk', error as Error, { context: 'GnaniCore' });
     }
@@ -612,6 +613,7 @@ const GnaniCore: React.FC = () => {
           onNewConversation={() => {
             setSessionId(null);
             clearMessages();
+            setStreamSessionId(null); // Explicitly clear Electron session
             // The next message sent will trigger a new session creation in the backend
             console.log("Starting new conversation...");
           }}

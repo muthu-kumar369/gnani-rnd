@@ -336,7 +336,7 @@ class StreamingClient extends EventEmitter {
 
   async startAudioStreaming(isTest = false) {
     this.isConnecting = true; // Set connecting flag
-    this.pendingAudioBuffer = []; // Initialize buffer
+    // Don't clear buffer - preserve frames that arrive during connection
 
     if (!this.isConnected) {
       await this.connect(isTest);

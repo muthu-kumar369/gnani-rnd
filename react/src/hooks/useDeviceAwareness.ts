@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import type { ActiveWindowInfo, SystemStatus, BatteryStatus, ConnectivityStatus, AudioDevices } from '../types/window';
+import type { ActiveWindowInfo, SystemStatus, BatteryStatus, ConnectivityStatus, AudioDevices } from '../types/shared';
 import errorLogger from '../utils/errorLogger';
 
 export interface DeviceAwarenessState {

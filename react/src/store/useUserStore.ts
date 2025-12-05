@@ -7,6 +7,7 @@ import errorLogger from '../utils/errorLogger';
 interface UserStore {
   user: User | null;
   loading: boolean;
+  isInitialized: boolean;
   error: string | null;
   isAuthenticated: boolean;
   accessToken: string | null;
@@ -14,12 +15,12 @@ interface UserStore {
   // Actions
   setAuth: (isAuthenticated: boolean, accessToken: string | null) => void;
   logout: () => void;
-  
+
   // Login helpers
   loginStart: () => void;
   loginSuccess: (user: User, accessToken: string, refreshToken: string) => void;
   loginFailure: (error: string) => void;
-  
+
   refreshUser: () => Promise<void>;
   initialize: () => void;
   updateProfile: (data: Partial<IProfile>) => Promise<void>;
@@ -37,6 +38,7 @@ interface UserStore {
 export const useUserStore = create<UserStore>((set, get) => ({
   user: null,
   loading: true,
+  isInitialized: false,
   error: null,
   isAuthenticated: false,
   accessToken: null,
@@ -45,22 +47,27 @@ export const useUserStore = create<UserStore>((set, get) => ({
   initialize: () => {
     // Ensure loading screen shows for at least 1 second for better UX
     const minLoadingTime = new Promise(resolve => setTimeout(resolve, 1000));
-    
+
     // Try to load token from localStorage
     const storedToken = localStorage.getItem('accessToken');
-    
+
     if (!storedToken) {
       // No token found, user needs to login
       minLoadingTime.then(() => {
-        set({ loading: false, isAuthenticated: false, accessToken: null });
+        set({ loading: false, isAuthenticated: false, accessToken: null, isInitialized: true });
       });
     } else {
       // Token found, set it and try to refresh user data
       set({ accessToken: storedToken, isAuthenticated: true, loading: true });
-      Promise.all([get().refreshUser(), minLoadingTime]).catch(() => {
-        // If refresh fails (expired token), logout and show login
-        get().logout();
-      });
+      Promise.all([get().refreshUser(), minLoadingTime])
+        .then(() => {
+          set({ isInitialized: true });
+        })
+        .catch(() => {
+          // If refresh fails (expired token), logout and show login
+          get().logout();
+          set({ isInitialized: true });
+        });
     }
   },
 
@@ -77,7 +84,7 @@ export const useUserStore = create<UserStore>((set, get) => ({
   logout: () => {
     // Clear token from localStorage
     localStorage.removeItem('accessToken');
-    
+
     set({
       user: null,
       isAuthenticated: false,
@@ -176,14 +183,14 @@ export const useUserStore = create<UserStore>((set, get) => ({
       set({ user: userData, error: null, loading: false });
     } catch (err: any) {
       errorLogger.error('Failed to fetch user data', err, { context: 'useUserStore' });
-      
+
       // Check if token is expired or invalid
-      const isTokenError = err.status === 401 || 
-                          err?.response?.status === 401 ||
-                          err?.message?.toLowerCase().includes('expired') || 
-                          err?.message?.toLowerCase().includes('not valid') ||
-                          err?.message?.toLowerCase().includes('invalid');
-      
+      const isTokenError = err.status === 401 ||
+        err?.response?.status === 401 ||
+        err?.message?.toLowerCase().includes('expired') ||
+        err?.message?.toLowerCase().includes('not valid') ||
+        err?.message?.toLowerCase().includes('invalid');
+
       if (isTokenError) {
         errorLogger.info('Token expired or invalid, logging out user', { context: 'useUserStore' });
         logout();
@@ -218,16 +225,16 @@ export const useUserStore = create<UserStore>((set, get) => ({
 
     const previousProfile = user.profile;
     set({
-        user: { ...user, profile: { ...user.profile, ...newProfile } }
+      user: { ...user, profile: { ...user.profile, ...newProfile } }
     });
 
     try {
-        await userService.updateProfile(newProfile);
-        errorLogger.info('Profile updated', { context: 'useUserStore', profile: newProfile });
+      await userService.updateProfile(newProfile);
+      errorLogger.info('Profile updated', { context: 'useUserStore', profile: newProfile });
     } catch (err) {
-        set({ user: { ...user, profile: previousProfile } });
-        errorLogger.error('Failed to update profile', err as Error, { context: 'useUserStore' });
-        throw err;
+      set({ user: { ...user, profile: previousProfile } });
+      errorLogger.error('Failed to update profile', err as Error, { context: 'useUserStore' });
+      throw err;
     }
   },
 
@@ -237,16 +244,16 @@ export const useUserStore = create<UserStore>((set, get) => ({
 
     const previousDevices = user.devices;
     set({
-        user: { ...user, devices: user.devices.filter(d => d.deviceId !== deviceId) }
+      user: { ...user, devices: user.devices.filter(d => d.deviceId !== deviceId) }
     });
 
     try {
-        await userService.removeDevice(deviceId);
-        errorLogger.info('Device removed', { context: 'useUserStore', deviceId });
+      await userService.removeDevice(deviceId);
+      errorLogger.info('Device removed', { context: 'useUserStore', deviceId });
     } catch (err) {
-        set({ user: { ...user, devices: previousDevices } });
-        errorLogger.error('Failed to remove device', err as Error, { context: 'useUserStore' });
-        throw err;
+      set({ user: { ...user, devices: previousDevices } });
+      errorLogger.error('Failed to remove device', err as Error, { context: 'useUserStore' });
+      throw err;
     }
   },
 
@@ -256,28 +263,28 @@ export const useUserStore = create<UserStore>((set, get) => ({
 
     const previousSecurity = user.security;
     set({
-        user: { ...user, security: { ...user.security, ...securityData } }
+      user: { ...user, security: { ...user.security, ...securityData } }
     });
 
     try {
-        await userService.updateSecurity(securityData);
-        errorLogger.info('Security updated', { context: 'useUserStore', security: securityData });
+      await userService.updateSecurity(securityData);
+      errorLogger.info('Security updated', { context: 'useUserStore', security: securityData });
     } catch (err) {
-        set({ user: { ...user, security: previousSecurity } });
-        errorLogger.error('Failed to update security', err as Error, { context: 'useUserStore' });
-        throw err;
+      set({ user: { ...user, security: previousSecurity } });
+      errorLogger.error('Failed to update security', err as Error, { context: 'useUserStore' });
+      throw err;
     }
   },
 
   linkOAuthProvider: async (provider) => {
     // No optimistic update for linking
     try {
-        await oauthService.initiateOAuth(provider);
-        await get().refreshUser();
-        errorLogger.info('OAuth provider linked', { context: 'useUserStore', provider });
+      await oauthService.initiateOAuth(provider);
+      await get().refreshUser();
+      errorLogger.info('OAuth provider linked', { context: 'useUserStore', provider });
     } catch (err) {
-        errorLogger.error('Failed to link OAuth provider', err as Error, { context: 'useUserStore' });
-        throw err;
+      errorLogger.error('Failed to link OAuth provider', err as Error, { context: 'useUserStore' });
+      throw err;
     }
   },
 
@@ -287,16 +294,16 @@ export const useUserStore = create<UserStore>((set, get) => ({
 
     const previousProviders = user.oauthProviders;
     set({
-        user: { ...user, oauthProviders: user.oauthProviders.filter(p => p.provider !== provider) }
+      user: { ...user, oauthProviders: user.oauthProviders.filter(p => p.provider !== provider) }
     });
 
     try {
-        await userService.unlinkOAuthProvider(provider);
-        errorLogger.info('OAuth provider unlinked', { context: 'useUserStore', provider });
+      await userService.unlinkOAuthProvider(provider);
+      errorLogger.info('OAuth provider unlinked', { context: 'useUserStore', provider });
     } catch (err) {
-        set({ user: { ...user, oauthProviders: previousProviders } });
-        errorLogger.error('Failed to unlink OAuth provider', err as Error, { context: 'useUserStore' });
-        throw err;
+      set({ user: { ...user, oauthProviders: previousProviders } });
+      errorLogger.error('Failed to unlink OAuth provider', err as Error, { context: 'useUserStore' });
+      throw err;
     }
   },
 
@@ -306,16 +313,16 @@ export const useUserStore = create<UserStore>((set, get) => ({
 
     const previousHistory = user.history;
     set({
-        user: { ...user, history: [] }
+      user: { ...user, history: [] }
     });
 
     try {
-        await userService.clearHistory();
-        errorLogger.info('History cleared', { context: 'useUserStore' });
+      await userService.clearHistory();
+      errorLogger.info('History cleared', { context: 'useUserStore' });
     } catch (err) {
-        set({ user: { ...user, history: previousHistory } });
-        errorLogger.error('Failed to clear history', err as Error, { context: 'useUserStore' });
-        throw err;
+      set({ user: { ...user, history: previousHistory } });
+      errorLogger.error('Failed to clear history', err as Error, { context: 'useUserStore' });
+      throw err;
     }
   },
 
@@ -325,16 +332,16 @@ export const useUserStore = create<UserStore>((set, get) => ({
 
     const previousHistory = user.history;
     set({
-        user: { ...user, history: user.history.filter(h => h.id !== id) }
+      user: { ...user, history: user.history.filter(h => h.id !== id) }
     });
 
     try {
-        await userService.deleteHistoryItem(id);
-        errorLogger.info('History item deleted', { context: 'useUserStore', id });
+      await userService.deleteHistoryItem(id);
+      errorLogger.info('History item deleted', { context: 'useUserStore', id });
     } catch (err) {
-        set({ user: { ...user, history: previousHistory } });
-        errorLogger.error('Failed to delete history item', err as Error, { context: 'useUserStore' });
-        throw err;
+      set({ user: { ...user, history: previousHistory } });
+      errorLogger.error('Failed to delete history item', err as Error, { context: 'useUserStore' });
+      throw err;
     }
   },
 
@@ -344,16 +351,16 @@ export const useUserStore = create<UserStore>((set, get) => ({
 
     const previousNotes = user.notes;
     set({
-        user: { ...user, notes: [...user.notes, note] }
+      user: { ...user, notes: [...user.notes, note] }
     });
 
     try {
-        await userService.addNote(note);
-        errorLogger.info('Note added', { context: 'useUserStore', note });
+      await userService.addNote(note);
+      errorLogger.info('Note added', { context: 'useUserStore', note });
     } catch (err) {
-        set({ user: { ...user, notes: previousNotes } });
-        errorLogger.error('Failed to add note', err as Error, { context: 'useUserStore' });
-        throw err;
+      set({ user: { ...user, notes: previousNotes } });
+      errorLogger.error('Failed to add note', err as Error, { context: 'useUserStore' });
+      throw err;
     }
   },
 
@@ -363,16 +370,16 @@ export const useUserStore = create<UserStore>((set, get) => ({
 
     const previousNotes = user.notes;
     set({
-        user: { ...user, notes: user.notes.filter((_, i) => i !== index) }
+      user: { ...user, notes: user.notes.filter((_, i) => i !== index) }
     });
 
     try {
-        await userService.deleteNote(index);
-        errorLogger.info('Note deleted', { context: 'useUserStore', index });
+      await userService.deleteNote(index);
+      errorLogger.info('Note deleted', { context: 'useUserStore', index });
     } catch (err) {
-        set({ user: { ...user, notes: previousNotes } });
-        errorLogger.error('Failed to delete note', err as Error, { context: 'useUserStore' });
-        throw err;
+      set({ user: { ...user, notes: previousNotes } });
+      errorLogger.error('Failed to delete note', err as Error, { context: 'useUserStore' });
+      throw err;
     }
   }
 }));

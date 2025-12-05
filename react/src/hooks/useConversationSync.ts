@@ -42,40 +42,48 @@ export function useConversationSync() {
             // For now, if no segment ID, we might risk duplicates or missing messages.
             // Ideally, text input should generate a segment ID or we rely on the fact that
             // the state transition triggers this.
-            
+
             // Actually, for text input, `latestFinalSTT` updates. If it's the same text,
             // React effect might not trigger if the value didn't change!
             // But `useIPC` sets state, so if we set same string, it might not re-render.
             // However, `useIPC` uses `useState`.
-            
+
             // Let's stick to: if segment ID exists, use it. If not, use text but be careful.
             // The issue reported is "Hello" -> "Hello" ignored.
             // If we remove the text check, we might get loops if the effect re-runs for other reasons.
             // But `latestFinalSTT` is in dependency array.
-            
+
             // If `latestSTTSegmentId` is present, we trust it.
         }
 
         if (!latestFinalSTT) return;
 
+        console.log('[useConversationSync] Processing final STT:', {
+            text: latestFinalSTT,
+            segmentId: latestSTTSegmentId,
+            lastProcessedId: lastProcessedSegmentId.current,
+            state,
+            previousState
+        });
+
         // Strict duplicate check only if we have a segment ID match
         if (latestSTTSegmentId && latestSTTSegmentId === lastProcessedSegmentId.current) {
             return;
         }
-        
+
         // If no segment ID (e.g. manual text input echo?), we might need another way.
         // But wait, manual text input in TerminalPanel sends text to backend, 
         // which echoes it back via `stream:final`? 
         // If so, backend should assign a segment ID.
-        
+
         // If we just remove the text check:
         // `if (!latestFinalSTT) return;`
         // But we need to update `lastProcessed` to avoid infinite loop if effect re-runs.
-        
+
         // Let's rely on `latestSTTSegmentId` primarily.
-        
+
         if (state === 'listening' || state === 'thinking' || state === 'speaking' || previousState === 'listening' || previousState === 'speaking') {
-             addMessage({
+            addMessage({
                 type: 'user',
                 message: latestFinalSTT,
                 metadata: {
@@ -89,13 +97,19 @@ export function useConversationSync() {
             // We don't track text anymore for duplicates if we have ID.
             // If we don't have ID, we might still want to track text?
             // Let's assume backend always sends ID for `stream:final`.
-            
+
             lastProcessedLLM.current = null; // Reset LLM tracker for new turn
 
             errorLogger.info('Added user message to conversation', {
                 context: 'useConversationSync',
                 text: latestFinalSTT.substring(0, 50),
                 segmentId: latestSTTSegmentId
+            });
+        } else {
+            console.warn('[useConversationSync] Skipped adding message - State mismatch or duplicate', {
+                state,
+                previousState,
+                isDuplicate: latestSTTSegmentId && latestSTTSegmentId === lastProcessedSegmentId.current
             });
         }
     }, [latestFinalSTT, latestSTTSegmentId, state, previousState, addMessage]);
@@ -155,12 +169,12 @@ export function useConversationSync() {
         if (!previousState || state === previousState) {
             return;
         }
-
+    
         const stateKey = `${previousState}->${state}`;
         if (stateKey === lastProcessedState.current) {
             return;
         }
-
+    
         // Create human-readable state transition message
         const getStateMessage = () => {
             switch (state) {
@@ -176,7 +190,7 @@ export function useConversationSync() {
                     return `State: ${previousState} → ${state}`;
             }
         };
-
+    
         addMessage({
             type: 'system',
             message: getStateMessage(),
@@ -185,9 +199,9 @@ export function useConversationSync() {
                 toState: state,
             },
         });
-
+    
         lastProcessedState.current = stateKey;
-
+    
         errorLogger.debug('Added state transition to conversation', {
             context: 'useConversationSync',
             from: previousState,

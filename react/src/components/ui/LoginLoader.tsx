@@ -7,179 +7,102 @@ interface LoginLoaderProps {
 
 const LoginLoader: React.FC<LoginLoaderProps> = ({ message = 'Authenticating...' }) => {
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-jarvis-bg">
-            {/* Animated background grid */}
-            <div className="absolute inset-0 opacity-20">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-jarvis-bg/90 backdrop-blur-sm">
+            {/* Animated background grid - Subtle */}
+            <div className="absolute inset-0 opacity-10 pointer-events-none">
                 <div className="absolute inset-0 bg-grid-pattern animate-pulse" />
             </div>
 
-            {/* Holographic rings */}
-            <div className="relative">
-                {/* Outer ring */}
-                <motion.div
-                    className="absolute inset-0 rounded-full border-2 border-cyan-500/30"
-                    style={{ width: '200px', height: '200px', left: '-100px', top: '-100px' }}
-                    animate={{
-                        rotate: 360,
-                        scale: [1, 1.1, 1],
-                    }}
-                    transition={{
-                        rotate: { duration: 3, repeat: Infinity, ease: 'linear' },
-                        scale: { duration: 2, repeat: Infinity, ease: 'easeInOut' },
-                    }}
-                />
+            {/* Main Unified Loader Container */}
+            <div className="relative flex flex-col items-center justify-center">
 
-                {/* Middle ring */}
-                <motion.div
-                    className="absolute inset-0 rounded-full border-2 border-blue-500/40"
-                    style={{ width: '150px', height: '150px', left: '-75px', top: '-75px' }}
-                    animate={{
-                        rotate: -360,
-                        scale: [1, 1.15, 1],
-                    }}
-                    transition={{
-                        rotate: { duration: 2.5, repeat: Infinity, ease: 'linear' },
-                        scale: { duration: 1.8, repeat: Infinity, ease: 'easeInOut', delay: 0.2 },
-                    }}
-                />
+                {/* Central Holographic Unit */}
+                <div className="relative w-32 h-32 mb-8">
 
-                {/* Inner ring */}
-                <motion.div
-                    className="absolute inset-0 rounded-full border-2 border-cyan-400/50"
-                    style={{ width: '100px', height: '100px', left: '-50px', top: '-50px' }}
-                    animate={{
-                        rotate: 360,
-                        scale: [1, 1.2, 1],
-                    }}
-                    transition={{
-                        rotate: { duration: 2, repeat: Infinity, ease: 'linear' },
-                        scale: { duration: 1.5, repeat: Infinity, ease: 'easeInOut', delay: 0.4 },
-                    }}
-                />
-
-                {/* Center core with pulsing glow */}
-                <motion.div
-                    className="relative w-16 h-16 rounded-full bg-gradient-to-br from-cyan-400 to-blue-600 shadow-[0_0_30px_rgba(6,182,212,0.6)]"
-                    animate={{
-                        boxShadow: [
-                            '0 0 30px rgba(6,182,212,0.6)',
-                            '0 0 50px rgba(6,182,212,0.9)',
-                            '0 0 30px rgba(6,182,212,0.6)',
-                        ],
-                        scale: [1, 1.05, 1],
-                    }}
-                    transition={{
-                        duration: 2,
-                        repeat: Infinity,
-                        ease: 'easeInOut',
-                    }}
-                >
-                    {/* Inner glow */}
+                    {/* Core Glow */}
                     <motion.div
-                        className="absolute inset-2 rounded-full bg-white/20"
-                        animate={{
-                            opacity: [0.2, 0.5, 0.2],
-                        }}
-                        transition={{
-                            duration: 1.5,
-                            repeat: Infinity,
-                            ease: 'easeInOut',
-                        }}
+                        className="absolute inset-0 rounded-full bg-cyan-500/10 blur-xl"
+                        animate={{ opacity: [0.3, 0.6, 0.3] }}
+                        transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
                     />
-                </motion.div>
 
-                {/* Orbiting particles */}
-                {[0, 1, 2, 3].map((i) => (
+                    {/* Primary Ring - Steady Rotation */}
                     <motion.div
-                        key={i}
-                        className="absolute w-2 h-2 rounded-full bg-cyan-400"
-                        style={{
-                            left: '0',
-                            top: '0',
-                            boxShadow: '0 0 10px rgba(6,182,212,0.8)',
-                        }}
-                        animate={{
-                            rotate: 360,
-                            x: [0, 60 * Math.cos((i * Math.PI) / 2), 0],
-                            y: [0, 60 * Math.sin((i * Math.PI) / 2), 0],
-                        }}
-                        transition={{
-                            duration: 3,
-                            repeat: Infinity,
-                            ease: 'linear',
-                            delay: i * 0.2,
-                        }}
+                        className="absolute inset-0 rounded-full border-2 border-t-cyan-400 border-r-transparent border-b-cyan-400 border-l-transparent"
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
                     />
-                ))}
-            </div>
 
-            {/* Loading text */}
-            <motion.div
-                className="absolute mt-48 text-center"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 }}
-            >
-                <h3 className="text-xl font-bold text-cyan-400 mb-2" style={{ textShadow: '0 0 10px rgba(6,182,212,0.5)' }}>
-                    {message}
-                </h3>
+                    {/* Secondary Ring - Counter Rotation */}
+                    <motion.div
+                        className="absolute inset-2 rounded-full border border-t-transparent border-r-blue-400 border-b-transparent border-l-blue-400 opacity-70"
+                        animate={{ rotate: -360 }}
+                        transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
+                    />
 
-                {/* Animated dots */}
-                <div className="flex justify-center gap-1">
-                    {[0, 1, 2].map((i) => (
-                        <motion.div
-                            key={i}
-                            className="w-2 h-2 rounded-full bg-cyan-400"
-                            animate={{
-                                opacity: [0.3, 1, 0.3],
-                                scale: [0.8, 1.2, 0.8],
-                            }}
-                            transition={{
-                                duration: 1.5,
-                                repeat: Infinity,
-                                ease: 'easeInOut',
-                                delay: i * 0.2,
-                            }}
-                        />
-                    ))}
+                    {/* Inner Core Pulse */}
+                    <motion.div
+                        className="absolute inset-[35%] rounded-full bg-cyan-400"
+                        animate={{
+                            scale: [1, 1.2, 1],
+                            opacity: [0.5, 0.8, 0.5],
+                            boxShadow: [
+                                "0 0 10px rgba(34, 211, 238, 0.5)",
+                                "0 0 20px rgba(34, 211, 238, 0.8)",
+                                "0 0 10px rgba(34, 211, 238, 0.5)"
+                            ]
+                        }}
+                        transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                    />
                 </div>
 
-                {/* Scanning line effect */}
+                {/* Loading Text */}
                 <motion.div
-                    className="mt-4 h-0.5 bg-gradient-to-r from-transparent via-cyan-400 to-transparent"
-                    style={{ width: '200px' }}
-                    animate={{
-                        opacity: [0, 1, 0],
-                        scaleX: [0, 1, 0],
-                    }}
-                    transition={{
-                        duration: 2,
-                        repeat: Infinity,
-                        ease: 'easeInOut',
-                    }}
-                />
-            </motion.div>
+                    className="text-center"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2 }}
+                >
+                    <h3 className="text-lg font-medium text-cyan-400 tracking-wider uppercase" style={{ textShadow: '0 0 10px rgba(6,182,212,0.5)' }}>
+                        {message}
+                    </h3>
 
-            {/* Corner accents */}
+                    {/* Simple animated dots */}
+                    <div className="flex justify-center gap-1 mt-2">
+                        {[0, 1, 2].map((i) => (
+                            <motion.div
+                                key={i}
+                                className="w-1.5 h-1.5 rounded-full bg-cyan-500"
+                                animate={{ opacity: [0.3, 1, 0.3] }}
+                                transition={{
+                                    duration: 1.5,
+                                    repeat: Infinity,
+                                    delay: i * 0.2,
+                                    ease: "easeInOut"
+                                }}
+                            />
+                        ))}
+                    </div>
+                </motion.div>
+            </div>
+
+            {/* Corner Accents - Kept for Theme Consistency but reduced opacity */}
             {['top-left', 'top-right', 'bottom-left', 'bottom-right'].map((corner) => {
                 const positions = {
-                    'top-left': 'top-4 left-4',
-                    'top-right': 'top-4 right-4',
-                    'bottom-left': 'bottom-4 left-4',
-                    'bottom-right': 'bottom-4 right-4',
+                    'top-left': 'top-8 left-8',
+                    'top-right': 'top-8 right-8',
+                    'bottom-left': 'bottom-8 left-8',
+                    'bottom-right': 'bottom-8 right-8',
                 };
 
                 return (
-                    <motion.div
+                    <div
                         key={corner}
-                        className={`absolute ${positions[corner as keyof typeof positions]} w-8 h-8`}
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: [0.3, 0.7, 0.3] }}
-                        transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+                        className={`absolute ${positions[corner as keyof typeof positions]} w-6 h-6 opacity-30`}
                     >
-                        <div className={`absolute ${corner.includes('top') ? 'top-0' : 'bottom-0'} ${corner.includes('left') ? 'left-0' : 'right-0'} w-8 h-0.5 bg-cyan-500/50`} />
-                        <div className={`absolute ${corner.includes('top') ? 'top-0' : 'bottom-0'} ${corner.includes('left') ? 'left-0' : 'right-0'} w-0.5 h-8 bg-cyan-500/50`} />
-                    </motion.div>
+                        <div className={`absolute ${corner.includes('top') ? 'top-0' : 'bottom-0'} ${corner.includes('left') ? 'left-0' : 'right-0'} w-full h-px bg-cyan-500`} />
+                        <div className={`absolute ${corner.includes('top') ? 'top-0' : 'bottom-0'} ${corner.includes('left') ? 'left-0' : 'right-0'} w-px h-full bg-cyan-500`} />
+                    </div>
                 );
             })}
         </div>

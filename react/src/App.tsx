@@ -26,10 +26,10 @@ function ProtectedRoute() {
 }
 
 function App() {
-  const { isAuthenticated, loading } = useUserStore();
+  const { isAuthenticated, isInitialized } = useUserStore();
 
   // Show loading screen only while checking authentication
-  if (loading) {
+  if (!isInitialized) {
     return <LoadingScreen />;
   }
 
