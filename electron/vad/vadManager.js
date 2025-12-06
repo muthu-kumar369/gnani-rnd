@@ -12,6 +12,7 @@ class VadManager extends EventEmitter {
     this.nonSpeechFramesCount = 0;
     this.speechFramesCount = 0;
     this.segmentId = null;
+    this.isSystemSpeaking = false; // Flag to prevent self-triggering
     this.config = {
       sampleRate: 16000,
       frameSize: 480,
@@ -38,10 +39,9 @@ class VadManager extends EventEmitter {
   }
 
   processAudioFrame(frame) {
-    if (this.state === "idle") {
-      return;
-    }
-
+    // If system is speaking, we STILL process audio to check for barge-in
+    // but we won't start a recording session automatically.
+    
     // Perform noise calibration if not yet calibrated
     if (!this.isCalibrated && this.state === "monitoring") {
       this.calibrateNoise(frame);
@@ -61,25 +61,35 @@ class VadManager extends EventEmitter {
           this.emit("audio:frame", frame);
         }
 
-        // Emit speech frame for barge-in detection (frontend needs this)
-        if (this.state === "speech_started" || this.state === "monitoring") {
-          this.emit("vad:speech-frame", { speech });
+        // Emit frame if we're in speech segment
+        if (this.state === "speech_started") {
+          this.emit("audio:frame", frame);
         }
 
+        // MOVED barge-in emission logic down to combined block
+
         if (isSpeech) {
-          this.nonSpeechFramesCount = 0;
-          this.speechFramesCount++;
+          // Only count speech frames towards triggering a NEW segment if system is NOT speaking
+          if (!this.isSystemSpeaking) {
+              this.nonSpeechFramesCount = 0;
+              this.speechFramesCount++;
+          }
+
+          // Emit speech frame for barge-in detection (frontend needs this regardless of triggering)
+          if (this.state === "speech_started" || this.state === "monitoring") {
+            this.emit("vad:speech-frame", { speech });
+          }
 
           // Start speech segment with hysteresis
           if (
             this.state === "monitoring" &&
+            !this.isSystemSpeaking && 
             this.speechFramesCount >= (this.config.speechStartThreshold + this.config.hysteresisMargin)
           ) {
             this._startSpeechSegment();
           }
         } else {
           this.speechFramesCount = 0;
-
           // End speech segment with hysteresis
           if (this.state === "speech_started") {
             this.nonSpeechFramesCount++;
@@ -89,12 +99,9 @@ class VadManager extends EventEmitter {
           }
         }
 
-        // Log state transitions for debugging
+        // Log state transitions for debug
         if (this.speechFramesCount > 0 || this.nonSpeechFramesCount > 0) {
-          logger.debug(
-            `VAD state: ${this.state}, speech frames: ${this.speechFramesCount}, non-speech frames: ${this.nonSpeechFramesCount}`,
-            { context: 'VadManager' }
-          );
+           // logger.debug(...) // keep silent for now or restore if needed
         }
       })
       .catch((error) => {
@@ -103,6 +110,24 @@ class VadManager extends EventEmitter {
   }
 
   _startSpeechSegment() {
+    // [VAD_TRACE] Debugging infinite loop
+    logger.info(`[VAD_TRACE] _startSpeechSegment called. State: ${this.state}, isSystemSpeaking: ${this.isSystemSpeaking}`, { context: 'VadManager' });
+
+    // CRITICAL: Do not start a new stream if the system is currently speaking (TTS).
+    // The frontend will receive "vad:speech-frame" events and trigger a barge-in (stop TTS).
+    // Once TTS stops, isSystemSpeaking will become false, and subsequent speech will trigger this.
+    if (this.isSystemSpeaking) {
+        // logger.debug('VAD detected speech start, but blocking stream start because system is speaking.', { context: 'VadManager' });
+        return;
+    }
+
+    if (this.vadCooldownUntil && Date.now() < this.vadCooldownUntil) {
+        logger.debug('VAD detected speech start, but blocking due to cooldown (echo prevention).', { context: 'VadManager' });
+        // Reset counters to prevent immediate trigger next frame
+        this.speechFramesCount = 0; 
+        return;
+    }
+
     this.setState("speech_started");
     this.segmentId = uuidv4();
     this.nonSpeechFramesCount = 0;
@@ -287,6 +312,25 @@ class VadManager extends EventEmitter {
       noiseProfile: this.noiseProfile,
       adaptiveThreshold: this.adaptiveThreshold,
     };
+  }
+
+  setSystemSpeaking(isSpeaking) {
+    if (this.isSystemSpeaking === isSpeaking) return;
+
+    this.isSystemSpeaking = isSpeaking;
+    logger.debug(`VAD system speaking state set to: ${isSpeaking}`, { context: 'VadManager' });
+    
+    // If system starts speaking, we should probably stop any current listening
+    if (isSpeaking) {
+      if (this.state === 'speech_started') {
+        logger.info('System started speaking while VAD was active. Forcing end of speech segment.', { context: 'VadManager' });
+        this._endSpeechSegment();
+      }
+    } else {
+        // System STOPPED speaking. Add a cooldown to prevent picking up self-echo.
+        this.vadCooldownUntil = Date.now() + 1000; // 1 second cooldown
+        logger.info(`System stopped speaking. VAD cooldown until ${this.vadCooldownUntil}`, { context: 'VadManager' });
+    }
   }
 
   cleanup() {

@@ -13,7 +13,7 @@ import MermaidDiagram from '../components/terminal/MermaidDiagram';
 import 'katex/dist/katex.min.css';
 
 // Custom component for code blocks
-const CustomCodeBlock = ({ inline, className, children }: any) => {
+const CustomCodeBlock = ({ inline, className, children, node }: any) => {
     const match = /language-(\w+)/.exec(className || '');
     const language = match ? match[1] : '';
 
@@ -110,11 +110,21 @@ const CustomListItem = ({ children, ...props }: any) => (
 );
 
 // Custom component for paragraphs
-const CustomParagraph = ({ children }: any) => (
-    <p className="text-sm text-cyan-200/90 leading-relaxed my-2">
-        {children}
-    </p>
-);
+// Fixed to use div instead of p when containing code blocks to prevent HTML nesting errors
+const CustomParagraph = ({ children, node }: any) => {
+    // Check if paragraph contains code blocks or pre elements
+    // In HTML, <p> cannot contain <div> or <pre>, so use <div> instead
+    const hasCodeBlock = node?.children?.some((child: any) =>
+        child.tagName === 'code' || child.tagName === 'pre' ||
+        (child.type === 'element' && (child.tagName === 'div' || child.tagName === 'pre'))
+    );
+
+    if (hasCodeBlock) {
+        return <div className="text-sm text-cyan-200/90 leading-relaxed my-2">{children}</div>;
+    }
+
+    return <p className="text-sm text-cyan-200/90 leading-relaxed my-2">{children}</p>;
+};
 
 // Custom component for horizontal rules
 const CustomHr = () => (

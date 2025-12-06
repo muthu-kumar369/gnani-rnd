@@ -77,6 +77,11 @@ function setupVadIPC(vadManager) {
     logger.info('Received vad:recalibrate from renderer.');
     vadManager.recalibrate();
   });
+
+  ipcMain.on('vad:setSpeaking', (event, isSpeaking) => {
+    logger.debug(`Received vad:setSpeaking from renderer: ${isSpeaking}`);
+    vadManager.setSystemSpeaking(isSpeaking);
+  });
 }
 
 module.exports = { setupVadIPC };

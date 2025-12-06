@@ -164,7 +164,7 @@ const TerminalPanel: React.FC<TerminalPanelProps> = ({ isVisible, onToggle }) =>
                 initial={{ opacity: 0, y: 50 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 50 }}
-                className={`fixed left-4 bottom-4 z-50 flex flex-col glass-panel rounded-lg overflow-hidden transition-all duration-300 ${isExpanded ? 'w-[600px] h-[80vh]' : 'w-[400px] h-[300px]'
+                className={`fixed left-4 bottom-4 z-50 flex flex-col glass-panel rounded-lg overflow-hidden transition-all duration-300 ${isExpanded ? 'w-[600px] h-[80vh]' : 'w-[400px] h-[450px]'
                     }`}
             >
                 {/* Holographic Grid Background */}
@@ -173,7 +173,7 @@ const TerminalPanel: React.FC<TerminalPanelProps> = ({ isVisible, onToggle }) =>
                 {/* Header */}
                 <div className="relative z-10 flex items-center justify-between px-4 py-2 bg-cyan-950/50 border-b border-cyan-500/30">
                     <div className="flex items-center gap-2 text-cyan-400">
-                        <Terminal size={14} />
+                        <Terminal size={18} />
                         <span className="text-xs font-bold uppercase tracking-wider">
                             {title ? (title.length > 30 ? `${title.substring(0, 30)}...` : title) : 'Gnani Terminal'}
                         </span>
@@ -181,11 +181,28 @@ const TerminalPanel: React.FC<TerminalPanelProps> = ({ isVisible, onToggle }) =>
 
                     <div className="flex items-center gap-1">
                         <button
-                            onClick={clearMessages}
+                            onClick={async () => {
+                                if (sessionId && accessToken) {
+                                    // Delete conversation from backend
+                                    try {
+                                        const response = await fetch(`http://localhost:3000/api/conversations/${sessionId}`, {
+                                            method: 'DELETE',
+                                            headers: { 'x-auth-token': accessToken }
+                                        });
+                                        if (response.ok) {
+                                            clearMessages(); // Clear frontend state
+                                        }
+                                    } catch (error) {
+                                        console.error('Failed to delete conversation:', error);
+                                    }
+                                } else {
+                                    clearMessages(); // Just clear if no session
+                                }
+                            }}
                             className="p-1.5 text-cyan-400/60 hover:text-red-400 hover:bg-red-900/20 rounded transition-colors"
-                            title="Clear History"
+                            title="Delete Conversation"
                         >
-                            <Trash2 size={12} />
+                            <Trash2 size={16} />
                         </button>
 
                         {/* Keyboard toggle removed as input is now always visible/accessible via bottom area */}
@@ -195,7 +212,7 @@ const TerminalPanel: React.FC<TerminalPanelProps> = ({ isVisible, onToggle }) =>
                             className="p-1.5 text-cyan-400/60 hover:text-cyan-300 hover:bg-cyan-900/20 rounded transition-colors"
                             title={isExpanded ? "Minimize" : "Maximize"}
                         >
-                            {isExpanded ? <Minimize2 size={12} /> : <Maximize2 size={12} />}
+                            {isExpanded ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
                         </button>
 
                         <button
@@ -203,7 +220,7 @@ const TerminalPanel: React.FC<TerminalPanelProps> = ({ isVisible, onToggle }) =>
                             className="p-1.5 text-cyan-400/60 hover:text-cyan-300 hover:bg-cyan-900/20 rounded transition-colors"
                             title="Close Terminal"
                         >
-                            <ChevronDown size={14} />
+                            <ChevronDown size={18} />
                         </button>
                     </div>
                 </div>

@@ -349,10 +349,16 @@ const GnaniCore: React.FC = () => {
   // Connect VAD to barge-in for automatic interruption
   useEffect(() => {
     const handleVadSpeechFrame = (_event: any, data: { speech: boolean }) => {
-      if (isSpeaking || isThinking) {
-        console.log('[GnaniCore] VAD speech frame:', data.speech, 'State:', state);
-        bargeIn.handleVADSpeech(data.speech);
+      // DEBUG TAG: VAD_LOOP_TRACE
+      if (data.speech) {
+        console.log('[GnaniCore] VAD CHECK: Speech detected.', {
+          state,
+          isMicActive,
+          isSpeaking,
+          // isTtsPlaying check removed to fix lint error
+        });
       }
+      bargeIn.handleVADSpeech(data.speech);
     };
 
     if (window.electron?.ipcRenderer) {
@@ -369,6 +375,11 @@ const GnaniCore: React.FC = () => {
   }, [isSpeaking, isThinking, bargeIn, state]);
 
   useEffect(() => {
+    // Sync speaking state to VAD manager to prevent self-triggering
+    if (window.gnani?.vad?.setSpeaking) {
+      window.gnani.vad.setSpeaking(isSpeaking);
+    }
+
     if (isSpeaking) {
       bargeIn.updateConfig({ vadThreshold: 20 });
     } else {

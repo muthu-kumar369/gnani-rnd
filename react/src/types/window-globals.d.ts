@@ -74,5 +74,14 @@ interface Window {
         notifications?: {
             show: (title: string, body: string, options?: any) => void;
         };
+
+        // Voice Activity Detection
+        vad?: {
+            startVAD: () => void;
+            stopVAD: () => void;
+            getVADStatus: () => Promise<any>;
+            setAggressiveness: (level: number) => void;
+            setSpeaking: (isSpeaking: boolean) => void;
+        };
     };
 }

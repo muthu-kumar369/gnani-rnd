@@ -300,11 +300,13 @@ export const useConversationStore = create<ConversationStore>()(
       sendMessage: async (text, accessToken, sendViaGrpc) => {
         const { sessionId, addMessage } = get();
 
-        // 1. Optimistic UI Update
-        addMessage({
-          type: 'user',
-          message: text
-        });
+        // REMOVED: Optimistic UI Update
+        // The backend will echo the message back via stream:final, which useConversationSync will add
+        // Adding it here causes duplicates
+        // addMessage({
+        //   type: 'user',
+        //   message: text
+        // });
 
         // 2. Try gRPC if available (always try if function is provided)
         if (sendViaGrpc) {

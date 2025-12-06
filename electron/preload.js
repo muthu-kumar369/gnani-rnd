@@ -149,6 +149,11 @@ contextBridge.exposeInMainWorld("gnani", {
       logger.info("Preload calling vad:stop", { context: 'Preload' });
       ipcRenderer.send("vad:stop");
     },
+    setSpeaking: (isSpeaking) => {
+        // Low-level debug log, often noisy
+        // logger.debug(`Preload calling vad:setSpeaking: ${isSpeaking}`, { context: 'Preload' });
+        ipcRenderer.send("vad:setSpeaking", isSpeaking);
+    },
     getVADStatus: () => {
       logger.info("Preload invoking vad:getStatus", { context: 'Preload' });
       return ipcRenderer.invoke("vad:getStatus");
