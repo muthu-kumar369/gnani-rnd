@@ -22,6 +22,7 @@ export const useIPC = () => {
   const [latestLLMChunk, setLatestLLMChunk] = useState<any>(null);
   const [latestSTTSegmentId, setLatestSTTSegmentId] = useState<string | null>(null); // To help combine partials
   const [latestSessionId, setLatestSessionId] = useState<string | null>(null);
+  const [latestConversationId, setLatestConversationId] = useState<string | null>(null); // NEW: Permanent conversation ID
   const [toolStatus, setToolStatus] = useState<any>(null);
 
   useEffect(() => {
@@ -65,6 +66,13 @@ export const useIPC = () => {
         setStreamErrorMessage(null);
         if (sessionId) setLatestSessionId(sessionId);
       }));
+
+      // NEW: Listen for conversation ID updates from backend
+      unsubs.push(window.gnani.stream.on('stream:conversation_id', ({ conversationId }: { conversationId: string }) => {
+        errorLogger.info(`IPC: Conversation ID update: ${conversationId}`, { context: 'useIPC' });
+        setLatestConversationId(conversationId);
+      }));
+
       unsubs.push(window.gnani.stream.on('stream:disconnected', () => {
         errorLogger.debug('IPC: Stream disconnected', { context: 'useIPC' });
         setIsStreamConnected(false);
@@ -236,6 +244,7 @@ export const useIPC = () => {
     latestLLMChunk,
     latestSTTSegmentId,
     sessionId: (latestSessionId as string | null),
+    conversationId: (latestConversationId as string | null),
     toolStatus,
     setSessionId: (sessionId: string) => {
       if (window.gnani && window.gnani.stream) {

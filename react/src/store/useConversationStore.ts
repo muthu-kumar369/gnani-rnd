@@ -36,14 +36,16 @@ export interface ConversationMessage {
 interface ConversationStore {
   messages: ConversationMessage[]; // Visible messages
   allMessages: ConversationMessage[]; // All messages (tree)
-  sessionId: string | null;
+  conversationId: string | null;
   currentLeafId: string | null;
   title: string | null;
   selectedModel: string | null;
   selectedTemplate: string | null;
+  isStreaming: boolean;
+  abortController: AbortController | null;
 
   // Actions
-  setSessionId: (id: string | null) => void;
+  setConversationId: (id: string | null) => void;
   addMessage: (message: Omit<ConversationMessage, 'id' | 'timestamp'>) => void;
   clearMessages: () => void;
   getMessagesByType: (type: ConversationMessage['type']) => ConversationMessage[];
@@ -55,8 +57,10 @@ interface ConversationStore {
   navigateToBranch: (messageId: string, direction: 'prev' | 'next') => void;
   setSelectedModel: (modelId: string) => void;
   setSelectedTemplate: (templateId: string) => void;
-  updateConversationTemplate: (sessionId: string, templateId: string, accessToken: string) => Promise<void>;
-  updateConversationModel: (sessionId: string, modelId: string, accessToken: string) => Promise<void>;
+  updateConversationTemplate: (conversationId: string, templateId: string, accessToken: string) => Promise<void>;
+  updateConversationModel: (conversationId: string, modelId: string, accessToken: string) => Promise<void>;
+  setIsStreaming: (isStreaming: boolean) => void;
+  cancelStream: (sessionId: string) => Promise<void>;
 
   // Helpers
   _deriveVisibleMessages: () => void;
@@ -69,21 +73,23 @@ export const useConversationStore = create<ConversationStore>()(
     (set, get) => ({
       messages: [],
       allMessages: [],
-      sessionId: null,
+      conversationId: null,
       currentLeafId: null,
       title: null,
       selectedModel: null,
       selectedTemplate: null,
+      isStreaming: false,
+      abortController: null,
 
-      setSessionId: (id) => set({ sessionId: id }),
+      setConversationId: (id) => set({ conversationId: id }),
 
       setSelectedModel: (modelId) => set({ selectedModel: modelId }),
 
       setSelectedTemplate: (templateId) => set({ selectedTemplate: templateId }),
 
-      updateConversationTemplate: async (sessionId, templateId, accessToken) => {
+      updateConversationTemplate: async (conversationId, templateId, accessToken) => {
         try {
-          const response = await fetch(`${API_BASE_URL}/conversations/${sessionId}/template`, {
+          const response = await fetch(`${API_BASE_URL}/conversations/${conversationId}/template`, {
             method: 'PATCH',
             headers: {
               'x-auth-token': accessToken,
@@ -101,9 +107,9 @@ export const useConversationStore = create<ConversationStore>()(
         }
       },
 
-      updateConversationModel: async (sessionId, modelId, accessToken) => {
+      updateConversationModel: async (conversationId, modelId, accessToken) => {
         try {
-          const response = await fetch(`${API_BASE_URL}/conversations/${sessionId}/model`, {
+          const response = await fetch(`${API_BASE_URL}/conversations/${conversationId}/model`, {
             method: 'PATCH',
             headers: {
               'x-auth-token': accessToken,
@@ -215,11 +221,11 @@ export const useConversationStore = create<ConversationStore>()(
       },
 
       refreshConversation: async (accessToken) => {
-        const { sessionId, currentLeafId } = get();
-        if (!sessionId || !accessToken) return;
+        const { conversationId, currentLeafId } = get();
+        if (!conversationId || !accessToken) return;
 
         try {
-          const response = await fetch(`${API_BASE_URL}/conversations/${sessionId}`, {
+          const response = await fetch(`${API_BASE_URL}/conversations/${conversationId}`, {
             headers: { 'x-auth-token': accessToken }
           });
 
@@ -280,17 +286,17 @@ export const useConversationStore = create<ConversationStore>()(
           if (!response.ok) throw new Error('Failed to create conversation');
 
           const data = await response.json();
-          const sessionId = data.sessionId;
+          const conversationId = data.sessionId; // Backend returns sessionId as conversation ID for now
 
           set({
-            sessionId,
+            conversationId,
             messages: [],
             allMessages: [],
             currentLeafId: null,
             title: data.title
           });
 
-          return sessionId;
+          return conversationId;
         } catch (error) {
           errorLogger.error('Error creating conversation', error as Error, { context: 'useConversationStore' });
           throw error;
@@ -298,7 +304,7 @@ export const useConversationStore = create<ConversationStore>()(
       },
 
       sendMessage: async (text, accessToken, sendViaGrpc) => {
-        const { sessionId, addMessage } = get();
+        const { conversationId, addMessage } = get();
 
         // REMOVED: Optimistic UI Update
         // The backend will echo the message back via stream:final, which useConversationSync will add
@@ -333,7 +339,7 @@ export const useConversationStore = create<ConversationStore>()(
             },
             body: JSON.stringify({
               message: text,
-              sessionId: sessionId,
+              sessionId: conversationId,
             })
           });
 
@@ -342,8 +348,8 @@ export const useConversationStore = create<ConversationStore>()(
           const data = await response.json();
 
           // If backend returns a new session ID, update it
-          if (data.sessionId && data.sessionId !== sessionId) {
-            set({ sessionId: data.sessionId });
+          if (data.sessionId && data.sessionId !== conversationId) {
+            set({ conversationId: data.sessionId });
           }
 
           // If backend returns the assistant response immediately (REST style), add it and trigger TTS
@@ -370,9 +376,38 @@ export const useConversationStore = create<ConversationStore>()(
         }
       },
 
+      setIsStreaming: (isStreaming) => set({ isStreaming }),
+
+      cancelStream: async (sessionId) => {
+        const { abortController, conversationId, accessToken } = get();
+        if (abortController) {
+          abortController.abort();
+          set({ abortController: null, isStreaming: false });
+        }
+
+        // Also notify backend to cancel processing
+        if (conversationId && accessToken) {
+          try {
+            await fetch(`${API_BASE_URL}/conversations/${conversationId}/cancel`, {
+              method: 'POST',
+              headers: {
+                'x-auth-token': accessToken,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({ messageId: sessionId }) // sessionId is used as messageId/streamId context often
+            });
+          } catch (e) {
+            errorLogger.warn('Failed to notify backend of cancellation', { error: e });
+          }
+        }
+      },
+
       regenerateResponse: async (messageId, accessToken) => {
-        const { sessionId } = get();
-        if (!sessionId || !accessToken) return;
+        const { conversationId } = get();
+        if (!conversationId || !accessToken) return;
+
+        const controller = new AbortController();
+        set({ isStreaming: true, abortController: controller });
 
         try {
           const response = await fetch(`${API_BASE_URL}/conversations/${messageId}/regenerate`, {
@@ -381,7 +416,8 @@ export const useConversationStore = create<ConversationStore>()(
               'x-auth-token': accessToken,
               'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ sessionId })
+            body: JSON.stringify({ sessionId: conversationId }),
+            signal: controller.signal
           });
 
           if (!response.ok) throw new Error('Failed to regenerate response');
@@ -391,15 +427,24 @@ export const useConversationStore = create<ConversationStore>()(
           set({ currentLeafId: newAssistantMessage._id || newAssistantMessage.id });
 
           await get().refreshConversation(accessToken);
-        } catch (error) {
-          errorLogger.error('Error regenerating response', error as Error, { context: 'useConversationStore' });
-          throw error;
+        } catch (error: any) {
+          if (error.name === 'AbortError') {
+            errorLogger.info('Regeneration cancelled by user');
+          } else {
+            errorLogger.error('Error regenerating response', error as Error, { context: 'useConversationStore' });
+            throw error;
+          }
+        } finally {
+          set({ isStreaming: false, abortController: null });
         }
       },
 
       editMessage: async (messageId, newContent, accessToken) => {
-        const { sessionId } = get();
-        if (!sessionId || !accessToken) return;
+        const { conversationId } = get();
+        if (!conversationId || !accessToken) return;
+
+        const controller = new AbortController();
+        set({ isStreaming: true, abortController: controller });
 
         try {
           const response = await fetch(`${API_BASE_URL}/conversations/${messageId}/edit`, {
@@ -408,7 +453,8 @@ export const useConversationStore = create<ConversationStore>()(
               'x-auth-token': accessToken,
               'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ sessionId, newContent })
+            body: JSON.stringify({ sessionId: conversationId, newContent }),
+            signal: controller.signal
           });
 
           if (!response.ok) throw new Error('Failed to edit message');
@@ -418,9 +464,15 @@ export const useConversationStore = create<ConversationStore>()(
           set({ currentLeafId: newAssistantMessage._id || newAssistantMessage.id });
 
           await get().refreshConversation(accessToken);
-        } catch (error) {
-          errorLogger.error('Error editing message', error as Error, { context: 'useConversationStore' });
-          throw error;
+        } catch (error: any) {
+          if (error.name === 'AbortError') {
+            errorLogger.info('Edit cancelled by user');
+          } else {
+            errorLogger.error('Error editing message', error as Error, { context: 'useConversationStore' });
+            throw error;
+          }
+        } finally {
+          set({ isStreaming: false, abortController: null });
         }
       },
 
@@ -469,9 +521,12 @@ export const useConversationStore = create<ConversationStore>()(
     {
       name: 'gnani_conversation_history',
       storage: createJSONStorage(() => localStorage),
-      partialize: (state) => ({ allMessages: state.allMessages, currentLeafId: state.currentLeafId }),
-      onRehydrateStorage: () => (state) => {
-        state?._deriveVisibleMessages();
+      partialize: (state) => ({
+        conversationId: state.conversationId // Only persist current conversation ID
+      }),
+      onRehydrateStorage: () => () => {
+        // Messages will be fetched from backend when conversationId is set
+        // GnaniCore.tsx handles this via useEffect on conversationId change
       }
     }
   )

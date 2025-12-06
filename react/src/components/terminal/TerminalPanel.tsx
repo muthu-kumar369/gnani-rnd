@@ -20,6 +20,7 @@ import FileUploadZone from './FileUploadZone';
 import AttachedFilesList from './AttachedFilesList';
 import ImageGallery from './ImageGallery';
 import TypingIndicator from './TypingIndicator';
+import { UndoToast } from '../common/UndoToast';
 import '../../styles/typingIndicator.css';
 
 interface TerminalPanelProps {
@@ -40,7 +41,13 @@ const TerminalPanel: React.FC<TerminalPanelProps> = ({ isVisible, onToggle }) =>
         setSelectedModel,
         setSelectedTemplate,
         updateConversationModel,
-        updateConversationTemplate
+        updateConversationTemplate,
+        undoData,
+        dismissUndo,
+        restoreMessage,
+        isStreaming,
+        setIsStreaming,
+        cancelStream
     } = useConversationStore();
     const { lastUsedModel, lastUsedTemplate, setLastUsedModel, setLastUsedTemplate, savePreferences } = usePreferencesStore();
     const { user, accessToken } = useUserStore();
@@ -305,8 +312,32 @@ const TerminalPanel: React.FC<TerminalPanelProps> = ({ isVisible, onToggle }) =>
                         onModelChange={handleModelChange}
                         onTemplateChange={handleTemplateChange}
                         disabled={isUploadingFile || isUploadingImage}
+                        isStreaming={isStreaming}
+                        onStopGeneration={async () => {
+                            if (sessionId) {
+                                await cancelStream(sessionId);
+                            }
+                        }}
                     />
                 </div>
+
+                {/* Undo Toast - Fixed position within terminal */}
+                {undoData && (
+                    <div className="absolute bottom-16 left-4 right-4 z-50">
+                        <UndoToast
+                            undoToken={undoData.undoToken}
+                            messageId={undoData.messageId}
+                            expiresAt={undoData.expiresAt}
+                            cascadedCount={undoData.cascadedCount}
+                            onUndo={async (token) => {
+                                if (accessToken) {
+                                    await restoreMessage(undoData.messageId, token, accessToken);
+                                }
+                            }}
+                            onDismiss={dismissUndo}
+                        />
+                    </div>
+                )}
 
                 {/* Footer / Input Status */}
                 <div className="relative z-10 px-4 py-1.5 bg-cyan-950/30 border-t border-cyan-500/20 flex justify-between items-center text-[10px] font-mono text-cyan-500/60">

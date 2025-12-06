@@ -41,9 +41,10 @@ const GnaniCore: React.FC = () => {
   // Zustand Hooks
   const { user, loading, isAuthenticated, accessToken } = useUserStore();
   const { state, transition, isIdle, isListening, isThinking, isSpeaking, _init: initGnaniStore } = useGnaniStore();
-  const { addMessage, setSessionId, refreshConversation, clearMessages } = useConversationStore();
+  /* REMOVED DUPLICATE useGnaniStore LINE */
+  const { addMessage, setConversationId, conversationId, refreshConversation, clearMessages } = useConversationStore();
 
-  const { latestLLMChunk, latestFinalSTT, isTtsEnded, isTtsStarted, isWakeWordTriggered, sessionId, toolStatus } = useIPC();
+  const { latestLLMChunk, latestFinalSTT, isTtsEnded, isTtsStarted, isWakeWordTriggered, sessionId: grpcSessionId, conversationId: ipcConversationId, toolStatus } = useIPC();
   const { connectivityStatus } = useDeviceAwareness();
 
   const spokenText = useSpokenText();
@@ -81,7 +82,8 @@ const GnaniCore: React.FC = () => {
       isTtsStarted,
       isTtsEnded,
       latestFinalSTT: latestFinalSTT?.substring(0, 50),
-      sessionId
+      grpcSessionId,
+      ipcConversationId
     });
   }, [isWakeWordTriggered, isTtsStarted, isTtsEnded, latestFinalSTT]);
 
@@ -127,16 +129,24 @@ const GnaniCore: React.FC = () => {
     }
   }, [uiState.avatarGender]);
 
-  // Sync session ID from IPC to Store
+  // Sync conversation ID from Store to Electron (pushes local state to backend/electron)
   useEffect(() => {
-    if (sessionId) {
-      console.log('[GnaniCore] Syncing sessionId:', sessionId);
-      setSessionId(sessionId);
+    if (conversationId && window.gnani?.stream?.setConversationId) {
+      console.log('[GnaniCore] Pushing conversationId to Electron:', conversationId);
+      window.gnani.stream.setConversationId(conversationId);
+    }
+  }, [conversationId]);
+
+  // Sync conversation ID from IPC to Store (updates local state from backend)
+  useEffect(() => {
+    if (ipcConversationId && ipcConversationId !== conversationId) {
+      console.log('[GnaniCore] Syncing conversationId from IPC:', ipcConversationId);
+      setConversationId(ipcConversationId);
       if (accessToken) {
         refreshConversation(accessToken);
       }
     }
-  }, [sessionId, setSessionId, refreshConversation, accessToken]);
+  }, [ipcConversationId, conversationId, setConversationId, refreshConversation, accessToken]);
 
   const showNotification = (title: string, body: string) => {
     if (window.gnani?.notifications?.show) {
@@ -639,20 +649,22 @@ const GnaniCore: React.FC = () => {
           isOpen={showHistory}
           onClose={() => setShowHistory(false)}
           onNewConversation={() => {
-            setSessionId(null);
+            setConversationId(null);
             clearMessages();
-            setStreamSessionId(null); // Explicitly clear Electron session
-            // The next message sent will trigger a new session creation in the backend
+            // Explicitly clear Electron conversation ID
+            if (window.gnani?.stream?.setConversationId) {
+              window.gnani.stream.setConversationId(null);
+            }
+            // The next message sent will trigger a new conversation creation in the backend
             console.log("Starting new conversation...");
           }}
-          onSelectConversation={(sessionId) => {
-            console.log("Switching to conversation:", sessionId);
-            setSessionId(sessionId);
+          onSelectConversation={(id) => {
+            console.log("Switching to conversation:", id);
+            setConversationId(id);
             if (accessToken) {
               refreshConversation(accessToken);
             }
-            // Notify Electron to switch session
-            setStreamSessionId(sessionId);
+            // Electron sync handled by useEffect
           }}
         />
 

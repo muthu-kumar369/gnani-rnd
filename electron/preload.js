@@ -28,6 +28,7 @@ contextBridge.exposeInMainWorld("gnani", {
       "stream:stop",
       "stream:setEndpoint",
       "stream:setSessionId", // New channel for setting session ID
+      "stream:setConversationId", // New channel for setting conversation ID
       "stream:audio-frame", // New channel for sending audio frames
       "stream:start-file-test",
       "stream:sendText", // New channel for sending text input
@@ -203,6 +204,10 @@ contextBridge.exposeInMainWorld("gnani", {
     setSessionId: (sessionId) => {
       logger.info(`Preload calling stream:setSessionId with: ${sessionId}`, { context: 'Preload' });
       ipcRenderer.send("stream:setSessionId", sessionId);
+    },
+    setConversationId: (conversationId) => {
+      logger.info("Preload calling stream:setConversationId", { context: 'Preload', extra: conversationId });
+      ipcRenderer.send("stream:setConversationId", conversationId);
     },
     getStatus: () => {
       logger.info("Preload invoking stream:getStatus", { context: 'Preload' });

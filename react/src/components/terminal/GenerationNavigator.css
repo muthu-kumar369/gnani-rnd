@@ -1,0 +1,54 @@
+/* components/terminal/GenerationNavigator.css */
+
+.generation-navigator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  background: var(--nav-bg, rgba(255, 255, 255, 0.05));
+  border-radius: 8px;
+  font-size: 12px;
+  margin-top: 8px;
+}
+
+.nav-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  color: var(--text-secondary, #888);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.nav-button:hover:not(:disabled) {
+  background: var(--hover-bg, rgba(255, 255, 255, 0.1));
+  color: var(--text-primary, #fff);
+}
+
+.nav-button:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.generation-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 120px;
+  text-align: center;
+}
+
+.generation-counter {
+  font-weight: 600;
+  color: var(--text-primary, #fff);
+}
+
+.generation-meta {
+  font-size: 11px;
+  color: var(--text-secondary, #888);
+}

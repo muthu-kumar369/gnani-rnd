@@ -1,0 +1,164 @@
+/* components/terminal/MessageInputArea.css */
+
+.message-input-area {
+  position: relative;
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.input-container {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  padding: 12px 16px;
+  background: var(--input-bg, #1a1a1a);
+  border: 1px solid var(--input-border, #333);
+  border-radius: 24px;
+  transition: all 0.2s ease;
+}
+
+.input-container:focus-within {
+  border-color: var(--primary-color, #4a9eff);
+  box-shadow: 0 0 0 3px rgba(74, 158, 255, 0.1);
+}
+
+.message-textarea {
+  flex: 1;
+  min-height: 24px;
+  max-height: 200px;
+  padding: 8px 0;
+  background: transparent;
+  border: none;
+  outline: none;
+  resize: none;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--text-primary, #fff);
+  font-family: inherit;
+}
+
+.message-textarea::placeholder {
+  color: var(--text-secondary, #888);
+}
+
+.message-textarea:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.input-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.attachment-button,
+.send-button,
+.stop-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: transparent;
+}
+
+.attachment-button {
+  color: var(--text-secondary, #888);
+}
+
+.attachment-button:hover:not(:disabled) {
+  background: var(--hover-bg, #2a2a2a);
+  color: var(--text-primary, #fff);
+}
+
+.attachment-button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Send button - changes color based on state */
+.send-button {
+  color: var(--text-secondary, #888);
+}
+
+.send-button.active {
+  background: var(--primary-color, #4a9eff);
+  color: white;
+}
+
+.send-button.active:hover {
+  background: var(--primary-hover, #3a8eef);
+  transform: scale(1.05);
+}
+
+.send-button.disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Stop button - shown during streaming */
+.stop-button {
+  background: var(--error-color, #ef4444);
+  color: white;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.stop-button:hover {
+  background: var(--error-hover, #dc2626);
+  transform: scale(1.05);
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+/* Streaming indicator */
+.streaming-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  font-size: 13px;
+  color: var(--text-secondary, #888);
+}
+
+.streaming-dots {
+  display: flex;
+  gap: 4px;
+}
+
+.streaming-dots span {
+  width: 6px;
+  height: 6px;
+  background: var(--primary-color, #4a9eff);
+  border-radius: 50%;
+  animation: bounce 1.4s ease-in-out infinite;
+}
+
+.streaming-dots span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.streaming-dots span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes bounce {
+  0%, 60%, 100% {
+    transform: translateY(0);
+  }
+  30% {
+    transform: translateY(-8px);
+  }
+}

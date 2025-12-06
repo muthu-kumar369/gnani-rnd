@@ -1,0 +1,121 @@
+/* components/terminal/InlineMessageEditor.css */
+
+.inline-message-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+  background: var(--editor-bg, rgba(255, 255, 255, 0.03));
+  border: 1px solid var(--editor-border, #444);
+  border-radius: 8px;
+  margin: 8px 0;
+}
+
+.editor-textarea {
+  width: 100%;
+  min-height: 80px;
+  max-height: 300px;
+  padding: 12px;
+  background: var(--input-bg, #1a1a1a);
+  border: 1px solid var(--input-border, #333);
+  border-radius: 6px;
+  color: var(--text-primary, #fff);
+  font-size: 14px;
+  line-height: 1.5;
+  font-family: inherit;
+  resize: none;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.editor-textarea:focus {
+  border-color: var(--primary-color, #4a9eff);
+}
+
+.editor-textarea:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.editor-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.editor-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 12px;
+}
+
+.char-count {
+  color: var(--text-secondary, #888);
+}
+
+.auto-regen-hint {
+  color: var(--primary-color, #4a9eff);
+  font-weight: 500;
+}
+
+.editor-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.cancel-button,
+.save-button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cancel-button {
+  background: transparent;
+  color: var(--text-secondary, #888);
+  border: 1px solid var(--border-color, #444);
+}
+
+.cancel-button:hover:not(:disabled) {
+  background: var(--hover-bg, rgba(255, 255, 255, 0.05));
+  color: var(--text-primary, #fff);
+}
+
+.save-button {
+  background: var(--primary-color, #4a9eff);
+  color: white;
+}
+
+.save-button:hover:not(:disabled) {
+  background: var(--primary-hover, #3a8eef);
+  transform: translateY(-1px);
+}
+
+.save-button:disabled,
+.cancel-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}

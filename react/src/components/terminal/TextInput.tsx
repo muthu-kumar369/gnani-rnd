@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send } from 'lucide-react';
+import { Send, Square } from 'lucide-react';
 import AttachmentMenu from './AttachmentMenu';
 import ModelSelector from './ModelSelector';
 import TemplateSelector from './TemplateSelector';
@@ -16,6 +16,10 @@ interface TextInputProps {
     onModelChange?: (modelId: string) => void;
     onTemplateChange?: (templateId: string) => void;
     disabled?: boolean;
+
+    // NEW: Streaming support
+    isStreaming?: boolean;
+    onStopGeneration?: () => void;
 }
 
 const TextInput: React.FC<TextInputProps> = ({
@@ -28,7 +32,9 @@ const TextInput: React.FC<TextInputProps> = ({
     selectedTemplate,
     onModelChange,
     onTemplateChange,
-    disabled
+    disabled,
+    isStreaming = false,
+    onStopGeneration
 }) => {
     const [text, setText] = useState('');
     const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -49,12 +55,14 @@ const TextInput: React.FC<TextInputProps> = ({
     const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
-            handleSend();
+            if (!isStreaming) {
+                handleSend();
+            }
         }
     };
 
     const handleSend = () => {
-        if (text.trim() && !disabled) {
+        if (text.trim() && !disabled && !isStreaming) {
             onSend(text.trim());
             setText('');
             if (textareaRef.current) {
@@ -62,6 +70,15 @@ const TextInput: React.FC<TextInputProps> = ({
             }
         }
     };
+
+    const handleStop = () => {
+        if (onStopGeneration) {
+            onStopGeneration();
+        }
+    };
+
+    // Determine button state
+    const canSend = text.trim() && !disabled && !isStreaming;
 
     return (
         <AnimatePresence>
@@ -73,6 +90,18 @@ const TextInput: React.FC<TextInputProps> = ({
                     className="border-t border-cyan-500/30 bg-cyan-950/30 backdrop-blur-sm"
                 >
                     <div className="p-3">
+                        {/* Streaming Indicator */}
+                        {isStreaming && (
+                            <div className="mb-2 flex items-center gap-2 text-xs text-cyan-400">
+                                <div className="flex gap-1">
+                                    <span className="animate-bounce" style={{ animationDelay: '0ms' }}>●</span>
+                                    <span className="animate-bounce" style={{ animationDelay: '150ms' }}>●</span>
+                                    <span className="animate-bounce" style={{ animationDelay: '300ms' }}>●</span>
+                                </div>
+                                <span>Gnani is thinking...</span>
+                            </div>
+                        )}
+
                         {/* Main textarea */}
                         <div className="relative mb-2">
                             <textarea
@@ -81,7 +110,7 @@ const TextInput: React.FC<TextInputProps> = ({
                                 onChange={handleInput}
                                 onKeyDown={handleKeyDown}
                                 placeholder="Message Gnani..."
-                                disabled={disabled}
+                                disabled={disabled || isStreaming}
                                 className="modern-input w-full p-3 text-sm text-cyan-100 placeholder-cyan-500/50 resize-none min-h-[44px] max-h-[150px] custom-scrollbar disabled:opacity-50 disabled:cursor-not-allowed"
                                 rows={1}
                             />
@@ -94,31 +123,44 @@ const TextInput: React.FC<TextInputProps> = ({
                                     <AttachmentMenu
                                         onFileSelect={onFileSelect}
                                         onImageSelect={onImageSelect}
-                                        disabled={disabled}
+                                        disabled={disabled || isStreaming}
                                     />
                                 )}
                                 {onModelChange && (
                                     <ModelSelector
                                         selectedModel={selectedModel || null}
                                         onModelChange={onModelChange}
-                                        disabled={disabled}
+                                        disabled={disabled || isStreaming}
                                     />
                                 )}
                                 {onTemplateChange && (
                                     <TemplateSelector
                                         selectedTemplate={selectedTemplate || null}
                                         onTemplateChange={onTemplateChange}
-                                        disabled={disabled}
+                                        disabled={disabled || isStreaming}
                                     />
                                 )}
                             </div>
-                            <button
-                                onClick={handleSend}
-                                disabled={!text.trim() || disabled}
-                                className="h-10 w-10 flex items-center justify-center bg-cyan-600 hover:bg-cyan-500 disabled:bg-cyan-900/50 disabled:text-cyan-500/30 text-white rounded-lg transition-all shadow-[0_0_10px_rgba(6,182,212,0.3)] hover:shadow-[0_0_20px_rgba(6,182,212,0.5)] hover:scale-105 active:scale-100 disabled:hover:scale-100 disabled:shadow-none"
-                            >
-                                <Send size={18} />
-                            </button>
+
+                            {/* Send/Stop Button */}
+                            {isStreaming ? (
+                                <button
+                                    onClick={handleStop}
+                                    className="h-10 w-10 flex items-center justify-center bg-red-600 hover:bg-red-500 text-white rounded-lg transition-all shadow-[0_0_10px_rgba(239,68,68,0.3)] hover:shadow-[0_0_20px_rgba(239,68,68,0.5)] hover:scale-105 active:scale-100 animate-pulse"
+                                    title="Stop generation"
+                                >
+                                    <Square size={18} fill="currentColor" />
+                                </button>
+                            ) : (
+                                <button
+                                    onClick={handleSend}
+                                    disabled={!canSend}
+                                    className="h-10 w-10 flex items-center justify-center bg-cyan-600 hover:bg-cyan-500 disabled:bg-cyan-900/50 disabled:text-cyan-500/30 text-white rounded-lg transition-all shadow-[0_0_10px_rgba(6,182,212,0.3)] hover:shadow-[0_0_20px_rgba(6,182,212,0.5)] hover:scale-105 active:scale-100 disabled:hover:scale-100 disabled:shadow-none"
+                                    title="Send message"
+                                >
+                                    <Send size={18} />
+                                </button>
+                            )}
                         </div>
                     </div>
                 </motion.div>

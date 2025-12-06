@@ -2,12 +2,21 @@ import { useState } from 'react';
 import { useConversationStore } from '../store/useConversationStore';
 import { useUserStore } from '../store/useUserStore';
 
-const API_BASE_URL = 'http://localhost:3000/api';
-
 export const useMessageActions = (conversationId: string | null) => {
     const { accessToken } = useUserStore();
-    const { regenerateResponse, editMessage: storeEditMessage, refreshConversation } = useConversationStore();
+    const {
+        regenerateResponse,
+        editMessage: storeEditMessage,
+        deleteMessage: storeDeleteMessage,
+        restoreMessage: storeRestoreMessage,
+        refreshConversation,
+        undoData,
+        dismissUndo
+    } = useConversationStore();
+
     const [isLoading, setIsLoading] = useState(false);
+    const [isEditing, setIsEditing] = useState(false);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
     const regenerateMessage = async (messageId: string) => {
         if (!conversationId || !accessToken) return;
@@ -21,13 +30,15 @@ export const useMessageActions = (conversationId: string | null) => {
         }
     };
 
-    const editMessage = async (messageId: string, newContent: string) => {
+    const editMessage = async (messageId: string, newContent: string, autoRegenerate = true) => {
         if (!conversationId || !accessToken) return;
         setIsLoading(true);
         try {
-            await storeEditMessage(messageId, newContent, accessToken);
+            await storeEditMessage(messageId, newContent, accessToken, autoRegenerate);
+            setIsEditing(false);
         } catch (error) {
             console.error('Failed to edit message:', error);
+            throw error;
         } finally {
             setIsLoading(false);
         }
@@ -37,28 +48,50 @@ export const useMessageActions = (conversationId: string | null) => {
         if (!conversationId || !accessToken) return;
         setIsLoading(true);
         try {
-            const response = await fetch(`${API_BASE_URL}/conversations/${conversationId}/messages/${messageId}`, {
-                method: 'DELETE',
-                headers: {
-                    'x-auth-token': accessToken
-                }
-            });
-
-            if (!response.ok) throw new Error('Failed to delete message');
-
-            // Refresh conversation to get updated tree
-            await refreshConversation(accessToken);
+            await storeDeleteMessage(messageId, accessToken);
+            setShowDeleteConfirm(false);
         } catch (error) {
             console.error('Failed to delete message:', error);
+            throw error;
         } finally {
             setIsLoading(false);
         }
     };
 
+    const restoreMessage = async () => {
+        if (!undoData || !accessToken) return;
+        setIsLoading(true);
+        try {
+            await storeRestoreMessage(undoData.messageId, undoData.undoToken, accessToken);
+        } catch (error) {
+            console.error('Failed to restore message:', error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const copyMessage = (content: string) => {
+        navigator.clipboard.writeText(content);
+        // Optional: Show toast notification
+    };
+
     return {
+        // Actions
         regenerateMessage,
         editMessage,
         deleteMessage,
-        isLoading
+        restoreMessage,
+        copyMessage,
+
+        // UI State
+        isLoading,
+        isEditing,
+        setIsEditing,
+        showDeleteConfirm,
+        setShowDeleteConfirm,
+
+        // Undo state
+        undoData,
+        dismissUndo
     };
 };

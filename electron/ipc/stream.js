@@ -20,6 +20,13 @@ function setupStreamIPC(streamingClient, ttsPlayer) {
     }
   });
 
+  streamingClient.on('stream:conversation_id', (payload) => {
+    logger.debug(`Sending stream:conversation_id to renderer: ${payload.conversationId}`);
+    if (global.mainWindow && !global.mainWindow.isDestroyed()) {
+      global.mainWindow.webContents.send('stream:conversation_id', payload);
+    }
+  });
+
   streamingClient.on('stream:partial', (payload) => {
     logger.debug('Sending stream:partial to renderer.', payload.text);
     if (global.mainWindow && !global.mainWindow.isDestroyed()) {
@@ -132,6 +139,11 @@ function setupStreamIPC(streamingClient, ttsPlayer) {
   ipcMain.on('stream:setSessionId', (event, sessionId) => {
     logger.info(`Received stream:setSessionId from renderer: ${sessionId}`);
     streamingClient.setSessionId(sessionId);
+  });
+
+  ipcMain.on('stream:setConversationId', (event, conversationId) => {
+    logger.info('Received stream:setConversationId from renderer.', conversationId);
+    streamingClient.setConversationId(conversationId);
   });
 
   ipcMain.on('stream:sendText', (event, text) => {

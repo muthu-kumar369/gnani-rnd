@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { User, Bot, Volume2, Terminal, Activity, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useConversationStore, type ConversationMessage } from '../../store/useConversationStore';
+import { useUserStore } from '../../store/useUserStore';
 import { useMessageActions } from '../../hooks/useMessageActions';
 import MessageActions from './MessageActions';
 import EditMessageModal from './EditMessageModal';
@@ -9,6 +10,7 @@ import DeleteConfirmDialog from './DeleteConfirmDialog';
 import TokenBadge from '../token-usage/TokenBadge';
 import MessageTimestamp from './MessageTimestamp';
 import MessageContent from './MessageContent';
+import { GenerationNavigator } from './GenerationNavigator';
 import '../../styles/messageActions.css';
 
 interface MessageBubbleProps {
@@ -18,16 +20,30 @@ interface MessageBubbleProps {
 }
 
 const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isLatest, showTimestamp = true }) => {
-    const { navigateToBranch, sessionId } = useConversationStore();
+    const { navigateToBranch, navigateToGeneration, sessionId } = useConversationStore();
+    const { accessToken } = useUserStore();
     const actions = useMessageActions(sessionId);
 
     const [isHovered, setIsHovered] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+    const [generationCount, setGenerationCount] = useState<number>(1);
 
     const isGnani = message.type === 'gnani';
     const isUser = message.type === 'user';
     const isSystem = message.type === 'system';
+
+    // Fetch generation count for assistant messages
+    useEffect(() => {
+        if (isGnani && message.generationIndex !== undefined && sessionId && accessToken) {
+            fetch(`http://localhost:3000/api/conversations/${sessionId}/messages/${message.id}/generations`, {
+                headers: { 'x-auth-token': accessToken }
+            })
+                .then(res => res.json())
+                .then(data => setGenerationCount(data.totalGenerations || 1))
+                .catch(() => setGenerationCount(1));
+        }
+    }, [isGnani, message.generationIndex, message.id, sessionId, accessToken]);
 
     const getIcon = () => {
         switch (message.type) {
@@ -140,6 +156,23 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isLatest, showTi
                             type={message.type}
                             isLatest={isLatest}
                         />
+
+                        {/* Generation Navigator for assistant messages with multiple generations */}
+                        {isGnani && message.generationIndex !== undefined && generationCount > 1 && (
+                            <div className="mt-2">
+                                <GenerationNavigator
+                                    currentIndex={message.generationIndex}
+                                    totalGenerations={generationCount}
+                                    onNavigate={(direction) => {
+                                        if (accessToken) {
+                                            navigateToGeneration(message.id, direction, accessToken);
+                                        }
+                                    }}
+                                    timestamp={new Date(message.timestamp)}
+                                    modelName={message.tokenUsage?.model || 'Unknown'}
+                                />
+                            </div>
+                        )}
                     </div>
                 </div>
 

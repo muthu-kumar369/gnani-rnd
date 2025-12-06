@@ -1,0 +1,89 @@
+/* components/common/UndoToast.css */
+
+.undo-toast {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 16px;
+  background: var(--toast-bg, #2a2a2a);
+  border: 1px solid var(--toast-border, #444);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  min-width: 320px;
+  max-width: 500px;
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.undo-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--text-primary, #fff);
+  font-size: 14px;
+}
+
+.undo-content svg {
+  color: var(--error-color, #ef4444);
+  flex-shrink: 0;
+}
+
+.undo-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.undo-button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: var(--primary-color, #4a9eff);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.undo-button:hover {
+  background: var(--primary-hover, #3a8eef);
+  transform: scale(1.02);
+}
+
+.undo-button svg {
+  flex-shrink: 0;
+}
+
+.dismiss-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: transparent;
+  color: var(--text-secondary, #888);
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.dismiss-button:hover {
+  background: var(--hover-bg, #3a3a3a);
+  color: var(--text-primary, #fff);
+}

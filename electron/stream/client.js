@@ -30,7 +30,8 @@ class StreamingClient extends EventEmitter {
     this.call = null;
     this.isConnected = false;
     this.isStreamingAudio = false;
-    this.currentSessionId = null;
+    this.currentSessionId = null;  // gRPC session ID (temporary)
+    this.conversationId = null;    // Conversation ID (permanent)
     this.backoff = new ExponentialBackoff(this.options.reconnect);
     this.metrics = new Metrics();
     this.isRefreshingToken = false;
@@ -76,12 +77,16 @@ class StreamingClient extends EventEmitter {
 
   async startSession(metadata) {
     const userId = this.store.get('userId') || "electron-user";
-    // Use the explicitly set session ID if available (for resumption), otherwise let backend generate one (or pass null)
+    // Send conversationId to backend if we have one
     const sessionIdToPass = this.currentSessionId;
 
     return new Promise((resolve, reject) => {
       this.grpcClient.StartSession(
-        { user_id: userId, session_id: sessionIdToPass },
+        { 
+          user_id: userId, 
+          session_id: sessionIdToPass,
+          conversation_id: this.conversationId  // Send conversationId
+        },
         metadata,
         (error, response) => {
           if (error) {
@@ -102,6 +107,13 @@ class StreamingClient extends EventEmitter {
           if (sessionId.includes('$')) {
             logger.warn(`Corrupted session_id detected. Cleaning it up. Original: ${sessionId}`);
             sessionId = sessionId.split('$').pop();
+          }
+
+          // Store conversationId from response
+          if (response.conversation_id) {
+            this.conversationId = response.conversation_id;
+            logger.info(`Conversation ID set to: ${this.conversationId}`, { context: "StreamingClient" });
+            this.emit('stream:conversation_id', { conversationId: this.conversationId });
           }
 
           resolve(sessionId);
@@ -457,6 +469,12 @@ class StreamingClient extends EventEmitter {
     this.currentSessionId = sessionId;
     // We don't automatically connect here; we wait for the next interaction (mic start or text input)
     // to trigger connection, which will now use this new sessionId.
+  }
+
+  async setConversationId(conversationId) {
+    logger.info(`Setting conversation ID: ${conversationId}`, { context: 'StreamingClient' });
+    this.conversationId = conversationId;
+    // Don't disconnect - just update for next connection
   }
 
   setEndpoint(cfg) {
