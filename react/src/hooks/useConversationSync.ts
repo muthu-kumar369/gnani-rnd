@@ -117,6 +117,11 @@ export function useConversationSync() {
     /**
      * Sync complete LLM responses (Gnani messages)
      */
+    /**
+     * Sync complete LLM responses (Gnani messages)
+     * HANDLED BY GnaniCore via streaming updates to prevent duplicates
+     */
+    /*
     useEffect(() => {
         if (!latestLLMChunk) return;
 
@@ -156,6 +161,7 @@ export function useConversationSync() {
             });
         }
     }, [latestLLMChunk, addMessage]);
+    */
 
     /**
      * Sync state transitions (system messages)

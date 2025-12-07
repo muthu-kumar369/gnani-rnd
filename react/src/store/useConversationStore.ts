@@ -33,14 +33,31 @@ export interface ConversationMessage {
   };
 }
 
+export interface ConversationSummary {
+  id: string;
+  title: string;
+  updatedAt: string;
+}
+
+export interface LlmModel {
+  id: string;
+  displayName: string;
+  description?: string;
+  provider?: string;
+}
+
 interface ConversationStore {
   messages: ConversationMessage[]; // Visible messages
   allMessages: ConversationMessage[]; // All messages (tree)
+  conversations: ConversationSummary[];
+  isLoadingConversations: boolean;
   conversationId: string | null;
   currentLeafId: string | null;
   title: string | null;
   selectedModel: string | null;
   selectedTemplate: string | null;
+  models: LlmModel[]; // List of available models
+  isLoadingModels: boolean;
   isStreaming: boolean;
   abortController: AbortController | null;
 
@@ -54,11 +71,16 @@ interface ConversationStore {
   regenerateResponse: (messageId: string, accessToken: string) => Promise<void>;
   editMessage: (messageId: string, newContent: string, accessToken: string) => Promise<void>;
   deleteMessage: (messageId: string, accessToken: string) => Promise<void>;
+  deleteConversation: (conversationId: string, accessToken: string) => Promise<void>;
+  updateTitle: (conversationId: string, title: string, accessToken: string) => Promise<void>;
   restoreMessage: (messageId: string, undoToken: string, accessToken: string) => Promise<void>;
   dismissUndo: () => void;
   refreshConversation: (accessToken: string) => Promise<void>;
+  fetchConversations: (accessToken: string) => Promise<void>;
+  fetchModels: (accessToken: string) => Promise<void>;
+  uploadFile: (file: File, accessToken: string) => Promise<{ fileId: string; url: string; filename: string }>;
   createConversation: (accessToken: string, systemPrompt?: string) => Promise<string>;
-  sendMessage: (text: string, accessToken: string, sendViaGrpc?: (text: string) => void) => Promise<void>;
+  sendMessage: (text: string, accessToken: string, attachments?: any[], sendViaGrpc?: (text: string) => void) => Promise<void>;
   navigateToBranch: (messageId: string, direction: 'prev' | 'next') => void;
   navigateToGeneration: (messageId: string, direction: 'prev' | 'next') => void; // Alias for consistency
   setSelectedModel: (modelId: string) => void;
@@ -81,11 +103,15 @@ export const useConversationStore = create<ConversationStore>()(
     (set, get) => ({
       messages: [],
       allMessages: [],
+      conversations: [],
+      isLoadingConversations: false,
       conversationId: null,
       currentLeafId: null,
       title: null,
       selectedModel: null,
       selectedTemplate: null,
+      models: [],
+      isLoadingModels: false,
       isStreaming: false,
       abortController: null,
       undoData: null,
@@ -281,6 +307,71 @@ export const useConversationStore = create<ConversationStore>()(
         }
       },
 
+      fetchConversations: async (accessToken) => {
+        set({ isLoadingConversations: true });
+        try {
+          const response = await fetch(`${API_BASE_URL}/conversations`, {
+            headers: { 'x-auth-token': accessToken }
+          });
+
+          if (!response.ok) throw new Error('Failed to list conversations');
+
+          const data = await response.json();
+          // Backend returns { conversations: [], total, page, ... }
+          const conversationList = data.conversations || [];
+
+          const mapped = conversationList.map((c: any) => ({
+            id: c.conversationId || c.id || c._id,
+            title: c.title || 'Untitled Conversation',
+            updatedAt: c.updatedAt || new Date().toISOString()
+          }));
+
+          // Sort by recent
+          mapped.sort((a: any, b: any) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+
+          set({ conversations: mapped });
+        } catch (error) {
+          errorLogger.error('Error fetching conversations', error as Error, { context: 'useConversationStore' });
+        } finally {
+          set({ isLoadingConversations: false });
+        }
+      },
+
+      fetchModels: async (accessToken) => {
+        set({ isLoadingModels: true });
+        try {
+          const response = await fetch(`${API_BASE_URL}/llm/models`, {
+            headers: { 'x-auth-token': accessToken }
+          });
+          if (!response.ok) throw new Error('Failed to fetch models');
+          const data = await response.json();
+          set({ models: data.models || [] });
+        } catch (error) {
+          errorLogger.error('Error fetching models', error as Error, { context: 'useConversationStore' });
+        } finally {
+          set({ isLoadingModels: false });
+        }
+      },
+
+      uploadFile: async (file, accessToken) => {
+        try {
+          const formData = new FormData();
+          formData.append('file', file);
+
+          const response = await fetch(`${API_BASE_URL}/files/upload`, {
+            method: 'POST',
+            headers: { 'x-auth-token': accessToken },
+            body: formData
+          });
+
+          if (!response.ok) throw new Error('Failed to upload file');
+          return await response.json();
+        } catch (error) {
+          errorLogger.error('Error uploading file', error as Error, { context: 'useConversationStore' });
+          throw error;
+        }
+      },
+
       createConversation: async (accessToken, systemPrompt) => {
         try {
           const response = await fetch(`${API_BASE_URL}/conversations`, {
@@ -312,16 +403,18 @@ export const useConversationStore = create<ConversationStore>()(
         }
       },
 
-      sendMessage: async (text, accessToken, sendViaGrpc) => {
+      sendMessage: async (text, accessToken, attachments = [], sendViaGrpc) => {
         const { conversationId, addMessage } = get();
 
-        // REMOVED: Optimistic UI Update
-        // The backend will echo the message back via stream:final, which useConversationSync will add
-        // Adding it here causes duplicates
-        // addMessage({
-        //   type: 'user',
-        //   message: text
-        // });
+        // Optimistic UI Update: Add user message immediately
+        addMessage({
+          type: 'user',
+          message: text
+        });
+
+        // Set streaming state immediately for UI feedback (Stop button etc)
+        const controller = new AbortController();
+        set({ isStreaming: true, abortController: controller });
 
         // 2. Try gRPC if available (always try if function is provided)
         if (sendViaGrpc) {
@@ -329,6 +422,7 @@ export const useConversationStore = create<ConversationStore>()(
             errorLogger.info('Attempting to send via gRPC', { context: 'useConversationStore' });
             sendViaGrpc(text);
             // gRPC will handle the response via stream events
+            // We do NOT set isStreaming false here; GnaniCore handles it on complete_response or error
             return;
           } catch (error) {
             errorLogger.warn('gRPC send failed, falling back to REST', { context: 'useConversationStore', error });
@@ -339,8 +433,7 @@ export const useConversationStore = create<ConversationStore>()(
         }
 
         // 3. Fallback to REST
-        const controller = new AbortController();
-        set({ isStreaming: true, abortController: controller });
+        // controller is already created above
 
         try {
           const response = await fetch(`${API_BASE_URL}/chat`, {
@@ -352,6 +445,7 @@ export const useConversationStore = create<ConversationStore>()(
             body: JSON.stringify({
               message: text,
               conversationId: conversationId,
+              attachments: attachments
             }),
             signal: controller.signal
           });
@@ -363,6 +457,7 @@ export const useConversationStore = create<ConversationStore>()(
           // If backend returns a new conversation ID, update it
           if (data.conversationId && data.conversationId !== conversationId) {
             set({ conversationId: data.conversationId });
+            get().fetchConversations(accessToken);
           }
 
           // If backend returns the assistant response immediately (REST style), add it and trigger TTS
@@ -470,6 +565,7 @@ export const useConversationStore = create<ConversationStore>()(
 
           const newAssistantMessage = await response.json();
           // Update currentLeafId to the new message to switch to this branch
+          // Backend returns the message object directly
           set({ currentLeafId: newAssistantMessage._id || newAssistantMessage.id });
 
           await get().refreshConversation(accessToken);
@@ -505,9 +601,15 @@ export const useConversationStore = create<ConversationStore>()(
 
           if (!response.ok) throw new Error('Failed to edit message');
 
-          const { newAssistantMessage } = await response.json();
+          const { newResponse } = await response.json();
           // Update currentLeafId to the new assistant response to switch to this branch
-          set({ currentLeafId: newAssistantMessage._id || newAssistantMessage.id });
+          if (newResponse) {
+            set({ currentLeafId: newResponse._id || newResponse.id });
+          } else {
+            // If no new response (e.g. autoRegenerate=false), just refresh.
+            // But we probably want to stay on the user message? Or the last leaf of that branch?
+            //refreshConversation handles finding the leaf if we don't set it.
+          }
 
           await get().refreshConversation(accessToken);
         } catch (error: any) {
@@ -547,6 +649,54 @@ export const useConversationStore = create<ConversationStore>()(
           await get().refreshConversation(accessToken);
         } catch (error) {
           errorLogger.error('Error deleting message', error as Error, { context: 'useConversationStore' });
+          throw error;
+        }
+      },
+
+      deleteConversation: async (conversationId, accessToken) => {
+        try {
+          const response = await fetch(`${API_BASE_URL}/conversations/${conversationId}`, {
+            method: 'DELETE',
+            headers: { 'x-auth-token': accessToken }
+          });
+
+          if (!response.ok) throw new Error('Failed to delete conversation');
+
+          // Remove from local list
+          set((state) => ({
+            conversations: state.conversations.filter(c => c.id !== conversationId),
+            // Reset active if deleted
+            conversationId: state.conversationId === conversationId ? null : state.conversationId,
+            messages: state.conversationId === conversationId ? [] : state.messages
+          }));
+        } catch (error) {
+          errorLogger.error('Error deleting conversation', error as Error, { context: 'useConversationStore' });
+          throw error;
+        }
+      },
+
+      updateTitle: async (conversationId, title, accessToken) => {
+        try {
+          const response = await fetch(`${API_BASE_URL}/conversations/${conversationId}/title`, {
+            method: 'PATCH',
+            headers: {
+              'x-auth-token': accessToken,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ title })
+          });
+
+          if (!response.ok) throw new Error('Failed to update title');
+
+          // Update local list
+          set((state) => ({
+            conversations: state.conversations.map(c =>
+              c.id === conversationId ? { ...c, title } : c
+            ),
+            title: state.conversationId === conversationId ? title : state.title
+          }));
+        } catch (error) {
+          errorLogger.error('Error updating title', error as Error, { context: 'useConversationStore' });
           throw error;
         }
       },
@@ -628,11 +778,16 @@ export const useConversationStore = create<ConversationStore>()(
       name: 'gnani_conversation_history',
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
-        conversationId: state.conversationId // Only persist current conversation ID
+        // We do NOT persist conversationId anymore, so we start fresh (New Chat) on every load
+        // conversationId: state.conversationId 
       }),
-      onRehydrateStorage: () => () => {
-        // Messages will be fetched from backend when conversationId is set
-        // GnaniCore.tsx handles this via useEffect on conversationId change
+      onRehydrateStorage: () => (state) => {
+        // Ensure conversationId is null on rehydrate just in case
+        if (state) {
+          state.conversationId = null;
+          state.messages = [];
+          state.currentLeafId = null;
+        }
       }
     }
   )

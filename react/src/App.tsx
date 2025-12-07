@@ -9,6 +9,9 @@ import ErrorBoundary from './components/ErrorBoundary';
 const GnaniCore = React.lazy(() => import('./components/gnani/GnaniCore'));
 const LoginPage = React.lazy(() => import('./pages/LoginPage'));
 const RegisterPage = React.lazy(() => import('./pages/RegisterPage'));
+const ChatLayout = React.lazy(() => import('./layouts/ChatLayout'));
+const ChatPage = React.lazy(() => import('./pages/ChatPage'));
+const SettingsPage = React.lazy(() => import('./pages/SettingsPage'));
 
 // Protected Route Wrapper - only renders when authenticated
 function ProtectedRoute() {
@@ -19,10 +22,19 @@ function ProtectedRoute() {
   }
 
   return (
-    <ErrorBoundary>
-      <GnaniCore />
-    </ErrorBoundary>
+    <Navigate to="/chat" replace />
   );
+}
+
+// Middleware to require authentication for protected routes
+function RequireAuth({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated } = useUserStore();
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return <>{children}</>;
 }
 
 function App() {
@@ -42,8 +54,27 @@ function App() {
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
 
-            {/* Protected Route */}
+            {/* Root Route - Redirects based on auth */}
             <Route path="/" element={<ProtectedRoute />} />
+
+            {/* Protected Routes */}
+            <Route path="/chat" element={
+              <RequireAuth>
+                <ErrorBoundary>
+                  <ChatLayout />
+                </ErrorBoundary>
+              </RequireAuth>
+            }>
+              <Route index element={<ChatPage />} />
+            </Route>
+
+            <Route path="/settings" element={
+              <RequireAuth>
+                <ErrorBoundary>
+                  <SettingsPage />
+                </ErrorBoundary>
+              </RequireAuth>
+            } />
 
             {/* Catch-all redirect */}
             <Route path="*" element={<Navigate to={isAuthenticated ? "/" : "/login"} replace />} />

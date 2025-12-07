@@ -17,7 +17,7 @@ describe('useConversationStore', () => {
     const { result } = renderHook(() => useConversationStore());
 
     await act(async () => {
-      await result.current.sendMessage('Hello gRPC', 'fake-token', sendViaGrpc);
+      await result.current.sendMessage('Hello gRPC', 'fake-token', [], sendViaGrpc);
     });
 
     // Check gRPC call
@@ -41,7 +41,7 @@ describe('useConversationStore', () => {
     const { result } = renderHook(() => useConversationStore());
 
     await act(async () => {
-      await result.current.sendMessage('Hello REST', 'fake-token', sendViaGrpc);
+      await result.current.sendMessage('Hello REST', 'fake-token', [], sendViaGrpc);
     });
 
     // Check gRPC call happened and failed

@@ -34,7 +34,14 @@ import { useGnaniStore } from "../../store/useGnaniStore";
 import { useConversationStore } from "../../store/useConversationStore";
 import { useUserStore } from "../../store/useUserStore";
 
-const GnaniCore: React.FC = () => {
+import { X } from "lucide-react";
+
+interface GnaniCoreProps {
+  isOverlayMode?: boolean;
+  onOverlayClose?: () => void;
+}
+
+const GnaniCore: React.FC<GnaniCoreProps> = ({ isOverlayMode = false, onOverlayClose }) => {
   const uiState = useGnaniUIState();
   const { audioLevel, isMicActive, startMic, stopMic } = useMicrophone();
 
@@ -144,6 +151,8 @@ const GnaniCore: React.FC = () => {
       setConversationId(ipcConversationId);
       if (accessToken) {
         refreshConversation(accessToken);
+        // Also refresh the sidebar list as we might have switched to a new/different conversation
+        useConversationStore.getState().fetchConversations(accessToken);
       }
     }
   }, [ipcConversationId, conversationId, setConversationId, refreshConversation, accessToken]);
@@ -202,11 +211,6 @@ const GnaniCore: React.FC = () => {
         // Stop streaming state
         setIsStreaming(false);
 
-        // Force refresh to ensure sync
-        if (accessToken) {
-          refreshConversation(accessToken);
-        }
-
         streamingTTSRef.current.reset();
         streamingTTSRef.current.setStreamActive(true);
         streamingTTSRef.current.addTextChunk(text);
@@ -219,8 +223,10 @@ const GnaniCore: React.FC = () => {
         // Update UI with streaming text
         updateLastMessageContent(text, true);
 
-        // Ensure streaming state is active
-        setIsStreaming(true);
+        // DO NOT set setIsStreaming(true) here. 
+        // It is already set by sendMessage (text) or VAD/STT (voice).
+        // Setting it here causes race conditions if a partial chunk arrives close to completion.
+        // setIsStreaming(true);
 
         // streamingTTSRef.current.addTextChunk(text);
         return;
@@ -560,7 +566,7 @@ const GnaniCore: React.FC = () => {
           animate={{ opacity: 1 }}
           transition={{ duration: 1 }}
         >
-          <header className="flex justify-between items-center h-20 shrink-0 z-50">
+          <header className={`flex justify-between items-center h-20 shrink-0 z-50 ${isOverlayMode ? 'hidden' : ''}`}>
             <div className="text-left relative group cursor-default">
               <div className="absolute -inset-2 bg-jarvis-blue/20 blur-xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
               <h1
@@ -638,9 +644,18 @@ const GnaniCore: React.FC = () => {
             </div>
           </main>
 
-          <footer className="w-full absolute bottom-0 left-0 p-4 md:p-8 pointer-events-none">
+          <footer className={`w-full absolute bottom-0 left-0 p-4 md:p-8 pointer-events-none ${isOverlayMode ? 'hidden' : ''}`}>
           </footer>
         </motion.div>
+
+        {isOverlayMode && (
+          <button
+            onClick={onOverlayClose}
+            className="absolute top-6 right-6 z-[60] p-3 bg-red-500/10 hover:bg-red-500/30 text-red-400 rounded-full border border-red-500/30 transition-all backdrop-blur-md"
+          >
+            <X className="w-6 h-6" />
+          </button>
+        )}
 
         {/* Mic Button Area - Responsive Position */}
         <div className="absolute left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-4 bottom-32 md:bottom-auto md:top-[35%]">
@@ -664,9 +679,11 @@ const GnaniCore: React.FC = () => {
         </div>
 
         {/* Device Stats HUD - Fixed at bottom right */}
-        <div className="absolute bottom-6 right-6 z-50">
-          <DeviceStatsHUD />
-        </div>
+        {!isOverlayMode && (
+          <div className="absolute bottom-6 right-6 z-50">
+            <DeviceStatsHUD />
+          </div>
+        )}
 
         <TerminalPanel isVisible={showTerminal} onToggle={() => setShowTerminal(!showTerminal)} />
 

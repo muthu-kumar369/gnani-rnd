@@ -6,6 +6,7 @@ import ConversationListItem from './ConversationListItem';
 import { useConversationStore } from '../../store/useConversationStore';
 import { useUserStore } from '../../store/useUserStore';
 import Button from '../ui/Button';
+import ConfirmationModal from '../ui/ConfirmationModal';
 
 interface ConversationSidebarProps {
     isOpen: boolean;
@@ -34,6 +35,7 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
     const { conversationId: currentConversationId, createConversation } = useConversationStore();
     const { accessToken } = useUserStore();
     const [searchQuery, setSearchQuery] = React.useState('');
+    const [deleteId, setDeleteId] = React.useState<string | null>(null);
     const sidebarRef = useRef<HTMLDivElement>(null);
 
     // Initial load
@@ -154,7 +156,7 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                                             }
                                             onClose();
                                         }}
-                                        onDelete={deleteConversation}
+                                        onDelete={(id) => setDeleteId(id)}
                                         onEditTitle={updateTitle}
                                     />
                                 ))
@@ -167,6 +169,18 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                             )}
                         </div>
                     </motion.div>
+
+                    <ConfirmationModal
+                        isOpen={!!deleteId}
+                        onClose={() => setDeleteId(null)}
+                        onConfirm={() => {
+                            if (deleteId) deleteConversation(deleteId);
+                        }}
+                        title="Delete Conversation"
+                        message="Are you sure you want to delete this conversation? This action cannot be undone."
+                        isDangerous={true}
+                        confirmLabel="Delete"
+                    />
                 </>
             )}
         </AnimatePresence>

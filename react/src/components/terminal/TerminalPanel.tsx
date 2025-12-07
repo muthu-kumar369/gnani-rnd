@@ -140,8 +140,14 @@ const TerminalPanel: React.FC<TerminalPanelProps> = ({ isVisible, onToggle }) =>
 
         // Use the unified sendMessage action
         // Always pass sendText if available, the store handles the fallback logic
+        // Create unified attachments array
+        const attachments = [
+            ...attachedFiles.map(f => ({ type: 'file', id: f.id, name: f.fileName })),
+            ...attachedImages.map(i => ({ type: 'image', id: i.id, name: i.fileName }))
+        ];
+
         setIsStreaming(true); // Enable stop button immediately for text input
-        await sendMessage(text, accessToken, sendText);
+        await sendMessage(text, accessToken, attachments, sendText);
 
         // Clear attached files and images after sending
         if (attachedFiles.length > 0) {
