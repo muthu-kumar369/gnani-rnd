@@ -45,7 +45,7 @@ const ConversationListItem: React.FC<ConversationListItemProps> = ({
     const handleSaveTitle = (e: React.FormEvent) => {
         e.stopPropagation();
         e.preventDefault();
-        onEditTitle(conversation.sessionId, editTitle);
+        onEditTitle(conversation.conversationId, editTitle);
         setIsEditing(false);
     };
 
@@ -61,7 +61,7 @@ const ConversationListItem: React.FC<ConversationListItemProps> = ({
                 ? 'bg-jarvis-blue/20 border-jarvis-cyan/50 shadow-[0_0_10px_rgba(0,240,255,0.2)]'
                 : 'bg-black/40 border-transparent hover:bg-jarvis-blue/10 hover:border-jarvis-blue/30'
                 }`}
-            onClick={() => onResume(conversation.sessionId)}
+            onClick={() => onResume(conversation.conversationId)}
         >
             <div className="flex items-start justify-between">
                 <div className="flex-1 min-w-0 mr-2">
@@ -111,13 +111,13 @@ const ConversationListItem: React.FC<ConversationListItemProps> = ({
                             onClick={e => e.stopPropagation()}
                         >
                             <button
-                                onClick={(e) => handleMenuAction(() => onResume(conversation.sessionId), e)}
+                                onClick={(e) => handleMenuAction(() => onResume(conversation.conversationId), e)}
                                 className="w-full px-3 py-2 text-left text-xs text-gray-300 hover:bg-jarvis-cyan/10 hover:text-jarvis-cyan transition-colors flex items-center gap-2"
                             >
                                 <Play size={12} />
                                 Resume
                             </button>
-                            <ExportButton sessionId={conversation.sessionId} asMenuItem />
+                            <ExportButton conversationId={conversation.conversationId} asMenuItem />
                             <div className="my-1 border-t border-jarvis-blue/20" />
                             <button
                                 onClick={(e) => handleMenuAction(() => setIsEditing(true), e)}
@@ -127,7 +127,7 @@ const ConversationListItem: React.FC<ConversationListItemProps> = ({
                                 Edit Title
                             </button>
                             <button
-                                onClick={(e) => handleMenuAction(() => onDelete(conversation.sessionId), e)}
+                                onClick={(e) => handleMenuAction(() => onDelete(conversation.conversationId), e)}
                                 className="w-full px-3 py-2 text-left text-xs text-red-300 hover:bg-red-500/10 hover:text-red-400 transition-colors flex items-center gap-2"
                             >
                                 <Trash2 size={12} />

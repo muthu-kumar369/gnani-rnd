@@ -44,6 +44,8 @@ interface ConversationStore {
   isStreaming: boolean;
   abortController: AbortController | null;
 
+  undoData: { messageId: string; undoToken: string } | null;
+
   // Actions
   setConversationId: (id: string | null) => void;
   addMessage: (message: Omit<ConversationMessage, 'id' | 'timestamp'>) => void;
@@ -51,16 +53,22 @@ interface ConversationStore {
   getMessagesByType: (type: ConversationMessage['type']) => ConversationMessage[];
   regenerateResponse: (messageId: string, accessToken: string) => Promise<void>;
   editMessage: (messageId: string, newContent: string, accessToken: string) => Promise<void>;
+  deleteMessage: (messageId: string, accessToken: string) => Promise<void>;
+  restoreMessage: (messageId: string, undoToken: string, accessToken: string) => Promise<void>;
+  dismissUndo: () => void;
   refreshConversation: (accessToken: string) => Promise<void>;
   createConversation: (accessToken: string, systemPrompt?: string) => Promise<string>;
   sendMessage: (text: string, accessToken: string, sendViaGrpc?: (text: string) => void) => Promise<void>;
   navigateToBranch: (messageId: string, direction: 'prev' | 'next') => void;
+  navigateToGeneration: (messageId: string, direction: 'prev' | 'next') => void; // Alias for consistency
   setSelectedModel: (modelId: string) => void;
   setSelectedTemplate: (templateId: string) => void;
   updateConversationTemplate: (conversationId: string, templateId: string, accessToken: string) => Promise<void>;
   updateConversationModel: (conversationId: string, modelId: string, accessToken: string) => Promise<void>;
   setIsStreaming: (isStreaming: boolean) => void;
-  cancelStream: (sessionId: string) => Promise<void>;
+  cancelStream: (sessionId: string, accessToken: string) => Promise<void>;
+  updateLastMessageContent: (content: string, append?: boolean) => void;
+  updateMessageContent: (messageId: string, content: string, append?: boolean) => void;
 
   // Helpers
   _deriveVisibleMessages: () => void;
@@ -80,6 +88,7 @@ export const useConversationStore = create<ConversationStore>()(
       selectedTemplate: null,
       isStreaming: false,
       abortController: null,
+      undoData: null,
 
       setConversationId: (id) => set({ conversationId: id }),
 
@@ -286,7 +295,7 @@ export const useConversationStore = create<ConversationStore>()(
           if (!response.ok) throw new Error('Failed to create conversation');
 
           const data = await response.json();
-          const conversationId = data.sessionId; // Backend returns sessionId as conversation ID for now
+          const conversationId = data.conversationId; // Backend returns conversationId
 
           set({
             conversationId,
@@ -330,6 +339,9 @@ export const useConversationStore = create<ConversationStore>()(
         }
 
         // 3. Fallback to REST
+        const controller = new AbortController();
+        set({ isStreaming: true, abortController: controller });
+
         try {
           const response = await fetch(`${API_BASE_URL}/chat`, {
             method: 'POST',
@@ -339,17 +351,18 @@ export const useConversationStore = create<ConversationStore>()(
             },
             body: JSON.stringify({
               message: text,
-              sessionId: conversationId,
-            })
+              conversationId: conversationId,
+            }),
+            signal: controller.signal
           });
 
           if (!response.ok) throw new Error('Failed to send message via REST');
 
           const data = await response.json();
 
-          // If backend returns a new session ID, update it
-          if (data.sessionId && data.sessionId !== conversationId) {
-            set({ conversationId: data.sessionId });
+          // If backend returns a new conversation ID, update it
+          if (data.conversationId && data.conversationId !== conversationId) {
+            set({ conversationId: data.conversationId });
           }
 
           // If backend returns the assistant response immediately (REST style), add it and trigger TTS
@@ -370,25 +383,34 @@ export const useConversationStore = create<ConversationStore>()(
               }
             }));
           }
-        } catch (error) {
-          errorLogger.error('Failed to send message via REST', error as Error, { context: 'useConversationStore' });
-          // TODO: Mark message as failed in UI?
+        } catch (error: any) {
+          if (error.name === 'AbortError') {
+            errorLogger.info('Message sending cancelled by user');
+          } else {
+            errorLogger.error('Failed to send message via REST', error as Error, { context: 'useConversationStore' });
+            // TODO: Mark message as failed in UI?
+          }
+        } finally {
+          set({ isStreaming: false, abortController: null });
         }
       },
 
       setIsStreaming: (isStreaming) => set({ isStreaming }),
 
-      cancelStream: async (sessionId) => {
-        const { abortController, conversationId, accessToken } = get();
+      cancelStream: async (sessionId, accessToken) => {
+        const { abortController, conversationId } = get();
         if (abortController) {
           abortController.abort();
-          set({ abortController: null, isStreaming: false });
+          set({ abortController: null });
         }
+
+        // Always reset streaming state
+        set({ isStreaming: false });
 
         // Also notify backend to cancel processing
         if (conversationId && accessToken) {
           try {
-            await fetch(`${API_BASE_URL}/conversations/${conversationId}/cancel`, {
+            await fetch(`${API_BASE_URL}/conversations/${conversationId}/cancel-stream`, {
               method: 'POST',
               headers: {
                 'x-auth-token': accessToken,
@@ -402,6 +424,30 @@ export const useConversationStore = create<ConversationStore>()(
         }
       },
 
+      updateMessageContent: (messageId, content, append = false) => {
+        set((state) => {
+          const allMessages = state.allMessages.map(msg => {
+            if (msg.id === messageId || msg._id === messageId) {
+              return {
+                ...msg,
+                message: append ? (msg.message + content) : content,
+                // Ensure type is 'gnani' if we are appending content (assistant response)
+                type: (msg.type === 'gnani' || msg.type === 'action') ? msg.type : 'gnani'
+              };
+            }
+            return msg;
+          });
+          return { allMessages };
+        });
+        get()._deriveVisibleMessages();
+      },
+
+      updateLastMessageContent: (content, append = true) => {
+        const { currentLeafId } = get();
+        if (!currentLeafId) return;
+        get().updateMessageContent(currentLeafId, content, append);
+      },
+
       regenerateResponse: async (messageId, accessToken) => {
         const { conversationId } = get();
         if (!conversationId || !accessToken) return;
@@ -410,13 +456,13 @@ export const useConversationStore = create<ConversationStore>()(
         set({ isStreaming: true, abortController: controller });
 
         try {
-          const response = await fetch(`${API_BASE_URL}/conversations/${messageId}/regenerate`, {
+          const response = await fetch(`${API_BASE_URL}/conversations/${conversationId}/regenerate`, {
             method: 'POST',
             headers: {
               'x-auth-token': accessToken,
               'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ sessionId: conversationId }),
+            body: JSON.stringify({ messageId }),
             signal: controller.signal
           });
 
@@ -447,13 +493,13 @@ export const useConversationStore = create<ConversationStore>()(
         set({ isStreaming: true, abortController: controller });
 
         try {
-          const response = await fetch(`${API_BASE_URL}/conversations/${messageId}/edit`, {
+          const response = await fetch(`${API_BASE_URL}/conversations/${conversationId}/edit`, {
             method: 'POST',
             headers: {
               'x-auth-token': accessToken,
               'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ sessionId: conversationId, newContent }),
+            body: JSON.stringify({ messageId, content: newContent, autoRegenerate: true }),
             signal: controller.signal
           });
 
@@ -475,6 +521,66 @@ export const useConversationStore = create<ConversationStore>()(
           set({ isStreaming: false, abortController: null });
         }
       },
+
+      deleteMessage: async (messageId, accessToken) => {
+        const { conversationId } = get();
+        if (!conversationId || !accessToken) return;
+
+        try {
+          const response = await fetch(`${API_BASE_URL}/conversations/${conversationId}/messages/${messageId}`, {
+            method: 'DELETE',
+            headers: { 'x-auth-token': accessToken }
+          });
+
+          if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to delete message');
+          }
+
+          const data = await response.json();
+
+          if (data.undoToken) {
+            set({ undoData: { messageId, undoToken: data.undoToken } });
+          }
+
+          // Refresh conversation
+          await get().refreshConversation(accessToken);
+        } catch (error) {
+          errorLogger.error('Error deleting message', error as Error, { context: 'useConversationStore' });
+          throw error;
+        }
+      },
+
+      restoreMessage: async (messageId, undoToken, accessToken) => {
+        try {
+          // Assuming endpoint is similar to delete but restore
+          const response = await fetch(`${API_BASE_URL}/conversations/messages/${messageId}/restore`, {
+            method: 'POST',
+            headers: {
+              'x-auth-token': accessToken,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ undoToken })
+          });
+
+          if (!response.ok) throw new Error('Failed to restore message');
+
+          set({ undoData: null });
+
+          // Refresh current conversation
+          const { conversationId } = get();
+          if (conversationId) {
+            await get().refreshConversation(accessToken);
+          }
+        } catch (error) {
+          errorLogger.error('Error restoring message', error as Error, { context: 'useConversationStore' });
+          throw error;
+        }
+      },
+
+      dismissUndo: () => set({ undoData: null }),
+
+      navigateToGeneration: (messageId, direction) => get().navigateToBranch(messageId, direction),
 
       navigateToBranch: (messageId, direction) => {
         const { allMessages } = get();

@@ -20,9 +20,9 @@ interface MessageBubbleProps {
 }
 
 const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isLatest, showTimestamp = true }) => {
-    const { navigateToBranch, navigateToGeneration, sessionId } = useConversationStore();
+    const { navigateToBranch, navigateToGeneration, conversationId, allMessages } = useConversationStore();
     const { accessToken } = useUserStore();
-    const actions = useMessageActions(sessionId);
+    const actions = useMessageActions(conversationId);
 
     const [isHovered, setIsHovered] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -33,17 +33,17 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isLatest, showTi
     const isUser = message.type === 'user';
     const isSystem = message.type === 'system';
 
-    // Fetch generation count for assistant messages
-    useEffect(() => {
-        if (isGnani && message.generationIndex !== undefined && sessionId && accessToken) {
-            fetch(`http://localhost:3000/api/conversations/${sessionId}/messages/${message.id}/generations`, {
-                headers: { 'x-auth-token': accessToken }
-            })
-                .then(res => res.json())
-                .then(data => setGenerationCount(data.totalGenerations || 1))
-                .catch(() => setGenerationCount(1));
-        }
-    }, [isGnani, message.generationIndex, message.id, sessionId, accessToken]);
+    // Compute generation stats from store state
+    const parentId = message.parentId;
+    const parent = parentId ? allMessages.find(m => m.id === parentId) : null;
+    const siblings = parent?.children || [];
+    // If no parent (root message) or no siblings found, default to self
+    const validSiblings = siblings.length > 0 ? siblings : [message.id];
+
+    const currentIndex = validSiblings.indexOf(message.id) !== -1
+        ? validSiblings.indexOf(message.id)
+        : 0;
+    const totalGenerations = validSiblings.length;
 
     const getIcon = () => {
         switch (message.type) {
@@ -158,14 +158,14 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isLatest, showTi
                         />
 
                         {/* Generation Navigator for assistant messages with multiple generations */}
-                        {isGnani && message.generationIndex !== undefined && generationCount > 1 && (
+                        {isGnani && totalGenerations > 1 && (
                             <div className="mt-2">
                                 <GenerationNavigator
-                                    currentIndex={message.generationIndex}
-                                    totalGenerations={generationCount}
+                                    currentIndex={currentIndex}
+                                    totalGenerations={totalGenerations}
                                     onNavigate={(direction) => {
                                         if (accessToken) {
-                                            navigateToGeneration(message.id, direction, accessToken);
+                                            navigateToGeneration(message.id, direction);
                                         }
                                     }}
                                     timestamp={new Date(message.timestamp)}

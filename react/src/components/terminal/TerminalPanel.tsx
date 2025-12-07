@@ -35,7 +35,7 @@ const TerminalPanel: React.FC<TerminalPanelProps> = ({ isVisible, onToggle }) =>
         clearMessages,
         title,
         sendMessage,
-        sessionId,
+        conversationId,
         selectedModel,
         selectedTemplate,
         setSelectedModel,
@@ -49,6 +49,8 @@ const TerminalPanel: React.FC<TerminalPanelProps> = ({ isVisible, onToggle }) =>
         setIsStreaming,
         cancelStream
     } = useConversationStore();
+    // Alias for backward compatibility if needed, or replace usages
+    const sessionId = conversationId;
     const { lastUsedModel, lastUsedTemplate, setLastUsedModel, setLastUsedTemplate, savePreferences } = usePreferencesStore();
     const { user, accessToken } = useUserStore();
     const {
@@ -138,6 +140,7 @@ const TerminalPanel: React.FC<TerminalPanelProps> = ({ isVisible, onToggle }) =>
 
         // Use the unified sendMessage action
         // Always pass sendText if available, the store handles the fallback logic
+        setIsStreaming(true); // Enable stop button immediately for text input
         await sendMessage(text, accessToken, sendText);
 
         // Clear attached files and images after sending
@@ -314,8 +317,8 @@ const TerminalPanel: React.FC<TerminalPanelProps> = ({ isVisible, onToggle }) =>
                         disabled={isUploadingFile || isUploadingImage}
                         isStreaming={isStreaming}
                         onStopGeneration={async () => {
-                            if (sessionId) {
-                                await cancelStream(sessionId);
+                            if (sessionId && accessToken) {
+                                await cancelStream(sessionId, accessToken);
                             }
                         }}
                     />
@@ -327,8 +330,8 @@ const TerminalPanel: React.FC<TerminalPanelProps> = ({ isVisible, onToggle }) =>
                         <UndoToast
                             undoToken={undoData.undoToken}
                             messageId={undoData.messageId}
-                            expiresAt={undoData.expiresAt}
-                            cascadedCount={undoData.cascadedCount}
+                            expiresAt={new Date(Date.now() + 10000)} // Default 10s timeout
+                            cascadedCount={0}
                             onUndo={async (token) => {
                                 if (accessToken) {
                                     await restoreMessage(undoData.messageId, token, accessToken);

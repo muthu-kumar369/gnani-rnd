@@ -34,7 +34,7 @@ export const useMessageActions = (conversationId: string | null) => {
         if (!conversationId || !accessToken) return;
         setIsLoading(true);
         try {
-            await storeEditMessage(messageId, newContent, accessToken, autoRegenerate);
+            await storeEditMessage(messageId, newContent, accessToken);
             setIsEditing(false);
         } catch (error) {
             console.error('Failed to edit message:', error);

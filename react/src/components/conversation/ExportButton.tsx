@@ -3,12 +3,12 @@ import { Download, FileJson, FileText } from 'lucide-react';
 import { downloadFile } from '../../utils/download';
 
 interface ExportButtonProps {
-    sessionId: string;
+    conversationId: string;
     className?: string;
     asMenuItem?: boolean;
 }
 
-const ExportButton: React.FC<ExportButtonProps> = ({ sessionId, className = '', asMenuItem = false }) => {
+const ExportButton: React.FC<ExportButtonProps> = ({ conversationId, className = '', asMenuItem = false }) => {
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -31,7 +31,7 @@ const ExportButton: React.FC<ExportButtonProps> = ({ sessionId, className = '', 
     const handleExport = async (format: 'markdown' | 'json') => {
         setIsOpen(false);
         const API_BASE_URL = 'http://localhost:3000/api';
-        const url = `${API_BASE_URL}/conversations/${sessionId}/export/${format}`;
+        const url = `${API_BASE_URL}/conversations/${conversationId}/export/${format}`;
 
         try {
             const token = localStorage.getItem('accessToken');
@@ -47,7 +47,7 @@ const ExportButton: React.FC<ExportButtonProps> = ({ sessionId, className = '', 
             }
 
             const blob = await response.blob();
-            const filename = `conversation-${sessionId}.${format === 'markdown' ? 'md' : 'json'}`;
+            const filename = `conversation-${conversationId}.${format === 'markdown' ? 'md' : 'json'}`;
             downloadFile(blob, filename);
 
         } catch (error) {

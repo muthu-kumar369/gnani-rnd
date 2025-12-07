@@ -143,24 +143,38 @@ const TextInput: React.FC<TextInputProps> = ({
                             </div>
 
                             {/* Send/Stop Button */}
-                            {isStreaming ? (
-                                <button
-                                    onClick={handleStop}
-                                    className="h-10 w-10 flex items-center justify-center bg-red-600 hover:bg-red-500 text-white rounded-lg transition-all shadow-[0_0_10px_rgba(239,68,68,0.3)] hover:shadow-[0_0_20px_rgba(239,68,68,0.5)] hover:scale-105 active:scale-100 animate-pulse"
-                                    title="Stop generation"
-                                >
-                                    <Square size={18} fill="currentColor" />
-                                </button>
-                            ) : (
-                                <button
-                                    onClick={handleSend}
-                                    disabled={!canSend}
-                                    className="h-10 w-10 flex items-center justify-center bg-cyan-600 hover:bg-cyan-500 disabled:bg-cyan-900/50 disabled:text-cyan-500/30 text-white rounded-lg transition-all shadow-[0_0_10px_rgba(6,182,212,0.3)] hover:shadow-[0_0_20px_rgba(6,182,212,0.5)] hover:scale-105 active:scale-100 disabled:hover:scale-100 disabled:shadow-none"
-                                    title="Send message"
-                                >
-                                    <Send size={18} />
-                                </button>
-                            )}
+                            <AnimatePresence mode="wait">
+                                {isStreaming ? (
+                                    <motion.button
+                                        key="stop-btn"
+                                        initial={{ scale: 0, opacity: 0 }}
+                                        animate={{ scale: 1, opacity: 1 }}
+                                        exit={{ scale: 0, opacity: 0 }}
+                                        whileHover={{ scale: 1.1 }}
+                                        whileTap={{ scale: 0.95 }}
+                                        onClick={handleStop}
+                                        className="h-10 w-10 flex items-center justify-center bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-full border border-red-500/50 backdrop-blur-sm transition-all"
+                                        title="Stop generation"
+                                    >
+                                        <div className="w-3 h-3 rounded-[2px] bg-current" />
+                                    </motion.button>
+                                ) : (
+                                    <motion.button
+                                        key="send-btn"
+                                        initial={{ scale: 0, opacity: 0 }}
+                                        animate={{ scale: 1, opacity: 1 }}
+                                        exit={{ scale: 0, opacity: 0 }}
+                                        whileHover={{ scale: 1.1 }}
+                                        whileTap={{ scale: 0.95 }}
+                                        onClick={handleSend}
+                                        disabled={!canSend}
+                                        className="h-10 w-10 flex items-center justify-center bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 rounded-full border border-cyan-500/50 backdrop-blur-sm disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                                        title="Send message"
+                                    >
+                                        <Send size={18} strokeWidth={2} />
+                                    </motion.button>
+                                )}
+                            </AnimatePresence>
                         </div>
                     </div>
                 </motion.div>

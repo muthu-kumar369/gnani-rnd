@@ -42,7 +42,7 @@ const GnaniCore: React.FC = () => {
   const { user, loading, isAuthenticated, accessToken } = useUserStore();
   const { state, transition, isIdle, isListening, isThinking, isSpeaking, _init: initGnaniStore } = useGnaniStore();
   /* REMOVED DUPLICATE useGnaniStore LINE */
-  const { addMessage, setConversationId, conversationId, refreshConversation, clearMessages } = useConversationStore();
+  const { addMessage, setConversationId, conversationId, refreshConversation, clearMessages, updateLastMessageContent, updateMessageContent, setIsStreaming } = useConversationStore();
 
   const { latestLLMChunk, latestFinalSTT, isTtsEnded, isTtsStarted, isWakeWordTriggered, sessionId: grpcSessionId, conversationId: ipcConversationId, toolStatus } = useIPC();
   const { connectivityStatus } = useDeviceAwareness();
@@ -189,7 +189,24 @@ const GnaniCore: React.FC = () => {
       }
 
       if (type === 'complete_response') {
-        console.log('[TRACE] [FRONTEND] Received COMPLETE response:', text);
+        const messageId = (chunk as any).messageId;
+        console.log('[TRACE] [FRONTEND] Received COMPLETE response:', text, 'messageId:', messageId);
+
+        // Update the message with the final complete text
+        if (messageId) {
+          updateMessageContent(messageId, text, false);
+        } else {
+          updateLastMessageContent(text, false);
+        }
+
+        // Stop streaming state
+        setIsStreaming(false);
+
+        // Force refresh to ensure sync
+        if (accessToken) {
+          refreshConversation(accessToken);
+        }
+
         streamingTTSRef.current.reset();
         streamingTTSRef.current.setStreamActive(true);
         streamingTTSRef.current.addTextChunk(text);
@@ -197,13 +214,20 @@ const GnaniCore: React.FC = () => {
         return;
       }
 
-      // Handle partial chunks (default case) - DISABLED: Only speak complete responses
-      // if (type === 'partial' || !type) {
-      //   streamingTTSRef.current.addTextChunk(text);
-      //   return;
-      // }
+      // Handle partial chunks
+      if (type === 'partial' || !type) {
+        // Update UI with streaming text
+        updateLastMessageContent(text, true);
+
+        // Ensure streaming state is active
+        setIsStreaming(true);
+
+        // streamingTTSRef.current.addTextChunk(text);
+        return;
+      }
     } catch (error) {
       errorLogger.error('Error processing LLM chunk', error as Error, { context: 'GnaniCore' });
+      setIsStreaming(false); // Safety net
     }
   }, [latestLLMChunk]);
 
@@ -234,6 +258,7 @@ const GnaniCore: React.FC = () => {
     if (latestFinalSTT && isListening && latestFinalSTT !== lastProcessedFinalSTT.current) {
       errorLogger.info('Final STT received, transitioning to thinking', { context: 'GnaniCore', text: latestFinalSTT });
       lastProcessedFinalSTT.current = latestFinalSTT;
+      setIsStreaming(true); // Enable stop button immediately when STT is finalized
       transition('vad-end');
     }
   }, [latestFinalSTT, isListening, transition]);

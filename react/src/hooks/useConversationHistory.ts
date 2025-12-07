@@ -17,12 +17,12 @@ export const useConversationHistory = () => {
         searchQuery,
         setSearchQuery
     } = useConversationHistoryStore();
-    
+
     const { accessToken } = useUserStore();
 
     const fetchConversations = useCallback(async (pageNum = 1, query = '') => {
         if (!accessToken) return;
-        
+
         setIsLoading(true);
         try {
             let url = `${API_BASE_URL}/conversations?page=${pageNum}&limit=20`;
@@ -47,7 +47,7 @@ export const useConversationHistory = () => {
             if (!response.ok) throw new Error('Failed to fetch conversations');
 
             const data = await response.json();
-            
+
             if (query) {
                 // Search returns a list directly in data.conversations
                 setConversations(data.conversations);
@@ -92,7 +92,7 @@ export const useConversationHistory = () => {
 
             if (!response.ok) throw new Error('Failed to delete conversation');
 
-            setConversations((prev: Conversation[]) => prev.filter((c: Conversation) => c.sessionId !== id));
+            setConversations((prev: Conversation[]) => prev.filter((c: Conversation) => c.conversationId !== id));
         } catch (error) {
             console.error('Error deleting conversation:', error);
         }
@@ -113,8 +113,8 @@ export const useConversationHistory = () => {
 
             if (!response.ok) throw new Error('Failed to update title');
 
-            setConversations((prev: Conversation[]) => prev.map((c: Conversation) => 
-                c.sessionId === id ? { ...c, title } : c
+            setConversations((prev: Conversation[]) => prev.map((c: Conversation) =>
+                c.conversationId === id ? { ...c, title } : c
             ));
         } catch (error) {
             console.error('Error updating title:', error);

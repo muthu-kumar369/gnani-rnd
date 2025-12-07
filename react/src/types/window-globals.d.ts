@@ -27,6 +27,7 @@ interface Window {
             startFileStream: () => void;
             sendText: (text: string) => void;
             setSessionId: (sessionId: string | null) => void;
+            setConversationId: (conversationId: string | null) => void;
         };
 
         // Methods for general IPC communication

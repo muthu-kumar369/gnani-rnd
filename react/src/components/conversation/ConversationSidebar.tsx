@@ -31,7 +31,7 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
         hasMore
     } = useConversationHistory();
 
-    const { sessionId: currentConversationId, createConversation } = useConversationStore();
+    const { conversationId: currentConversationId, createConversation } = useConversationStore();
     const { accessToken } = useUserStore();
     const [searchQuery, setSearchQuery] = React.useState('');
     const sidebarRef = useRef<HTMLDivElement>(null);
@@ -145,9 +145,9 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                             ) : (
                                 conversations.map(conv => (
                                     <ConversationListItem
-                                        key={conv.sessionId}
+                                        key={conv.conversationId}
                                         conversation={conv}
-                                        isActive={conv.sessionId === currentConversationId}
+                                        isActive={conv.conversationId === currentConversationId}
                                         onResume={(id) => {
                                             if (onSelectConversation) {
                                                 onSelectConversation(id);
