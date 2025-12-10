@@ -231,7 +231,7 @@ const TerminalPanel: React.FC<TerminalPanelProps> = ({ isVisible, onToggle }) =>
                                 if (sessionId && accessToken) {
                                     // Delete conversation from backend
                                     try {
-                                        const response = await fetch(`http://localhost:3000/api/conversations/${sessionId}`, {
+                                        const response = await fetch(`http://localhost:3000/api/v1/conversations/${sessionId}`, {
                                             method: 'DELETE',
                                             headers: { 'x-auth-token': accessToken }
                                         });

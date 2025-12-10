@@ -2,11 +2,11 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import type { GnaniState, StateTrigger } from '../state/GnaniStateMachine';
 import errorLogger from '../utils/errorLogger';
-import { LRUCache } from '../utils/LRUCache';
+import { messageCache } from '../utils/messageCache'; // STAGE R1: New message cache
 import { useAnalyticsStore } from './useAnalyticsStore'; // STAGE 20
 import { useModelStore } from './useModelStore'; // STAGE 23
 
-const API_BASE_URL = 'http://localhost:3000/api';
+const API_BASE_URL = 'http://localhost:3000/api/v1';
 
 export interface ConversationMessage {
   id: string;
@@ -104,21 +104,7 @@ interface ConversationStore {
 
 const generateId = () => `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-// Cache interface
-interface CachedConversation {
-  messages: ConversationMessage[];
-  allMessages: ConversationMessage[];
-  currentLeafId: string | null;
-  title: string;
-  cachedAt: number;
-}
-
-// Create LRU cache instance (max 10 conversations)
-const conversationCache = new LRUCache<string, CachedConversation>(10);
-
-// Cache metrics (for debugging)
-let cacheHits = 0;
-let cacheMisses = 0;
+// STAGE R1: Using new messageCache utility (no need for local cache instance)
 
 export const useConversationStore = create<ConversationStore>()(
   persist(
@@ -185,7 +171,7 @@ export const useConversationStore = create<ConversationStore>()(
       },
 
       addMessage: (message) => {
-        const { currentLeafId, allMessages } = get();
+        const { currentLeafId, allMessages, conversationId } = get();
         const newMessage: ConversationMessage = {
           ...message,
           id: message._id || generateId(),
@@ -213,6 +199,11 @@ export const useConversationStore = create<ConversationStore>()(
         });
 
         get()._deriveVisibleMessages();
+
+        // STAGE R1: Update cache with new message
+        if (conversationId) {
+          messageCache.set(conversationId, updatedAllMessages);
+        }
 
         errorLogger.debug('Added message to conversation', {
           context: 'useConversationStore',
@@ -281,30 +272,19 @@ export const useConversationStore = create<ConversationStore>()(
         const { conversationId, currentLeafId } = get();
         if (!conversationId || !accessToken) return;
 
-        // Check cache first
-        const cached = conversationCache.get(conversationId);
+        // STAGE R1: Check cache first
+        const cached = messageCache.get(conversationId);
         if (cached) {
-          const age = Date.now() - cached.cachedAt;
-
-          // Use cache if less than 5 minutes old
-          if (age < 5 * 60 * 1000) {
-            console.log('[Cache HIT] Loading conversation from cache:', conversationId);
-            cacheHits++;
-            set({
-              messages: cached.messages,
-              allMessages: cached.allMessages,
-              currentLeafId: cached.currentLeafId,
-              title: cached.title,
-            });
-            get()._deriveVisibleMessages();
-            return;
-          }
+          console.log(`[MessageCache] Using cached messages for ${conversationId}`);
+          set({
+            allMessages: cached,
+            currentLeafId: currentLeafId || (cached.length > 0 ? cached[cached.length - 1].id : null)
+          });
+          get()._deriveVisibleMessages();
+          return;
         }
 
-        // Cache miss or stale - fetch from backend
-        console.log('[Cache MISS] Fetching conversation from backend:', conversationId);
-        cacheMisses++;
-
+        // Cache miss - fetch from backend
         try {
           const response = await fetch(`${API_BASE_URL}/conversations/${conversationId}`, {
             headers: { 'x-auth-token': accessToken }
@@ -346,14 +326,8 @@ export const useConversationStore = create<ConversationStore>()(
             currentLeafId: newLeafId
           });
 
-          // Update cache
-          conversationCache.set(conversationId, {
-            messages: get().messages, // Will be set by _deriveVisibleMessages
-            allMessages: mappedMessages,
-            currentLeafId: newLeafId,
-            title: data.title || 'Untitled',
-            cachedAt: Date.now(),
-          });
+          // STAGE R1: Update cache
+          messageCache.set(conversationId, mappedMessages);
 
           get()._deriveVisibleMessages();
 
@@ -721,6 +695,9 @@ export const useConversationStore = create<ConversationStore>()(
             //refreshConversation handles finding the leaf if we don't set it.
           }
 
+          // STAGE R1: Invalidate cache before refresh
+          messageCache.invalidate(conversationId);
+
           await get().refreshConversation(accessToken);
         } catch (error: any) {
           if (error.name === 'AbortError') {
@@ -755,6 +732,9 @@ export const useConversationStore = create<ConversationStore>()(
             set({ undoData: { messageId, undoToken: data.undoToken } });
           }
 
+          // STAGE R1: Invalidate cache before refresh
+          messageCache.invalidate(conversationId);
+
           // Refresh conversation
           await get().refreshConversation(accessToken);
         } catch (error) {
@@ -771,6 +751,9 @@ export const useConversationStore = create<ConversationStore>()(
           });
 
           if (!response.ok) throw new Error('Failed to delete conversation');
+
+          // STAGE R1: Invalidate cache
+          messageCache.invalidate(conversationId);
 
           // Remove from local list
           set((state) => ({

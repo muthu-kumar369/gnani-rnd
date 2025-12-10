@@ -30,7 +30,7 @@ const ExportButton: React.FC<ExportButtonProps> = ({ conversationId, className =
 
     const handleExport = async (format: 'markdown' | 'json') => {
         setIsOpen(false);
-        const API_BASE_URL = 'http://localhost:3000/api';
+        const API_BASE_URL = 'http://localhost:3000/api/v1';
         const url = `${API_BASE_URL}/conversations/${conversationId}/export/${format}`;
 
         try {

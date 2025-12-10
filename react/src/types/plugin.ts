@@ -27,6 +27,15 @@ export interface GnaniPlugin {
 
     // Configuration
     config?: Record<string, any>;
+
+    // Sandboxing (Stage R3)
+    code?: string; // Source code for Web Worker execution
+    requiredPermissions?: {
+        api?: { reason: string };
+        storage?: { reason: string };
+        notifications?: { reason: string };
+        clipboard?: { reason: string };
+    };
 }
 
 export interface PluginMetadata {
@@ -41,4 +50,10 @@ export interface PluginMetadata {
     rating: number;
     installed: boolean;
     enabled: boolean;
+    requiredPermissions?: {
+        api?: { reason: string };
+        storage?: { reason: string };
+        notifications?: { reason: string };
+        clipboard?: { reason: string };
+    };
 }

@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react';
 import { useConversationStore } from '../store/useConversationStore';
 import { useUserStore } from '../store/useUserStore';
 
-const API_BASE_URL = 'http://localhost:3000/api';
+const API_BASE_URL = 'http://localhost:3000/api/v1';
 
 export const useMessageActions = (conversationId: string | null) => {
     const { accessToken } = useUserStore();

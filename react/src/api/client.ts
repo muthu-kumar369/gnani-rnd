@@ -1,11 +1,12 @@
 import axios, { AxiosError } from 'axios';
 import type { AxiosResponse } from 'axios';
 import { parseError } from '../utils/errorParser';
+import { useRateLimitStore } from '../store/useRateLimitStore';
 import { useErrorStore } from '../store/useErrorStore';
 
 // Create axios instance with interceptors
 const api = axios.create({
-    baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3000',
+    baseURL: (import.meta.env.VITE_API_URL || 'http://localhost:3000') + '/api/v1',
     timeout: 30000,
     headers: {
         'Content-Type': 'application/json',
@@ -18,7 +19,7 @@ api.interceptors.request.use(
         // Add auth token if available
         const token = localStorage.getItem('accessToken');
         if (token) {
-            config.headers.Authorization = `Bearer ${token}`;
+            config.headers['x-auth-token'] = token;
         }
         return config;
     },
@@ -32,7 +33,6 @@ api.interceptors.response.use(
     (response: AxiosResponse) => {
         // STAGE 19: Parse and store rate limit headers
         if (response.headers) {
-            const { useRateLimitStore } = require('../store/useRateLimitStore');
             useRateLimitStore.getState().updateRateLimit(response.headers as any);
         }
         return response;
@@ -40,7 +40,6 @@ api.interceptors.response.use(
     (error: AxiosError) => {
         // STAGE 19: Parse rate limit headers even on error
         if (error.response?.headers) {
-            const { useRateLimitStore } = require('../store/useRateLimitStore');
             useRateLimitStore.getState().updateRateLimit(error.response.headers as any);
         }
 

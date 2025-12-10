@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 
-const API_BASE_URL = 'http://localhost:3000/api';
+const API_BASE_URL = 'http://localhost:3000/api/v1';
 
 interface PreferencesStore {
     lastUsedModel: string | null;

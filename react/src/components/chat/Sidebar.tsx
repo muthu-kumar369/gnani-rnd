@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Settings, LogOut, Plus, MessageSquare, User, MoreHorizontal, Trash2, Edit2, Check, X, Moon, Keyboard, Search } from 'lucide-react';
+import { Settings, LogOut, Plus, MessageSquare, User, MoreHorizontal, Trash2, Edit2, Check, X, Moon, Keyboard, Search, BarChart3, Sparkles } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useUserStore } from '../../store/useUserStore';
 import { useConversationStore } from '../../store/useConversationStore';
@@ -134,6 +134,16 @@ const Sidebar: React.FC<SidebarProps> = ({ onNewChat, className = '' }) => {
         <div className={`flex flex-col h-full bg-jarvis-bg border-r border-jarvis-border/30 w-64 ${className}`}>
             {/* Header / New Chat */}
             <div className="p-4 pb-2">
+                {/* Branding Logo */}
+                <div className="flex items-center gap-3 px-2 mb-6 mt-1">
+                    <div className="w-8 h-8 bg-cyan-500/10 rounded-lg flex items-center justify-center border border-cyan-500/20 shadow-[0_0_15px_rgba(6,182,212,0.15)]">
+                        <Sparkles className="w-5 h-5 text-cyan-400" />
+                    </div>
+                    <span className="text-xl font-bold tracking-tight text-white bg-clip-text text-transparent bg-gradient-to-r from-white to-cyan-200">
+                        Gnani
+                    </span>
+                </div>
+
                 <button
                     onClick={onNewChat}
                     className="w-full flex items-center gap-2 px-4 py-2 bg-jarvis-blue/10 hover:bg-jarvis-blue/20 text-jarvis-blue border border-jarvis-blue/30 rounded-lg transition-all duration-200 group mb-3"
@@ -269,6 +279,18 @@ const Sidebar: React.FC<SidebarProps> = ({ onNewChat, className = '' }) => {
                                     <span>Profile</span>
                                 </button>
                                 <button
+                                    onClick={() => {
+                                        console.log('Dispatching open-analytics event');
+                                        setIsProfileOpen(false);
+                                        window.dispatchEvent(new Event('open-analytics'));
+                                    }}
+                                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-300 hover:text-white hover:bg-white/10 rounded-md transition-colors"
+                                >
+                                    <BarChart3 className="w-4 h-4" />
+                                    <span>Analytics</span>
+                                </button>
+                                <button
+
                                     onClick={() => navigate('/settings')}
                                     className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-300 hover:text-white hover:bg-white/10 rounded-md transition-colors"
                                 >

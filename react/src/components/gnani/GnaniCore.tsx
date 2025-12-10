@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Terminal, History } from "lucide-react";
 import { useGnaniUIState } from "../../hooks/useGnaniUIState";
@@ -29,6 +29,9 @@ import DeviceStatsHUD from "../device/DeviceStatsHUD";
 import ConversationSidebar from "../conversation/ConversationSidebar";
 import ToolStatusIndicator from "./ToolStatusIndicator";
 
+import { AudioManager } from "./AudioManager";
+import { StateManager } from "./StateManager";
+
 // Zustand Stores
 import { useGnaniStore } from "../../store/useGnaniStore";
 import { useConversationStore } from "../../store/useConversationStore";
@@ -48,7 +51,7 @@ const GnaniCore: React.FC<GnaniCoreProps> = ({ isOverlayMode = false, onOverlayC
   // Zustand Hooks
   const { user, loading, isAuthenticated, accessToken } = useUserStore();
   const { state, transition, isIdle, isListening, isThinking, isSpeaking, _init: initGnaniStore } = useGnaniStore();
-  /* REMOVED DUPLICATE useGnaniStore LINE */
+
   const { addMessage, setConversationId, conversationId, refreshConversation, clearMessages, updateLastMessageContent, updateMessageContent, setIsStreaming } = useConversationStore();
 
   const { latestLLMChunk, latestFinalSTT, isTtsEnded, isTtsStarted, isWakeWordTriggered, sessionId: grpcSessionId, conversationId: ipcConversationId, toolStatus } = useIPC();
@@ -136,7 +139,7 @@ const GnaniCore: React.FC<GnaniCoreProps> = ({ isOverlayMode = false, onOverlayC
     }
   }, [uiState.avatarGender]);
 
-  // Sync conversation ID from Store to Electron (pushes local state to backend/electron)
+  // Sync conversation ID from Store to Electron
   useEffect(() => {
     if (conversationId && window.gnani?.stream?.setConversationId) {
       console.log('[GnaniCore] Pushing conversationId to Electron:', conversationId);
@@ -144,24 +147,23 @@ const GnaniCore: React.FC<GnaniCoreProps> = ({ isOverlayMode = false, onOverlayC
     }
   }, [conversationId]);
 
-  // Sync conversation ID from IPC to Store (updates local state from backend)
+  // Sync conversation ID from IPC to Store
   useEffect(() => {
     if (ipcConversationId && ipcConversationId !== conversationId) {
       console.log('[GnaniCore] Syncing conversationId from IPC:', ipcConversationId);
       setConversationId(ipcConversationId);
       if (accessToken) {
         refreshConversation(accessToken);
-        // Also refresh the sidebar list as we might have switched to a new/different conversation
         useConversationStore.getState().fetchConversations(accessToken);
       }
     }
   }, [ipcConversationId, conversationId, setConversationId, refreshConversation, accessToken]);
 
-  const showNotification = (title: string, body: string) => {
+  const showNotification = useCallback((title: string, body: string) => {
     if (window.gnani?.notifications?.show) {
       window.gnani.notifications.show(title, body);
     }
-  };
+  }, []);
 
   useEffect(() => {
     if (toolStatus && toolStatus.status === 'completed') {
@@ -174,13 +176,12 @@ const GnaniCore: React.FC<GnaniCoreProps> = ({ isOverlayMode = false, onOverlayC
       });
       showNotification('Tool Completed', `Executed ${toolStatus.tool_name}: ${toolStatus.message}`);
     }
-  }, [toolStatus, addMessage]);
+  }, [toolStatus, addMessage, showNotification]);
 
   useEffect(() => {
     if (!latestLLMChunk || !streamingTTSRef.current) return;
 
     try {
-      // Unwrap the payload from useIPC wrapper
       let chunk = latestLLMChunk.payload;
       if (typeof chunk === 'string') {
         try {
@@ -193,7 +194,6 @@ const GnaniCore: React.FC<GnaniCoreProps> = ({ isOverlayMode = false, onOverlayC
       const { type, text } = chunk;
 
       if (type === 'debug') {
-        console.log('[GnaniCore] Received debug chunk:', text);
         return;
       }
 
@@ -201,14 +201,12 @@ const GnaniCore: React.FC<GnaniCoreProps> = ({ isOverlayMode = false, onOverlayC
         const messageId = (chunk as any).messageId;
         console.log('[TRACE] [FRONTEND] Received COMPLETE response:', text, 'messageId:', messageId);
 
-        // Update the message with the final complete text
         if (messageId) {
           updateMessageContent(messageId, text, false);
         } else {
           updateLastMessageContent(text, false);
         }
 
-        // Stop streaming state
         setIsStreaming(false);
 
         streamingTTSRef.current.reset();
@@ -218,28 +216,18 @@ const GnaniCore: React.FC<GnaniCoreProps> = ({ isOverlayMode = false, onOverlayC
         return;
       }
 
-      // Handle partial chunks
       if (type === 'partial' || !type) {
-        // Update UI with streaming text
         updateLastMessageContent(text, true);
-
-        // DO NOT set setIsStreaming(true) here. 
-        // It is already set by sendMessage (text) or VAD/STT (voice).
-        // Setting it here causes race conditions if a partial chunk arrives close to completion.
-        // setIsStreaming(true);
-
-        // streamingTTSRef.current.addTextChunk(text);
         return;
       }
     } catch (error) {
       errorLogger.error('Error processing LLM chunk', error as Error, { context: 'GnaniCore' });
-      setIsStreaming(false); // Safety net
+      setIsStreaming(false);
     }
-  }, [latestLLMChunk]);
+  }, [latestLLMChunk, updateMessageContent, updateLastMessageContent, setIsStreaming]);
 
   useEffect(() => {
     if (!isAuthenticated) return;
-
     const init = async () => {
       setTimeout(() => {
         startMic();
@@ -248,106 +236,8 @@ const GnaniCore: React.FC<GnaniCoreProps> = ({ isOverlayMode = false, onOverlayC
         }
       }, 500);
     };
-
     init();
   }, [isAuthenticated, startMic]);
-
-  useEffect(() => {
-    if (isWakeWordTriggered && isIdle) {
-      errorLogger.info('Wake word triggered, transitioning to listening', { context: 'GnaniCore' });
-      showNotification('Gnani Listening', 'Wake word detected');
-      transition('wake-word-detected');
-    }
-  }, [isWakeWordTriggered, isIdle, transition]);
-
-  useEffect(() => {
-    if (latestFinalSTT && isListening && latestFinalSTT !== lastProcessedFinalSTT.current) {
-      errorLogger.info('Final STT received, transitioning to thinking', { context: 'GnaniCore', text: latestFinalSTT });
-      lastProcessedFinalSTT.current = latestFinalSTT;
-      setIsStreaming(true); // Enable stop button immediately when STT is finalized
-      transition('vad-end');
-    }
-  }, [latestFinalSTT, isListening, transition]);
-
-  useEffect(() => {
-    if (isTtsStarted && isThinking) {
-      errorLogger.info('TTS started, transitioning to speaking', { context: 'GnaniCore' });
-      transition('tts-start');
-    }
-  }, [isTtsStarted, isThinking, transition]);
-
-  useEffect(() => {
-    if (isTtsEnded && isSpeaking) {
-      errorLogger.info('TTS ended, transitioning to idle', { context: 'GnaniCore' });
-      transition('tts-complete');
-    }
-  }, [isTtsEnded, isSpeaking, transition]);
-
-  // Timeout guard for thinking state (10 seconds)
-  useEffect(() => {
-    if (isThinking) {
-      console.log('[GnaniCore] Thinking state entered, setting 30s timeout guard');
-      const timeout = setTimeout(() => {
-        errorLogger.error('Thinking state timeout (30s), recovering to idle', null, { context: 'GnaniCore' });
-        showNotification('Error', 'Response timeout - returning to idle');
-        transition('error');
-      }, 30000);
-
-      return () => {
-        console.log('[GnaniCore] Thinking state exited, clearing timeout');
-        clearTimeout(timeout);
-      };
-    }
-  }, [isThinking, transition]);
-
-  // Timeout guard for speaking state (30 seconds)
-  useEffect(() => {
-    if (isSpeaking) {
-      console.log('[GnaniCore] Speaking state entered, setting 30s timeout guard');
-      const timeout = setTimeout(() => {
-        errorLogger.error('Speaking state timeout (30s), recovering to idle', null, { context: 'GnaniCore' });
-        showNotification('Error', 'TTS timeout - stopping playback');
-        if (streamingTTSRef.current) {
-          streamingTTSRef.current.stop();
-        }
-        transition('error');
-      }, 30000);
-
-      return () => {
-        console.log('[GnaniCore] Speaking state exited, clearing timeout');
-        clearTimeout(timeout);
-      };
-    }
-  }, [isSpeaking, transition]);
-
-  // Timeout guard for listening state (60 seconds)
-  useEffect(() => {
-    if (isListening) {
-      console.log('[GnaniCore] Listening state entered, setting 60s timeout guard');
-      const timeout = setTimeout(() => {
-        errorLogger.warn('Listening state timeout (60s), transitioning to thinking', { context: 'GnaniCore' });
-        showNotification('Info', 'Listening timeout - processing input');
-        transition('manual-stop');
-      }, 60000);
-
-      return () => {
-        console.log('[GnaniCore] Listening state exited, clearing timeout');
-        clearTimeout(timeout);
-      };
-    }
-  }, [isListening, transition]);
-
-  useEffect(() => {
-    const handleInterruption = () => {
-      errorLogger.info('TTS Interrupted event received', { context: 'GnaniCore' });
-      handleBargeIn();
-    };
-
-    window.addEventListener('tts:interrupted', handleInterruption);
-    return () => {
-      window.removeEventListener('tts:interrupted', handleInterruption);
-    };
-  }, [state]);
 
   useEffect(() => {
     const handleTtsSpeak = (event: Event) => {
@@ -368,7 +258,7 @@ const GnaniCore: React.FC<GnaniCoreProps> = ({ isOverlayMode = false, onOverlayC
     };
   }, []);
 
-  const handleBargeIn = () => {
+  const handleBargeIn = useCallback(() => {
     errorLogger.info('Barge-in triggered', { context: 'GnaniCore', currentState: state });
 
     if (streamingTTSRef.current) {
@@ -383,68 +273,11 @@ const GnaniCore: React.FC<GnaniCoreProps> = ({ isOverlayMode = false, onOverlayC
     if (!isMicActive) {
       startMic();
     }
-  };
+  }, [state, spokenText, transition, isMicActive, startMic]);
 
   const bargeIn = useBargeIn(state, handleBargeIn);
 
-  // Connect VAD to barge-in for automatic interruption
-  useEffect(() => {
-    const handleVadSpeechFrame = (_event: any, data: { speech: boolean }) => {
-      // DEBUG TAG: VAD_LOOP_TRACE
-      if (data.speech) {
-        console.log('[GnaniCore] VAD CHECK: Speech detected.', {
-          state,
-          isMicActive,
-          isSpeaking,
-          // isTtsPlaying check removed to fix lint error
-        });
-      }
-      bargeIn.handleVADSpeech(data.speech);
-    };
-
-    if (window.electron?.ipcRenderer) {
-      console.log('[GnaniCore] Registering VAD speech frame listener for barge-in');
-      window.electron.ipcRenderer.on('vad:speech-frame', handleVadSpeechFrame);
-    }
-
-    return () => {
-      if (window.electron?.ipcRenderer) {
-        console.log('[GnaniCore] Removing VAD speech frame listener');
-        window.electron.ipcRenderer.removeAllListeners('vad:speech-frame');
-      }
-    };
-  }, [isSpeaking, isThinking, bargeIn, state]);
-
-  useEffect(() => {
-    // Sync speaking state to VAD manager to prevent self-triggering
-    if (window.gnani?.vad?.setSpeaking) {
-      window.gnani.vad.setSpeaking(isSpeaking);
-    }
-
-    if (isSpeaking) {
-      bargeIn.updateConfig({ vadThreshold: 20 });
-    } else {
-      setTimeout(() => {
-        if (!isMicActive) {
-          startMic();
-        }
-      }, 200);
-    }
-  }, [isTtsEnded, isSpeaking, isMicActive, startMic, bargeIn]);
-
-  useEffect(() => {
-    if (isIdle && !isMicActive) {
-      errorLogger.info('Transitioning to idle, ensuring microphone is ready', { context: 'GnaniCore' });
-      setTimeout(() => {
-        if (window.gnani?.wake?.startWakeWord) {
-          window.gnani.wake.startWakeWord();
-        }
-        startMic();
-      }, 300);
-    }
-  }, [isIdle, isMicActive, startMic]);
-
-  const handleStartRecording = () => {
+  const handleStartRecording = useCallback(() => {
     if (isIdle) {
       errorLogger.info('Manual start, transitioning to listening', { context: 'GnaniCore' });
       if (streamingTTSRef.current) {
@@ -455,17 +288,17 @@ const GnaniCore: React.FC<GnaniCoreProps> = ({ isOverlayMode = false, onOverlayC
     } else if (isSpeaking || isThinking) {
       bargeIn.handleManualBargeIn();
     }
-  };
+  }, [isIdle, isSpeaking, isThinking, transition, startMic, bargeIn]);
 
-  const handleStopRecording = () => {
+  const handleStopRecording = useCallback(() => {
     if (isListening) {
       errorLogger.info('Manual stop, transitioning to thinking', { context: 'GnaniCore' });
       transition('manual-stop');
       stopMic();
     }
-  };
+  }, [isListening, transition, stopMic]);
 
-  const getUIStatus = () => {
+  const getUIStatus = useCallback(() => {
     switch (state) {
       case 'idle':
         return 'idle';
@@ -478,9 +311,9 @@ const GnaniCore: React.FC<GnaniCoreProps> = ({ isOverlayMode = false, onOverlayC
       default:
         return 'idle';
     }
-  };
+  }, [state, isMicActive]);
 
-  const getAnimationState = (): 'IDLE' | 'LISTENING' | 'THINKING' | 'SPEAKING' | 'ERROR' => {
+  const getAnimationState = useCallback((): 'IDLE' | 'LISTENING' | 'THINKING' | 'SPEAKING' | 'ERROR' => {
     if (uiState.streamErrorMessage) return 'ERROR';
 
     switch (state) {
@@ -495,11 +328,11 @@ const GnaniCore: React.FC<GnaniCoreProps> = ({ isOverlayMode = false, onOverlayC
       default:
         return 'IDLE';
     }
-  };
+  }, [state, uiState.streamErrorMessage]);
 
-  const { sendText, setSessionId: setStreamSessionId } = useAudioStream();
+  const { sendText } = useAudioStream();
 
-  const handleScreenshot = (base64: string) => {
+  const handleScreenshot = useCallback((base64: string) => {
     console.log('Screenshot captured:', base64.substring(0, 50) + '...');
     addMessage({
       type: 'user',
@@ -515,9 +348,9 @@ const GnaniCore: React.FC<GnaniCoreProps> = ({ isOverlayMode = false, onOverlayC
       content: base64,
       mimeType: 'image/png'
     }));
-  };
+  }, [addMessage, sendText]);
 
-  const handleClipboardPaste = (content: { type: 'text' | 'image', data: string }) => {
+  const handleClipboardPaste = useCallback((content: { type: 'text' | 'image', data: string }) => {
     console.log('Clipboard paste:', content.type);
     if (content.type === 'text') {
       addMessage({ type: 'user', message: content.data });
@@ -525,9 +358,9 @@ const GnaniCore: React.FC<GnaniCoreProps> = ({ isOverlayMode = false, onOverlayC
     } else if (content.type === 'image') {
       handleScreenshot(content.data);
     }
-  };
+  }, [addMessage, sendText, handleScreenshot]);
 
-  const handleFileDrop = async (files: File[]) => {
+  const handleFileDrop = useCallback(async (files: File[]) => {
     console.log('Files dropped:', files);
     for (const file of files) {
       if (file.type.startsWith('image/')) {
@@ -543,7 +376,7 @@ const GnaniCore: React.FC<GnaniCoreProps> = ({ isOverlayMode = false, onOverlayC
         sendText(`Content of file ${file.name}:\n${text}`);
       }
     }
-  };
+  }, [handleScreenshot, addMessage, sendText]);
 
   useScreenshot(handleScreenshot);
   useClipboard(handleClipboardPaste);
@@ -552,12 +385,42 @@ const GnaniCore: React.FC<GnaniCoreProps> = ({ isOverlayMode = false, onOverlayC
   const animationState = getAnimationState();
 
   if (loading) {
-    return null; // Or return <LoadingScreen /> if available and desired
+    return null;
   }
 
   return (
     <FileDropZone onFileDrop={handleFileDrop}>
       <div className="relative w-screen h-screen overflow-hidden font-sans text-jarvis-text">
+        <StateManager
+          state={state}
+          isIdle={isIdle}
+          isListening={isListening}
+          isThinking={isThinking}
+          isSpeaking={isSpeaking}
+          isWakeWordTriggered={isWakeWordTriggered}
+          latestFinalSTT={latestFinalSTT}
+          lastProcessedFinalSTT={lastProcessedFinalSTT}
+          isTtsStarted={isTtsStarted}
+          isTtsEnded={isTtsEnded}
+          streamingTTS={streamingTTSRef.current}
+          transition={transition}
+          setIsStreaming={setIsStreaming}
+          showNotification={showNotification}
+        />
+        <AudioManager
+          state={state}
+          isIdle={isIdle}
+          isListening={isListening}
+          isThinking={isThinking}
+          isSpeaking={isSpeaking}
+          isMicActive={isMicActive}
+          startMic={startMic}
+          stopMic={stopMic}
+          isTtsEnded={isTtsEnded}
+          bargeIn={bargeIn}
+          handleBargeIn={handleBargeIn}
+        />
+
         <HUDBackground status={currentUIStatus} />
 
         <motion.div
@@ -657,7 +520,6 @@ const GnaniCore: React.FC<GnaniCoreProps> = ({ isOverlayMode = false, onOverlayC
           </button>
         )}
 
-        {/* Mic Button Area - Responsive Position */}
         <div className="absolute left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-4 bottom-32 md:bottom-auto md:top-[35%]">
           <StatusDisplay status={animationState} subtext={uiState.streamErrorMessage || undefined} />
 
@@ -678,7 +540,6 @@ const GnaniCore: React.FC<GnaniCoreProps> = ({ isOverlayMode = false, onOverlayC
           </div>
         </div>
 
-        {/* Device Stats HUD - Fixed at bottom right */}
         {!isOverlayMode && (
           <div className="absolute bottom-6 right-6 z-50">
             <DeviceStatsHUD />
@@ -693,11 +554,9 @@ const GnaniCore: React.FC<GnaniCoreProps> = ({ isOverlayMode = false, onOverlayC
           onNewConversation={() => {
             setConversationId(null);
             clearMessages();
-            // Explicitly clear Electron conversation ID
             if (window.gnani?.stream?.setConversationId) {
               window.gnani.stream.setConversationId(null);
             }
-            // The next message sent will trigger a new conversation creation in the backend
             console.log("Starting new conversation...");
           }}
           onSelectConversation={(id) => {
@@ -706,7 +565,6 @@ const GnaniCore: React.FC<GnaniCoreProps> = ({ isOverlayMode = false, onOverlayC
             if (accessToken) {
               refreshConversation(accessToken);
             }
-            // Electron sync handled by useEffect
           }}
         />
 

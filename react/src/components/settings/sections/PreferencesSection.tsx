@@ -4,6 +4,7 @@ import { useToast } from '../../../context/ToastContext';
 import SectionHeader from '../SectionHeader';
 import { StickyNote, Database, Plus, Trash2 } from 'lucide-react';
 import Loader from '../../ui/Loader';
+import { CacheStatistics } from '../CacheStatistics'; // STAGE R1
 
 const PreferencesSection: React.FC = () => {
     const { user, loading, addNote, deleteNote } = useUserStore();
@@ -95,6 +96,11 @@ const PreferencesSection: React.FC = () => {
                             <p className="text-cyan-400/50 text-sm italic">No notes saved yet.</p>
                         )}
                     </div>
+                </div>
+
+                {/* STAGE R1: Cache Statistics */}
+                <div className="bg-cyan-900/10 border border-cyan-500/20 rounded-xl p-6">
+                    <CacheStatistics />
                 </div>
 
                 {/* Metadata Viewer */}

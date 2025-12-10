@@ -5,13 +5,14 @@ import { useConversationStore, type ConversationMessage } from '../../store/useC
 import { useUserStore } from '../../store/useUserStore';
 import { useMessageActions } from '../../hooks/useMessageActions';
 import MessageActions from './MessageActions';
-import EditMessageModal from './EditMessageModal';
+
 import DeleteConfirmDialog from './DeleteConfirmDialog';
 import TokenBadge from '../token-usage/TokenBadge';
 import MessageTimestamp from './MessageTimestamp';
 import MessageContent from './MessageContent';
 import { GenerationNavigator } from './GenerationNavigator';
 import FeedbackButtons from '../common/FeedbackButtons'; // STAGE 21
+import { InlineMessageEditor } from './InlineMessageEditor'; // STAGE R2
 import '../../styles/messageActions.css';
 
 interface MessageBubbleProps {
@@ -26,14 +27,12 @@ const MessageBubble: React.FC<MessageBubbleProps> = memo(({ message, isLatest, s
     const actions = useMessageActions(conversationId);
 
     const [isHovered, setIsHovered] = useState(false);
-    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [generationCount, setGenerationCount] = useState<number>(1);
 
-    // Inline editing state
+    // STAGE R2: Inline editing state (InlineMessageEditor handles text internally)
     const [isInlineEditing, setIsInlineEditing] = useState(false);
-    const [editedText, setEditedText] = useState(message.message);
-    const textareaRef = useRef<HTMLTextAreaElement>(null);
 
     const isGnani = message.type === 'gnani';
     const isUser = message.type === 'user';
@@ -116,52 +115,9 @@ const MessageBubble: React.FC<MessageBubbleProps> = memo(({ message, isLatest, s
         // TODO: Integrate with input area to pre-fill the prompt
     }, [message.message]);
 
-    // Auto-focus textarea when entering edit mode
-    useEffect(() => {
-        if (isInlineEditing && textareaRef.current) {
-            textareaRef.current.focus();
-            textareaRef.current.setSelectionRange(editedText.length, editedText.length);
-        }
-    }, [isInlineEditing]);
-
-    // Reset edited text when message changes
-    useEffect(() => {
-        setEditedText(message.message);
-    }, [message.message]);
-
+    // STAGE R2: Simplified inline editing - InlineMessageEditor handles all logic
     const handleStartInlineEdit = () => {
         setIsInlineEditing(true);
-        setEditedText(message.message);
-    };
-
-    const handleSaveEdit = async () => {
-        if (editedText.trim() === message.message.trim()) {
-            setIsInlineEditing(false);
-            return;
-        }
-
-        try {
-            await actions.editMessage(message.id, editedText);
-            setIsInlineEditing(false);
-        } catch (error) {
-            console.error('Failed to edit message:', error);
-            // Keep edit mode open on error
-        }
-    };
-
-    const handleCancelEdit = () => {
-        setEditedText(message.message);
-        setIsInlineEditing(false);
-    };
-
-    const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-        if (e.key === 'Enter' && e.ctrlKey) {
-            e.preventDefault();
-            handleSaveEdit();
-        } else if (e.key === 'Escape') {
-            e.preventDefault();
-            handleCancelEdit();
-        }
     };
 
 
@@ -201,7 +157,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = memo(({ message, isLatest, s
                         isVisible={isHovered}
                         onCopy={handleCopy}
                         onRegenerate={isGnani ? () => actions.regenerateMessage(message.id) : undefined}
-                        onEdit={isUser ? () => setIsEditModalOpen(true) : undefined}
+                        onEdit={isUser ? handleStartInlineEdit : undefined}
                         onDelete={() => setIsDeleteDialogOpen(true)}
                         onShare={handleShare}
                         onContinue={isGnani ? handleContinue : undefined}
@@ -271,39 +227,18 @@ const MessageBubble: React.FC<MessageBubbleProps> = memo(({ message, isLatest, s
                             </div>
                         </div>
 
-                        {/* Inline Edit Mode */}
+                        {/* STAGE R2: Inline Edit Mode with InlineMessageEditor */}
                         {isInlineEditing ? (
-                            <div className="space-y-2">
-                                <textarea
-                                    ref={textareaRef}
-                                    value={editedText}
-                                    onChange={(e) => setEditedText(e.target.value)}
-                                    onKeyDown={handleKeyDown}
-                                    className="w-full bg-black/50 border border-cyan-500 rounded p-3 text-sm text-cyan-100 focus:outline-none focus:border-cyan-400 resize-none font-mono"
-                                    rows={Math.max(3, editedText.split('\n').length)}
-                                    placeholder="Edit your message..."
-                                />
-                                <div className="flex gap-2 justify-end">
-                                    <button
-                                        onClick={handleCancelEdit}
-                                        className="px-3 py-1.5 text-xs bg-gray-700 hover:bg-gray-600 rounded flex items-center gap-1 transition-colors"
-                                    >
-                                        <X size={12} />
-                                        Cancel (Esc)
-                                    </button>
-                                    <button
-                                        onClick={handleSaveEdit}
-                                        disabled={actions.isLoading}
-                                        className="px-3 py-1.5 text-xs bg-cyan-500 hover:bg-cyan-400 text-black rounded flex items-center gap-1 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                    >
-                                        <Check size={12} />
-                                        {actions.isLoading ? 'Saving...' : 'Save & Regenerate (Ctrl+Enter)'}
-                                    </button>
-                                </div>
-                                <p className="text-xs text-cyan-500/60">
-                                    Tip: Press Ctrl+Enter to save, Esc to cancel
-                                </p>
-                            </div>
+                            <InlineMessageEditor
+                                initialContent={message.message}
+                                onSave={async (newContent) => {
+                                    await actions.editMessage(message.id, newContent);
+                                    setIsInlineEditing(false);
+                                }}
+                                onCancel={() => setIsInlineEditing(false)}
+                                maxLength={2000}
+                                autoRegenerate={true}
+                            />
                         ) : (
                             <MessageContent
                                 content={message.message}
@@ -378,12 +313,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = memo(({ message, isLatest, s
             </motion.div >
 
             {/* Modals */}
-            < EditMessageModal
-                isOpen={isEditModalOpen}
-                onClose={() => setIsEditModalOpen(false)}
-                onSave={(newContent) => actions.editMessage(message.id, newContent)}
-                initialContent={message.message}
-            />
+
 
             <DeleteConfirmDialog
                 isOpen={isDeleteDialogOpen}

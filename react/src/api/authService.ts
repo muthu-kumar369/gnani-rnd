@@ -1,7 +1,7 @@
 import errorLogger from "../utils/errorLogger"; // Import errorLogger
 
 // Assuming the backend is running on http://localhost:3000
-const API_BASE_URL = "http://localhost:3000/api/auth";
+const API_BASE_URL = "http://localhost:3000/api/v1/auth";
 
 interface LoginResponse {
   accessToken: string;

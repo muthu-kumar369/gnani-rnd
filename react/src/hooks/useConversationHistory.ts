@@ -2,7 +2,7 @@ import { useCallback } from 'react';
 import { useConversationHistoryStore, type Conversation } from '../store/useConversationHistoryStore';
 import { useUserStore } from '../store/useUserStore';
 
-const API_BASE_URL = 'http://localhost:3000/api'; // Adjust as needed
+const API_BASE_URL = 'http://localhost:3000/api/v1'; // Adjust as needed
 
 export const useConversationHistory = () => {
     const {

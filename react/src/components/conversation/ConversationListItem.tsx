@@ -59,16 +59,34 @@ const ConversationListItem: React.FC<ConversationListItemProps> = ({
         setShowMenu(false);
     };
 
-    // Prefetch conversation on hover
-    const { refreshConversation } = useConversationStore();
+    // STAGE R1: Prefetch conversation on hover
     const { accessToken } = useUserStore();
 
     const handleMouseEnter = useCallback(() => {
-        if (!isActive && accessToken) {
-            // Prefetch in background (don't await, don't block)
-            refreshConversation(accessToken).catch(console.error);
+        if (!isActive && accessToken && conversation.conversationId) {
+            // Prefetch messages for instant switching
+            import('../../utils/messageCache').then(({ messageCache }) => {
+                messageCache.prefetch(conversation.conversationId, async () => {
+                    const response = await fetch(
+                        `http://localhost:3000/api/v1/conversations/${conversation.conversationId}`,
+                        { headers: { 'x-auth-token': accessToken } }
+                    );
+                    const data = await response.json();
+                    return data.messages.map((msg: any) => ({
+                        id: msg.id || msg._id,
+                        _id: msg.id || msg._id,
+                        type: msg.role === 'assistant' ? 'gnani' : msg.role,
+                        message: msg.content,
+                        timestamp: new Date(msg.timestamp).getTime(),
+                        parentId: msg.parentId,
+                        children: msg.children,
+                        branchIndex: msg.branchIndex,
+                        metadata: msg.metadata
+                    }));
+                });
+            });
         }
-    }, [isActive, accessToken, refreshConversation]);
+    }, [isActive, accessToken, conversation.conversationId]);
 
     // NEW: Highlight search matches
     const highlightMatch = (text: string, query: string) => {

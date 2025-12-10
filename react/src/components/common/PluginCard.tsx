@@ -1,5 +1,5 @@
 import React from 'react';
-import { Download, Trash2, Power, Settings, Star, Users } from 'lucide-react';
+import { Download, Trash2, Power, Settings, Star, Users, Shield, AlertTriangle } from 'lucide-react';
 import type { PluginMetadata } from '../../types/plugin';
 
 interface PluginCardProps {
@@ -9,6 +9,32 @@ interface PluginCardProps {
     onToggle: () => void;
     onSettings?: () => void;
 }
+
+const SecurityBadge: React.FC<{ plugin: PluginMetadata }> = ({ plugin }) => {
+    const hasPermissions = plugin.requiredPermissions &&
+        Object.keys(plugin.requiredPermissions).length > 0;
+
+    // In PluginMetadata, requiredPermissions is an object.
+    const permissionCount = hasPermissions && plugin.requiredPermissions
+        ? Object.keys(plugin.requiredPermissions).length
+        : 0;
+
+    if (!hasPermissions) {
+        return (
+            <div className="flex items-center gap-1 text-green-400 text-[10px] bg-green-500/10 px-2 py-0.5 rounded border border-green-500/20">
+                <Shield size={10} />
+                <span>Safe</span>
+            </div>
+        );
+    }
+
+    return (
+        <div className="flex items-center gap-1 text-yellow-400 text-[10px] bg-yellow-500/10 px-2 py-0.5 rounded border border-yellow-500/20">
+            <AlertTriangle size={10} />
+            <span>{permissionCount} Perms</span>
+        </div>
+    );
+};
 
 const PluginCard: React.FC<PluginCardProps> = ({
     plugin,
@@ -23,7 +49,10 @@ const PluginCard: React.FC<PluginCardProps> = ({
             <div className="flex items-start gap-3 mb-3">
                 <span className="text-3xl">{plugin.icon}</span>
                 <div className="flex-1 min-w-0">
-                    <h3 className="text-cyan-400 font-semibold truncate">{plugin.name}</h3>
+                    <div className="flex items-center justify-between gap-2">
+                        <h3 className="text-cyan-400 font-semibold truncate">{plugin.name}</h3>
+                        <SecurityBadge plugin={plugin} />
+                    </div>
                     <p className="text-xs text-cyan-500/60">
                         by {plugin.author} • v{plugin.version}
                     </p>

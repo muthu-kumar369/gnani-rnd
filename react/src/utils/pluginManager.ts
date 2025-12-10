@@ -2,12 +2,33 @@ import type { GnaniPlugin } from '../types/plugin';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
+import { pluginWorkerManager } from './pluginWorker';
+import { pluginPermissionManager, type PluginPermissionRequest } from './pluginPermissions';
+
 class PluginManager {
     private plugins: Map<string, GnaniPlugin> = new Map();
     private enabledPlugins: Set<string> = new Set();
 
     async install(plugin: GnaniPlugin): Promise<void> {
         try {
+            // STAGE R3: Request Permissions
+            if (plugin.requiredPermissions) {
+                const request: PluginPermissionRequest = {
+                    pluginId: plugin.id,
+                    pluginName: plugin.name,
+                    permissions: plugin.requiredPermissions
+                };
+
+                // This awaits user approval via dialog
+                const granted = await pluginPermissionManager.requestPermissions(request);
+                console.log(`Permissions granted for ${plugin.name}:`, granted);
+
+                // STAGE R3: Load into Web Worker if code provided
+                if (plugin.code) {
+                    await pluginWorkerManager.loadPlugin(plugin.id, plugin.code, granted);
+                }
+            }
+
             await plugin.onInstall?.();
             this.plugins.set(plugin.id, plugin);
             console.log(`Plugin ${plugin.name} installed successfully`);
@@ -27,6 +48,13 @@ class PluginManager {
             if (this.enabledPlugins.has(pluginId)) {
                 await this.disable(pluginId);
             }
+
+            // STAGE R3: Cleanup Worker and Permissions
+            if (plugin.code) {
+                pluginWorkerManager.unloadPlugin(pluginId);
+            }
+            pluginPermissionManager.revokePermissions(pluginId);
+
             await plugin.onUninstall?.();
             this.plugins.delete(pluginId);
             console.log(`Plugin ${plugin.name} uninstalled successfully`);
@@ -76,6 +104,19 @@ class PluginManager {
         for (const [pluginId, plugin] of this.plugins.entries()) {
             if (!this.enabledPlugins.has(pluginId)) continue;
 
+            // STAGE R3: Sandboxed Execution
+            if (plugin.code) {
+                try {
+                    // Execute in Web Worker
+                    const result = await pluginWorkerManager.executePlugin(pluginId, hookName as string, args);
+                    results.push(result);
+                } catch (error) {
+                    console.error(`Plugin ${plugin.name} (worker) hook ${hookName} failed:`, error);
+                }
+                continue;
+            }
+
+            // Legacy Execution (Main Thread)
             const hook = plugin[hookName];
             if (typeof hook === 'function') {
                 try {

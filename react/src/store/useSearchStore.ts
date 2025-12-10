@@ -4,8 +4,8 @@ import { persist } from 'zustand/middleware';
 export interface SearchFilters {
     dateFrom?: string;
     dateTo?: string;
-    model?: string;
-    folder?: string;
+    models?: string[]; // Arrays for multi-select
+    folders?: string[];
     tags?: string[];
 }
 

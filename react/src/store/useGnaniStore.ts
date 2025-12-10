@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import GnaniStateMachine from '../state/GnaniStateMachine';
 import type { GnaniState, StateTrigger, StateChangeEvent } from '../state/GnaniStateMachine';
+export type { GnaniState, StateTrigger, StateChangeEvent };
 import errorLogger from '../utils/errorLogger';
 import type { FileAttachment } from '../types/file.types';
 import type { ImageAttachment, AnalysisStatus } from '../types/vision.types';

@@ -2,7 +2,7 @@
 import { apiClient } from './apiClient';
 import type { FileUploadResponse } from '../types/file.types';
 
-const API_BASE_URL = 'http://localhost:3000/api'; // Updated to match apiClient base URL
+const API_BASE_URL = 'http://localhost:3000/api/v1'; // Updated to match apiClient base URL
 
 export const fileApi = {
     /**
@@ -17,7 +17,7 @@ export const fileApi = {
         return new Promise((resolve, reject) => {
             const xhr = new XMLHttpRequest();
             xhr.open('POST', `${API_BASE_URL}/files/upload`);
-            
+
             // Add auth token if available
             const token = localStorage.getItem('accessToken');
             if (token) {

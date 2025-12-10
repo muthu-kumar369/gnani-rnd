@@ -4,11 +4,13 @@ import Sidebar from '../components/chat/Sidebar';
 import ChatHeader from '../components/chat/ChatHeader';
 import { useConversationStore } from '../store/useConversationStore';
 import { useUserStore } from '../store/useUserStore';
+import AnalyticsModal from '../components/analytics/AnalyticsModal';
 
 const ChatLayout: React.FC = () => {
     const { createConversation, fetchConversations, conversationId } = useConversationStore();
     const { accessToken } = useUserStore();
     const navigate = useNavigate();
+    const [showAnalytics, setShowAnalytics] = React.useState(false);
 
     const handleNewChat = async () => {
         if (!accessToken) return;
@@ -28,6 +30,16 @@ const ChatLayout: React.FC = () => {
         }
     }, [conversationId]);
 
+    // Handle Open Analytics Event
+    useEffect(() => {
+        const handleOpenAnalytics = () => {
+            console.log('[ChatLayout] Opening Analytics Modal');
+            setShowAnalytics(true);
+        };
+        window.addEventListener('open-analytics', handleOpenAnalytics);
+        return () => window.removeEventListener('open-analytics', handleOpenAnalytics);
+    }, []);
+
     return (
         <div className="flex h-screen w-full bg-jarvis-bg overflow-hidden text-jarvis-text font-sans">
             {/* Sidebar */}
@@ -42,6 +54,9 @@ const ChatLayout: React.FC = () => {
                     <Outlet />
                 </div>
             </div>
+
+            {/* Global Modals */}
+            <AnalyticsModal isOpen={showAnalytics} onClose={() => setShowAnalytics(false)} />
         </div>
     );
 };

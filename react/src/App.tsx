@@ -13,6 +13,8 @@ import { useKeyboardNav } from './hooks/useKeyboardNav'; // STAGE 25
 import { offlineQueue } from './utils/offlineQueue'; // STAGE 16
 import './styles/accessibility.css'; // STAGE 25
 import './styles/rtl.css'; // STAGE 29: RTL support
+import { PluginPermissionDialog } from './components/common/PluginPermissionDialog'; // STAGE R3
+
 
 // Lazy load components
 const GnaniCore = React.lazy(() => import('./components/gnani/GnaniCore'));
@@ -22,6 +24,7 @@ const ChatLayout = React.lazy(() => import('./layouts/ChatLayout'));
 const ChatPage = React.lazy(() => import('./pages/ChatPage'));
 const SettingsPage = React.lazy(() => import('./pages/SettingsPage'));
 const SharedConversationPage = React.lazy(() => import('./pages/SharedConversationPage')); // STAGE 22
+const AnalyticsPage = React.lazy(() => import('./components/common/AnalyticsDashboard')); // STAGE R8
 
 // Protected Route Wrapper - only renders when authenticated
 function ProtectedRoute() {
@@ -75,6 +78,8 @@ function App() {
       <OfflineIndicator />
       {/* STAGE 17: Error display */}
       <ErrorDisplay />
+      {/* STAGE R3: Plugin Permission Dialog */}
+      <PluginPermissionDialog />
       <ToastProvider>
         <Suspense fallback={<LoadingScreen />}>
           <Routes>
@@ -109,6 +114,8 @@ function App() {
             }>
               <Route index element={<ChatPage />} />
             </Route>
+
+            {/* Analytics Route removed - now a modal */}
 
             <Route path="/settings" element={
               <RequireAuth>
