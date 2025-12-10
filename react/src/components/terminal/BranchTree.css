@@ -1,0 +1,26 @@
+/* Branch Tree Visualization */
+.branch-tree {
+  background: rgba(6, 182, 212, 0.05);
+  border: 1px solid rgba(6, 182, 212, 0.2);
+  border-radius: 8px;
+  padding: 12px;
+  max-height: 400px;
+}
+
+.branch-tree::-webkit-scrollbar {
+  width: 6px;
+}
+
+.branch-tree::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 3px;
+}
+
+.branch-tree::-webkit-scrollbar-thumb {
+  background: rgba(6, 182, 212, 0.3);
+  border-radius: 3px;
+}
+
+.branch-tree::-webkit-scrollbar-thumb:hover {
+  background: rgba(6, 182, 212, 0.5);
+}

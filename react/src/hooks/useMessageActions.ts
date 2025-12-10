@@ -1,6 +1,8 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useConversationStore } from '../store/useConversationStore';
 import { useUserStore } from '../store/useUserStore';
+
+const API_BASE_URL = 'http://localhost:3000/api';
 
 export const useMessageActions = (conversationId: string | null) => {
     const { accessToken } = useUserStore();
@@ -75,6 +77,28 @@ export const useMessageActions = (conversationId: string | null) => {
         // Optional: Show toast notification
     };
 
+    // NEW: Get message generations for variant navigation
+    const getMessageGenerations = useCallback(async (messageId: string) => {
+        if (!conversationId || !accessToken) return [];
+
+        try {
+            const response = await fetch(
+                `${API_BASE_URL}/conversations/${conversationId}/messages/${messageId}/generations`,
+                {
+                    headers: { 'x-auth-token': accessToken }
+                }
+            );
+
+            if (!response.ok) return [];
+
+            const data = await response.json();
+            return data.generations || [];
+        } catch (error) {
+            console.error('Failed to fetch generations:', error);
+            return [];
+        }
+    }, [conversationId, accessToken]);
+
     return {
         // Actions
         regenerateMessage,
@@ -82,6 +106,7 @@ export const useMessageActions = (conversationId: string | null) => {
         deleteMessage,
         restoreMessage,
         copyMessage,
+        getMessageGenerations, // NEW
 
         // UI State
         isLoading,
@@ -95,3 +120,4 @@ export const useMessageActions = (conversationId: string | null) => {
         dismissUndo
     };
 };
+

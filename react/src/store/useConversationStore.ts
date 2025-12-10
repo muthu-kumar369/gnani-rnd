@@ -2,6 +2,9 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import type { GnaniState, StateTrigger } from '../state/GnaniStateMachine';
 import errorLogger from '../utils/errorLogger';
+import { LRUCache } from '../utils/LRUCache';
+import { useAnalyticsStore } from './useAnalyticsStore'; // STAGE 20
+import { useModelStore } from './useModelStore'; // STAGE 23
 
 const API_BASE_URL = 'http://localhost:3000/api';
 
@@ -23,6 +26,9 @@ export interface ConversationMessage {
     toState?: GnaniState;
     image?: string;
     mimeType?: string;
+    edited?: boolean; // NEW: Track if message was edited
+    status?: 'queued' | 'sending' | 'failed' | 'sent'; // STAGE 16: Offline mode status
+    model?: string; // STAGE 23: Model used for this message
   };
   tokenUsage?: {
     inputTokens: number;
@@ -97,6 +103,22 @@ interface ConversationStore {
 }
 
 const generateId = () => `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+// Cache interface
+interface CachedConversation {
+  messages: ConversationMessage[];
+  allMessages: ConversationMessage[];
+  currentLeafId: string | null;
+  title: string;
+  cachedAt: number;
+}
+
+// Create LRU cache instance (max 10 conversations)
+const conversationCache = new LRUCache<string, CachedConversation>(10);
+
+// Cache metrics (for debugging)
+let cacheHits = 0;
+let cacheMisses = 0;
 
 export const useConversationStore = create<ConversationStore>()(
   persist(
@@ -259,6 +281,30 @@ export const useConversationStore = create<ConversationStore>()(
         const { conversationId, currentLeafId } = get();
         if (!conversationId || !accessToken) return;
 
+        // Check cache first
+        const cached = conversationCache.get(conversationId);
+        if (cached) {
+          const age = Date.now() - cached.cachedAt;
+
+          // Use cache if less than 5 minutes old
+          if (age < 5 * 60 * 1000) {
+            console.log('[Cache HIT] Loading conversation from cache:', conversationId);
+            cacheHits++;
+            set({
+              messages: cached.messages,
+              allMessages: cached.allMessages,
+              currentLeafId: cached.currentLeafId,
+              title: cached.title,
+            });
+            get()._deriveVisibleMessages();
+            return;
+          }
+        }
+
+        // Cache miss or stale - fetch from backend
+        console.log('[Cache MISS] Fetching conversation from backend:', conversationId);
+        cacheMisses++;
+
         try {
           const response = await fetch(`${API_BASE_URL}/conversations/${conversationId}`, {
             headers: { 'x-auth-token': accessToken }
@@ -299,6 +345,16 @@ export const useConversationStore = create<ConversationStore>()(
             allMessages: mappedMessages,
             currentLeafId: newLeafId
           });
+
+          // Update cache
+          conversationCache.set(conversationId, {
+            messages: get().messages, // Will be set by _deriveVisibleMessages
+            allMessages: mappedMessages,
+            currentLeafId: newLeafId,
+            title: data.title || 'Untitled',
+            cachedAt: Date.now(),
+          });
+
           get()._deriveVisibleMessages();
 
           errorLogger.info('Refreshed conversation', { count: mappedMessages.length });
@@ -396,6 +452,9 @@ export const useConversationStore = create<ConversationStore>()(
             title: data.title
           });
 
+          // FIX: Refresh conversation list after creation
+          await get().fetchConversations(accessToken);
+
           return conversationId;
         } catch (error) {
           errorLogger.error('Error creating conversation', error as Error, { context: 'useConversationStore' });
@@ -404,12 +463,47 @@ export const useConversationStore = create<ConversationStore>()(
       },
 
       sendMessage: async (text, accessToken, attachments = [], sendViaGrpc) => {
+        // STAGE 16: Check if offline and queue message
+        if (!navigator.onLine) {
+          console.log('[Offline Mode] Queuing message:', text);
+
+          // Add user message with 'queued' status
+          get().addMessage({
+            type: 'user',
+            message: text,
+            metadata: { status: 'queued' }
+          });
+
+          // Queue the request for later
+          const { offlineQueue } = await import('../utils/offlineQueue');
+          offlineQueue.add(
+            `${import.meta.env.VITE_API_URL}/conversations/${get().conversationId}/messages`,
+            'POST',
+            { text, attachments },
+            { Authorization: `Bearer ${accessToken}` }
+          );
+
+          return;
+        }
+
         const { conversationId, addMessage } = get();
+
+        // STAGE 20: Track message sent
+        useAnalyticsStore.getState().trackEvent('message_sent', { conversationId });
+        useAnalyticsStore.getState().incrementMessages();
 
         // Optimistic UI Update: Add user message immediately
         addMessage({
           type: 'user',
           message: text
+        });
+
+        // FIX: Add placeholder assistant message for streaming
+        const assistantPlaceholderId = generateId();
+        addMessage({
+          _id: assistantPlaceholderId,
+          type: 'gnani',
+          message: '' // Empty placeholder
         });
 
         // Set streaming state immediately for UI feedback (Stop button etc)
@@ -457,15 +551,13 @@ export const useConversationStore = create<ConversationStore>()(
           // If backend returns a new conversation ID, update it
           if (data.conversationId && data.conversationId !== conversationId) {
             set({ conversationId: data.conversationId });
-            get().fetchConversations(accessToken);
+            // FIX: Refresh conversation list when new conversation is created
+            await get().fetchConversations(accessToken);
           }
 
-          // If backend returns the assistant response immediately (REST style), add it and trigger TTS
+          // If backend returns the assistant response immediately (REST style), update placeholder
           if (data.message) {
-            addMessage({
-              type: 'gnani',
-              message: data.message
-            });
+            get().updateMessageContent(assistantPlaceholderId, data.message, false);
 
             // Trigger TTS for REST response
             errorLogger.info('Triggering TTS for REST response', { context: 'useConversationStore', messageLength: data.message.length });
@@ -482,6 +574,24 @@ export const useConversationStore = create<ConversationStore>()(
           if (error.name === 'AbortError') {
             errorLogger.info('Message sending cancelled by user');
           } else {
+            // STAGE 17: Parse error for user-friendly message
+            const { parseError } = await import('../utils/errorParser');
+            const { useErrorStore } = await import('./useErrorStore');
+            const parsedError = parseError(error);
+
+            // Add to error store for toast display
+            useErrorStore.getState().addError(
+              parsedError.message,
+              parsedError.action === 'Retry' ? () => get().sendMessage(text, accessToken, attachments, sendViaGrpc) : undefined
+            );
+
+            // Log for debugging
+            console.error('[SendMessage Error]', {
+              code: parsedError.code,
+              title: parsedError.title,
+              original: parsedError.originalError
+            });
+
             errorLogger.error('Failed to send message via REST', error as Error, { context: 'useConversationStore' });
             // TODO: Mark message as failed in UI?
           }

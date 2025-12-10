@@ -1,16 +1,19 @@
-import { Component } from 'react';
+import React, { Component } from 'react';
 import type { ErrorInfo, ReactNode } from 'react';
+import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
 
 interface Props {
     children: ReactNode;
     fallback?: ReactNode;
     componentName?: string;
+    onError?: (error: Error, errorInfo: ErrorInfo) => void;
 }
 
 interface State {
     hasError: boolean;
     error: Error | null;
     errorInfo: ErrorInfo | null;
+    retryCount: number;
 }
 
 export class ErrorBoundary extends Component<Props, State> {
@@ -19,7 +22,8 @@ export class ErrorBoundary extends Component<Props, State> {
         this.state = {
             hasError: false,
             error: null,
-            errorInfo: null
+            errorInfo: null,
+            retryCount: 0,
         };
     }
 
@@ -33,22 +37,42 @@ export class ErrorBoundary extends Component<Props, State> {
 
         this.setState({ errorInfo });
 
+        // Call custom error handler
+        this.props.onError?.(error, errorInfo);
+
+        // Send to error tracking service
+        this.reportError(error, errorInfo);
+
         // Send to Electron main process for logging
         if (typeof window !== 'undefined' && (window as any).electron?.log) {
             (window as any).electron.log('error', `${componentName} crashed`, {
                 error: error.message,
                 stack: error.stack,
-                componentStack: errorInfo.componentStack
+                componentStack: errorInfo.componentStack,
             });
         }
     }
 
-    handleReset = () => {
-        this.setState({
+    reportError = (error: Error, errorInfo: ErrorInfo) => {
+        // TODO: Integrate with error tracking service (e.g., Sentry)
+        console.log('Reporting error to tracking service:', {
+            error: error.message,
+            stack: error.stack,
+            componentStack: errorInfo.componentStack,
+        });
+    };
+
+    handleRetry = () => {
+        this.setState((prevState) => ({
             hasError: false,
             error: null,
-            errorInfo: null
-        });
+            errorInfo: null,
+            retryCount: prevState.retryCount + 1,
+        }));
+    };
+
+    handleGoHome = () => {
+        window.location.href = '/';
     };
 
     render() {
@@ -60,38 +84,61 @@ export class ErrorBoundary extends Component<Props, State> {
             const componentName = this.props.componentName || 'Component';
 
             return (
-                <div className="flex items-center justify-center min-h-screen bg-background">
-                    <div className="max-w-md p-6 bg-red-50 border-2 border-red-200 rounded-lg shadow-lg">
-                        <div className="flex items-center mb-4">
-                            <svg className="w-6 h-6 text-red-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                            </svg>
-                            <h2 className="text-xl font-bold text-red-800">
-                                {componentName} Error
-                            </h2>
+                <div className="flex flex-col items-center justify-center min-h-screen bg-black text-cyan-400 p-8">
+                    <div className="max-w-md w-full bg-cyan-950/20 border border-cyan-500/30 rounded-lg p-8">
+                        {/* Error Icon */}
+                        <div className="flex justify-center mb-6">
+                            <div className="p-4 bg-red-500/20 rounded-full">
+                                <AlertTriangle size={48} className="text-red-400" />
+                            </div>
                         </div>
 
-                        <p className="text-red-700 mb-4">
+                        {/* Error Title */}
+                        <h1 className="text-2xl font-bold text-center mb-4">
+                            {componentName} Error
+                        </h1>
+
+                        {/* Error Message */}
+                        <p className="text-sm text-cyan-500/80 text-center mb-6">
                             {this.state.error?.message || 'An unexpected error occurred'}
                         </p>
 
-                        {process.env.NODE_ENV === 'development' && this.state.error?.stack && (
-                            <details className="mb-4">
-                                <summary className="text-sm text-red-600 cursor-pointer hover:text-red-800">
+                        {/* Error Details (Dev Mode) */}
+                        {process.env.NODE_ENV === 'development' && (
+                            <details className="mb-6 text-xs">
+                                <summary className="cursor-pointer text-cyan-500/60 hover:text-cyan-500">
                                     Error Details
                                 </summary>
-                                <pre className="mt-2 p-2 text-xs bg-red-100 rounded overflow-auto max-h-40">
-                                    {this.state.error.stack}
+                                <pre className="mt-2 p-3 bg-black/50 rounded overflow-auto max-h-40 text-red-400">
+                                    {this.state.error?.stack}
                                 </pre>
                             </details>
                         )}
 
-                        <button
-                            onClick={this.handleReset}
-                            className="w-full px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
-                        >
-                            Try Again
-                        </button>
+                        {/* Action Buttons */}
+                        <div className="flex gap-3">
+                            <button
+                                onClick={this.handleRetry}
+                                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-cyan-500 hover:bg-cyan-400 text-black rounded transition-colors"
+                            >
+                                <RefreshCw size={16} />
+                                Try Again
+                            </button>
+                            <button
+                                onClick={this.handleGoHome}
+                                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/30 rounded transition-colors"
+                            >
+                                <Home size={16} />
+                                Go Home
+                            </button>
+                        </div>
+
+                        {/* Retry Count */}
+                        {this.state.retryCount > 0 && (
+                            <p className="text-xs text-cyan-500/40 text-center mt-4">
+                                Retry attempt: {this.state.retryCount}
+                            </p>
+                        )}
                     </div>
                 </div>
             );

@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Virtuoso, type VirtuosoHandle } from 'react-virtuoso';
 import { motion } from 'framer-motion';
-import { Terminal, ChevronDown, Trash2, Maximize2, Minimize2 } from 'lucide-react';
+import { Terminal, ChevronDown, Trash2, Maximize2, Minimize2, GitBranch } from 'lucide-react';
 import { useConversationStore } from '../../store/useConversationStore';
 import { usePreferencesStore } from '../../store/usePreferencesStore';
 import { useGnaniStore } from '../../store/useGnaniStore';
@@ -21,6 +21,12 @@ import AttachedFilesList from './AttachedFilesList';
 import ImageGallery from './ImageGallery';
 import TypingIndicator from './TypingIndicator';
 import { UndoToast } from '../common/UndoToast';
+import BranchTree from './BranchTree';
+import './BranchTree.css';
+import StreamingProgress from '../common/StreamingProgress';
+import TimeoutIndicator from '../common/TimeoutIndicator'; // STAGE 18
+import RateLimitIndicator from '../common/RateLimitIndicator'; // STAGE 19
+import { useTimeout } from '../../hooks/useTimeout'; // STAGE 18
 import '../../styles/typingIndicator.css';
 
 interface TerminalPanelProps {
@@ -69,6 +75,19 @@ const TerminalPanel: React.FC<TerminalPanelProps> = ({ isVisible, onToggle }) =>
     const [isExpanded, setIsExpanded] = useState(false);
     // showInput is now always true by default for better UX
     const [showInput] = useState(true);
+    const [showBranchTree, setShowBranchTree] = useState(false);
+
+    // STAGE 18: Timeout handling for streaming operations
+    const { timeLeft, isActive: isTimeoutActive, start: startTimeout, stop: stopTimeout, extend: extendTimeout } = useTimeout(
+        30, // 30 seconds default timeout
+        () => {
+            console.log('[Timeout] Streaming operation timed out');
+            // Optionally cancel the stream on timeout
+            if (sessionId && accessToken) {
+                cancelStream(sessionId, accessToken);
+            }
+        }
+    );
 
     // File upload hook
     const { uploadFile, isUploading: isUploadingFile } = useFileUpload('default-user');
@@ -147,6 +166,7 @@ const TerminalPanel: React.FC<TerminalPanelProps> = ({ isVisible, onToggle }) =>
         ];
 
         setIsStreaming(true); // Enable stop button immediately for text input
+        startTimeout(); // STAGE 18: Start timeout countdown
         await sendMessage(text, accessToken, attachments, sendText);
 
         // Clear attached files and images after sending
@@ -172,15 +192,25 @@ const TerminalPanel: React.FC<TerminalPanelProps> = ({ isVisible, onToggle }) =>
         }
     }, [messages.length, isVisible, isExpanded]);
 
+    // STAGE 18: Stop timeout when streaming ends
+    useEffect(() => {
+        if (!isStreaming && isTimeoutActive) {
+            stopTimeout();
+        }
+    }, [isStreaming, isTimeoutActive, stopTimeout]);
+
     if (!isVisible) return null;
 
     return (
         <FileUploadZone onFileDrop={handleFileSelect} disabled={isUploadingFile || isUploadingImage}>
             <motion.div
-                initial={{ opacity: 0, y: 50 }}
+                id="main-content" // STAGE 25: Skip link target
+                role="main" // STAGE 25: Main landmark
+                aria-label="Conversation terminal"
+                initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 50 }}
-                className={`fixed left-4 bottom-4 z-50 flex flex-col glass-panel rounded-lg overflow-hidden transition-all duration-300 ${isExpanded ? 'w-[600px] h-[80vh]' : 'w-[400px] h-[450px]'
+                exit={{ opacity: 0, y: 20 }}
+                className={`terminal-panel ${isExpanded ? 'expanded' : ''} ${!isVisible ? 'hidden' : ''} overflow-hidden transition-all duration-300 ${isExpanded ? 'w-[600px] h-[80vh]' : 'w-[400px] h-[450px]'
                     }`}
             >
                 {/* Holographic Grid Background */}
@@ -219,6 +249,18 @@ const TerminalPanel: React.FC<TerminalPanelProps> = ({ isVisible, onToggle }) =>
                             title="Delete Conversation"
                         >
                             <Trash2 size={16} />
+                        </button>
+
+                        {/* Branch Tree Toggle */}
+                        <button
+                            onClick={() => setShowBranchTree(!showBranchTree)}
+                            className={`p-1.5 rounded transition-colors ${showBranchTree
+                                ? 'text-cyan-300 bg-cyan-900/30'
+                                : 'text-cyan-400/60 hover:text-cyan-300 hover:bg-cyan-900/20'
+                                }`}
+                            title="Toggle Branch Tree"
+                        >
+                            <GitBranch size={16} />
                         </button>
 
                         {/* Keyboard toggle removed as input is now always visible/accessible via bottom area */}
@@ -308,6 +350,16 @@ const TerminalPanel: React.FC<TerminalPanelProps> = ({ isVisible, onToggle }) =>
                     </div>
                 )}
 
+                {/* STAGE 18: Timeout Indicator during streaming */}
+                {isStreaming && isTimeoutActive && (
+                    <div className="relative z-10 px-4 pb-3">
+                        <TimeoutIndicator timeLeft={timeLeft} onExtend={extendTimeout} />
+                    </div>
+                )}
+
+                {/* STAGE 19: Rate Limit Indicator */}
+                <RateLimitIndicator />
+
                 {/* Text Input Area with New Modern Design */}
                 <div className="relative">
                     <TextInput
@@ -329,6 +381,20 @@ const TerminalPanel: React.FC<TerminalPanelProps> = ({ isVisible, onToggle }) =>
                         }}
                     />
                 </div>
+
+                {/* Streaming Progress Bar */}
+                {isStreaming && (
+                    <div className="relative z-10 px-4 pb-2">
+                        <StreamingProgress isStreaming={isStreaming} />
+                    </div>
+                )}
+
+                {/* Branch Tree Visualization */}
+                {showBranchTree && messages.length > 0 && (
+                    <div className="relative z-10 px-4 pb-2">
+                        <BranchTree />
+                    </div>
+                )}
 
                 {/* Undo Toast - Fixed position within terminal */}
                 {undoData && (

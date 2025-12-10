@@ -102,7 +102,6 @@ const TextInput: React.FC<TextInputProps> = ({
                             </div>
                         )}
 
-                        {/* Main textarea */}
                         <div className="relative mb-2">
                             <textarea
                                 ref={textareaRef}
@@ -111,6 +110,9 @@ const TextInput: React.FC<TextInputProps> = ({
                                 onKeyDown={handleKeyDown}
                                 placeholder="Message Gnani..."
                                 disabled={disabled || isStreaming}
+                                aria-label="Message input"
+                                aria-disabled={disabled || isStreaming}
+                                aria-multiline="true"
                                 className="modern-input w-full p-3 text-sm text-cyan-100 placeholder-cyan-500/50 resize-none min-h-[44px] max-h-[150px] custom-scrollbar disabled:opacity-50 disabled:cursor-not-allowed"
                                 rows={1}
                             />
@@ -153,6 +155,7 @@ const TextInput: React.FC<TextInputProps> = ({
                                         whileHover={{ scale: 1.1 }}
                                         whileTap={{ scale: 0.95 }}
                                         onClick={handleStop}
+                                        aria-label="Stop generation"
                                         className="h-10 w-10 flex items-center justify-center bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-full border border-red-500/50 backdrop-blur-sm transition-all"
                                         title="Stop generation"
                                     >
@@ -168,6 +171,8 @@ const TextInput: React.FC<TextInputProps> = ({
                                         whileTap={{ scale: 0.95 }}
                                         onClick={handleSend}
                                         disabled={!canSend}
+                                        aria-label="Send message"
+                                        aria-disabled={!canSend}
                                         className="h-10 w-10 flex items-center justify-center bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 rounded-full border border-cyan-500/50 backdrop-blur-sm disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                                         title="Send message"
                                     >

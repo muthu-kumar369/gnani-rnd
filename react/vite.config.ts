@@ -11,6 +11,16 @@ export default defineConfig({
     },
   },
   build: {
-    sourcemap: false
+    sourcemap: false,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          'ui-vendor': ['framer-motion', 'lucide-react'],
+          'store': ['zustand'],
+          'utils': ['date-fns'],
+        }
+      }
+    }
   }
 });

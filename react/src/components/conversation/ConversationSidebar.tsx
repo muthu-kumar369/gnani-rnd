@@ -1,12 +1,13 @@
 import React, { useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Plus, X, History } from 'lucide-react';
+import { Search, Plus, X, History, RefreshCw } from 'lucide-react';
 import { useConversationHistory } from '../../hooks/useConversationHistory';
 import ConversationListItem from './ConversationListItem';
 import { useConversationStore } from '../../store/useConversationStore';
 import { useUserStore } from '../../store/useUserStore';
 import Button from '../ui/Button';
 import ConfirmationModal from '../ui/ConfirmationModal';
+import { ConversationSkeleton } from '../common/SkeletonLoader';
 
 interface ConversationSidebarProps {
     isOpen: boolean;
@@ -119,6 +120,15 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                             >
                                 New Conversation
                             </Button>
+
+                            <Button
+                                onClick={() => fetchConversations()}
+                                variant="secondary"
+                                className="w-full justify-center mt-2"
+                                leftIcon={<RefreshCw size={16} />}
+                            >
+                                Refresh
+                            </Button>
                         </div>
 
                         {/* Search */}
@@ -144,6 +154,8 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                                 <div className="text-center text-gray-500 mt-10 text-sm">
                                     No conversations found.
                                 </div>
+                            ) : isLoading && conversations.length === 0 ? (
+                                <ConversationSkeleton className="mt-4" />
                             ) : (
                                 conversations.map(conv => (
                                     <ConversationListItem
@@ -158,11 +170,12 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                                         }}
                                         onDelete={(id) => setDeleteId(id)}
                                         onEditTitle={updateTitle}
+                                        searchQuery={searchQuery}
                                     />
                                 ))
                             )}
 
-                            {isLoading && (
+                            {isLoading && conversations.length > 0 && (
                                 <div className="flex justify-center py-4">
                                     <div className="w-5 h-5 border-2 border-jarvis-cyan/30 border-t-jarvis-cyan rounded-full animate-spin" />
                                 </div>

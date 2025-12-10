@@ -58,16 +58,27 @@ export const useChatSession = () => {
 
             if (type === 'partial') {
                 setIsThinking(false);
-                updateLastMessageContent(text, true); // true = append
+                // FIX: Only update if current leaf is an assistant message
+                const { currentLeafId, allMessages } = useConversationStore.getState();
+                const currentMessage = allMessages.find(m => m.id === currentLeafId);
+
+                if (currentMessage && currentMessage.type === 'gnani') {
+                    updateLastMessageContent(text, true); // append to assistant message
+                } else {
+                    // If current leaf is not assistant, this is an error state
+                    console.warn('Partial chunk received but current leaf is not assistant message');
+                }
             }
             else if (type === 'complete_response') {
                 setIsThinking(false);
                 setIsStreaming(false); // Reset streaming state explicitly
                 updateLastMessageContent(text, false); // false = replace/finalize
 
-                // Force refresh if needed
+                // Force refresh conversation list to get updated title
                 if (accessToken) {
                     refreshConversation(accessToken);
+                    // FIX: Also refresh conversation list
+                    useConversationStore.getState().fetchConversations(accessToken);
                 }
             }
 
@@ -75,7 +86,7 @@ export const useChatSession = () => {
             console.error('Error processing chat chunk', error);
         }
 
-    }, [latestLLMChunk, updateLastMessageContent, accessToken, refreshConversation]);
+    }, [latestLLMChunk, updateLastMessageContent, accessToken, refreshConversation, setIsStreaming]);
 
     return {
         sendMessage,

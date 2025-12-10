@@ -121,6 +121,32 @@ export const useConversationHistory = () => {
         }
     }, [accessToken, setConversations]);
 
+    const generateTitle = useCallback(async (conversationId: string) => {
+        if (!accessToken) return;
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/conversations/${conversationId}/title/generate`, {
+                method: 'POST',
+                headers: {
+                    'x-auth-token': accessToken
+                }
+            });
+
+            if (!response.ok) throw new Error('Failed to generate title');
+
+            const data = await response.json();
+
+            // Update local conversation list with new title
+            setConversations((prev: Conversation[]) => prev.map((c: Conversation) =>
+                c.conversationId === conversationId ? { ...c, title: data.title } : c
+            ));
+
+            return data.title;
+        } catch (error) {
+            console.error('Error generating title:', error);
+        }
+    }, [accessToken, setConversations]);
+
     return {
         conversations,
         isLoading,
@@ -129,6 +155,7 @@ export const useConversationHistory = () => {
         search,
         deleteConversation,
         updateTitle,
-        fetchConversations
+        fetchConversations,
+        generateTitle // Export new method
     };
 };

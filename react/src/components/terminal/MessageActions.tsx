@@ -1,5 +1,5 @@
 import React from 'react';
-import { Copy, RefreshCw, Edit2, Trash2 } from 'lucide-react';
+import { Copy, RefreshCw, Edit2, Trash2, Share2, CornerDownRight } from 'lucide-react';
 
 interface MessageActionsProps {
     role: 'user' | 'assistant' | 'system';
@@ -7,6 +7,8 @@ interface MessageActionsProps {
     onRegenerate?: () => void;
     onEdit?: () => void;
     onDelete?: () => void;
+    onShare?: () => void; // NEW
+    onContinue?: () => void; // NEW
     isVisible?: boolean;
     isRegenerating?: boolean;
     isDeleting?: boolean;
@@ -18,6 +20,8 @@ const MessageActions: React.FC<MessageActionsProps> = ({
     onRegenerate,
     onEdit,
     onDelete,
+    onShare, // NEW
+    onContinue, // NEW
     isVisible = false,
     isRegenerating = false,
     isDeleting = false
@@ -57,6 +61,20 @@ const MessageActions: React.FC<MessageActionsProps> = ({
                     disabled={isDeleting}
                 >
                     <Trash2 size={14} />
+                </button>
+            )}
+
+            {/* Share button - available for all messages */}
+            {onShare && (
+                <button onClick={onShare} title="Share message">
+                    <Share2 size={14} />
+                </button>
+            )}
+
+            {/* Continue button - only for assistant messages */}
+            {role === 'assistant' && onContinue && (
+                <button onClick={onContinue} title="Continue conversation">
+                    <CornerDownRight size={14} />
                 </button>
             )}
         </div>

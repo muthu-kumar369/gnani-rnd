@@ -1,0 +1,86 @@
+/* STAGE 25: Accessibility - Screen Reader Only Utility */
+
+/* Hide element visually but keep it accessible to screen readers */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+}
+
+/* Show element when focused (for skip links) */
+.sr-only-focusable:focus {
+    position: static;
+    width: auto;
+    height: auto;
+    padding: inherit;
+    margin: inherit;
+    overflow: visible;
+    clip: auto;
+    white-space: normal;
+}
+
+/* STAGE 25: Focus visible styles for keyboard navigation */
+*:focus-visible {
+    outline: 2px solid #22d3ee;
+    outline-offset: 2px;
+    border-radius: 4px;
+}
+
+/* Remove default focus outline for mouse users */
+*:focus:not(:focus-visible) {
+    outline: none;
+}
+
+/* STAGE 25: Skip to main content link */
+.skip-link {
+    position: absolute;
+    top: -40px;
+    left: 0;
+    background: #0f172a;
+    color: #22d3ee;
+    padding: 8px 16px;
+    text-decoration: none;
+    border: 2px solid #22d3ee;
+    border-radius: 4px;
+    z-index: 100;
+}
+
+.skip-link:focus {
+    top: 8px;
+    left: 8px;
+}
+
+/* STAGE 25: High contrast mode support */
+@media (prefers-contrast: high) {
+    .text-cyan-400 {
+        color: #00ffff;
+    }
+
+    .text-cyan-500 {
+        color: #00e5e5;
+    }
+
+    .border-cyan-500\/30 {
+        border-color: #00e5e5;
+        border-width: 2px;
+    }
+}
+
+/* STAGE 25: Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}

@@ -1,7 +1,9 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { MessageSquare, Trash2, Edit2, Play, MoreVertical } from 'lucide-react';
 import type { Conversation } from '../../store/useConversationHistoryStore';
+import { useConversationStore } from '../../store/useConversationStore';
+import { useUserStore } from '../../store/useUserStore';
 import ExportButton from './ExportButton';
 
 interface ConversationListItemProps {
@@ -10,6 +12,7 @@ interface ConversationListItemProps {
     onResume: (id: string) => void;
     onDelete: (id: string) => void;
     onEditTitle: (id: string, newTitle: string) => void;
+    searchQuery?: string; // NEW: for highlighting search matches
 }
 
 const ConversationListItem: React.FC<ConversationListItemProps> = ({
@@ -17,7 +20,8 @@ const ConversationListItem: React.FC<ConversationListItemProps> = ({
     isActive,
     onResume,
     onDelete,
-    onEditTitle
+    onEditTitle,
+    searchQuery = '' // NEW
 }) => {
     const [isEditing, setIsEditing] = useState(false);
     const [editTitle, setEditTitle] = useState(conversation.title);
@@ -55,6 +59,29 @@ const ConversationListItem: React.FC<ConversationListItemProps> = ({
         setShowMenu(false);
     };
 
+    // Prefetch conversation on hover
+    const { refreshConversation } = useConversationStore();
+    const { accessToken } = useUserStore();
+
+    const handleMouseEnter = useCallback(() => {
+        if (!isActive && accessToken) {
+            // Prefetch in background (don't await, don't block)
+            refreshConversation(accessToken).catch(console.error);
+        }
+    }, [isActive, accessToken, refreshConversation]);
+
+    // NEW: Highlight search matches
+    const highlightMatch = (text: string, query: string) => {
+        if (!query || !query.trim()) return text;
+
+        const parts = text.split(new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi'));
+        return parts.map((part, i) =>
+            part.toLowerCase() === query.toLowerCase()
+                ? <mark key={i} className="bg-cyan-500/30 text-cyan-100 px-0.5 rounded">{part}</mark>
+                : part
+        );
+    };
+
     return (
         <div
             className={`group relative p-3 rounded-lg mb-2 cursor-pointer transition-all duration-200 border ${isActive
@@ -62,6 +89,7 @@ const ConversationListItem: React.FC<ConversationListItemProps> = ({
                 : 'bg-black/40 border-transparent hover:bg-jarvis-blue/10 hover:border-jarvis-blue/30'
                 }`}
             onClick={() => onResume(conversation.conversationId)}
+            onMouseEnter={handleMouseEnter}
         >
             <div className="flex items-start justify-between">
                 <div className="flex-1 min-w-0 mr-2">
@@ -78,7 +106,7 @@ const ConversationListItem: React.FC<ConversationListItemProps> = ({
                         </form>
                     ) : (
                         <h3 className="text-sm font-medium text-jarvis-cyan truncate group-hover:text-white transition-colors">
-                            {conversation.title}
+                            {highlightMatch(conversation.title, searchQuery)}
                         </h3>
                     )}
                     <p className="text-xs text-gray-400 truncate mt-1">
