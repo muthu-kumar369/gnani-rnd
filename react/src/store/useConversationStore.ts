@@ -5,8 +5,8 @@ import errorLogger from '../utils/errorLogger';
 import { messageCache } from '../utils/messageCache'; // STAGE R1: New message cache
 import { useAnalyticsStore } from './useAnalyticsStore'; // STAGE 20
 import { useModelStore } from './useModelStore'; // STAGE 23
-
-const API_BASE_URL = 'http://localhost:3000/api/v1';
+import apiClient from '../api/client'; // STAGE 1
+import { MessageTreeValidator } from '../utils/messageTreeValidator'; // STAGE 1: Message validation
 
 export interface ConversationMessage {
   id: string;
@@ -132,17 +132,8 @@ export const useConversationStore = create<ConversationStore>()(
 
       updateConversationTemplate: async (conversationId, templateId, accessToken) => {
         try {
-          const response = await fetch(`${API_BASE_URL}/conversations/${conversationId}/template`, {
-            method: 'PATCH',
-            headers: {
-              'x-auth-token': accessToken,
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ templateId })
-          });
-
-          if (!response.ok) throw new Error('Failed to update template');
-
+          // STAGE 1: Use apiClient
+          await apiClient.patch(`/conversations/${conversationId}/template`, { templateId });
           set({ selectedTemplate: templateId });
         } catch (error) {
           errorLogger.error('Error updating conversation template', error as Error, { context: 'useConversationStore' });
@@ -152,17 +143,8 @@ export const useConversationStore = create<ConversationStore>()(
 
       updateConversationModel: async (conversationId, modelId, accessToken) => {
         try {
-          const response = await fetch(`${API_BASE_URL}/conversations/${conversationId}/model`, {
-            method: 'PATCH',
-            headers: {
-              'x-auth-token': accessToken,
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ modelId })
-          });
-
-          if (!response.ok) throw new Error('Failed to update model');
-
+          // STAGE 1: Use apiClient
+          await apiClient.patch(`/conversations/${conversationId}/model`, { modelId });
           set({ selectedModel: modelId });
         } catch (error) {
           errorLogger.error('Error updating conversation model', error as Error, { context: 'useConversationStore' });
@@ -286,13 +268,9 @@ export const useConversationStore = create<ConversationStore>()(
 
         // Cache miss - fetch from backend
         try {
-          const response = await fetch(`${API_BASE_URL}/conversations/${conversationId}`, {
-            headers: { 'x-auth-token': accessToken }
-          });
-
-          if (!response.ok) throw new Error('Failed to fetch conversation');
-
-          const data = await response.json();
+          // STAGE 1: Use apiClient
+          const response = await apiClient.get(`/conversations/${conversationId}`);
+          const data = response.data;
 
           set({ title: data.title });
 
@@ -308,11 +286,29 @@ export const useConversationStore = create<ConversationStore>()(
             metadata: msg.metadata
           }));
 
+          // STAGE 1: Validate and repair message tree
+          const validation = MessageTreeValidator.validate(mappedMessages);
+          let finalMessages = mappedMessages;
+
+          if (!validation.isValid) {
+            errorLogger.warn('Message tree validation failed', {
+              context: 'useConversationStore',
+              errors: validation.errors,
+              repairs: validation.repairs
+            });
+            finalMessages = MessageTreeValidator.repair(mappedMessages);
+            errorLogger.info('Message tree repaired', {
+              context: 'useConversationStore',
+              originalCount: mappedMessages.length,
+              repairedCount: finalMessages.length
+            });
+          }
+
           let newLeafId = currentLeafId;
           // If currentLeafId is not set, or not in new messages, reset to latest
-          if (!currentLeafId || !mappedMessages.find(m => m.id === currentLeafId)) {
-            if (mappedMessages.length > 0) {
-              const latest = mappedMessages.reduce((prev, current) =>
+          if (!currentLeafId || !finalMessages.find(m => m.id === currentLeafId)) {
+            if (finalMessages.length > 0) {
+              const latest = finalMessages.reduce((prev, current) =>
                 (prev.timestamp > current.timestamp) ? prev : current
               );
               newLeafId = latest.id;
@@ -322,12 +318,12 @@ export const useConversationStore = create<ConversationStore>()(
           }
 
           set({
-            allMessages: mappedMessages,
+            allMessages: finalMessages,
             currentLeafId: newLeafId
           });
 
           // STAGE R1: Update cache
-          messageCache.set(conversationId, mappedMessages);
+          messageCache.set(conversationId, finalMessages);
 
           get()._deriveVisibleMessages();
 
@@ -340,13 +336,9 @@ export const useConversationStore = create<ConversationStore>()(
       fetchConversations: async (accessToken) => {
         set({ isLoadingConversations: true });
         try {
-          const response = await fetch(`${API_BASE_URL}/conversations`, {
-            headers: { 'x-auth-token': accessToken }
-          });
-
-          if (!response.ok) throw new Error('Failed to list conversations');
-
-          const data = await response.json();
+          // STAGE 1: Use apiClient
+          const response = await apiClient.get('/conversations');
+          const data = response.data;
           // Backend returns { conversations: [], total, page, ... }
           const conversationList = data.conversations || [];
 
@@ -367,14 +359,32 @@ export const useConversationStore = create<ConversationStore>()(
         }
       },
 
+      loadConversation: async (conversationId: string, accessToken: string) => {
+        try {
+          // STAGE 1: Use apiClient
+          // Assuming apiClient is configured to include auth token
+          const response = await apiClient.get(`/conversations/${conversationId}`);
+          const data = response.data;
+
+          set({
+            conversationId,
+            allMessages: data.messages || [],
+            currentLeafId: data.currentLeafId || null,
+            selectedModel: data.modelId || null,
+            selectedTemplate: data.templateId || null
+          });
+        } catch (error) {
+          errorLogger.error('Error loading conversation', error as Error, { context: 'useConversationStore' });
+          throw error;
+        }
+      },
+
       fetchModels: async (accessToken) => {
         set({ isLoadingModels: true });
         try {
-          const response = await fetch(`${API_BASE_URL}/llm/models`, {
-            headers: { 'x-auth-token': accessToken }
-          });
-          if (!response.ok) throw new Error('Failed to fetch models');
-          const data = await response.json();
+          // STAGE 1: Use apiClient
+          const response = await apiClient.get('/llm/models');
+          const data = response.data;
           set({ models: data.models || [] });
         } catch (error) {
           errorLogger.error('Error fetching models', error as Error, { context: 'useConversationStore' });
@@ -388,14 +398,11 @@ export const useConversationStore = create<ConversationStore>()(
           const formData = new FormData();
           formData.append('file', file);
 
-          const response = await fetch(`${API_BASE_URL}/files/upload`, {
-            method: 'POST',
-            headers: { 'x-auth-token': accessToken },
-            body: formData
+          // STAGE 1: Use apiClient for file upload
+          const response = await apiClient.post('/files/upload', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
           });
-
-          if (!response.ok) throw new Error('Failed to upload file');
-          return await response.json();
+          return response.data;
         } catch (error) {
           errorLogger.error('Error uploading file', error as Error, { context: 'useConversationStore' });
           throw error;
@@ -404,18 +411,9 @@ export const useConversationStore = create<ConversationStore>()(
 
       createConversation: async (accessToken, systemPrompt) => {
         try {
-          const response = await fetch(`${API_BASE_URL}/conversations`, {
-            method: 'POST',
-            headers: {
-              'x-auth-token': accessToken,
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ systemPrompt })
-          });
-
-          if (!response.ok) throw new Error('Failed to create conversation');
-
-          const data = await response.json();
+          // STAGE 1: Use apiClient
+          const response = await apiClient.post('/conversations', { systemPrompt });
+          const data = response.data;
           const conversationId = data.conversationId; // Backend returns conversationId
 
           set({
@@ -423,11 +421,8 @@ export const useConversationStore = create<ConversationStore>()(
             messages: [],
             allMessages: [],
             currentLeafId: null,
-            title: data.title
+            title: data.title || 'New Conversation'
           });
-
-          // FIX: Refresh conversation list after creation
-          await get().fetchConversations(accessToken);
 
           return conversationId;
         } catch (error) {
@@ -504,45 +499,69 @@ export const useConversationStore = create<ConversationStore>()(
         // controller is already created above
 
         try {
-          const response = await fetch(`${API_BASE_URL}/chat`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'x-auth-token': accessToken
-            },
-            body: JSON.stringify({
-              message: text,
-              conversationId: conversationId,
-              attachments: attachments
-            }),
-            signal: controller.signal
-          });
+          // STAGE 1: Use apiClient for sending message
+          const response = await apiClient.post(
+            `/conversations/${conversationId}/messages`,
+            { text, attachments },
+            {
+              signal: controller.signal,
+              headers: {
+                'x-auth-token': accessToken,
+                'Content-Type': 'application/json'
+              },
+              responseType: 'stream' // Indicate that we expect a stream
+            }
+          );
 
-          if (!response.ok) throw new Error('Failed to send message via REST');
+          // Handle streaming response
+          const reader = response.data.getReader();
+          const decoder = new TextDecoder();
+          let buffer = '';
 
-          const data = await response.json();
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
 
-          // If backend returns a new conversation ID, update it
-          if (data.conversationId && data.conversationId !== conversationId) {
-            set({ conversationId: data.conversationId });
-            // FIX: Refresh conversation list when new conversation is created
-            await get().fetchConversations(accessToken);
-          }
+            buffer += decoder.decode(value, { stream: true });
 
-          // If backend returns the assistant response immediately (REST style), update placeholder
-          if (data.message) {
-            get().updateMessageContent(assistantPlaceholderId, data.message, false);
+            // Process complete JSON objects from the buffer
+            let newlineIndex;
+            while ((newlineIndex = buffer.indexOf('\n')) !== -1) {
+              const line = buffer.substring(0, newlineIndex).trim();
+              buffer = buffer.substring(newlineIndex + 1);
 
-            // Trigger TTS for REST response
-            errorLogger.info('Triggering TTS for REST response', { context: 'useConversationStore', messageLength: data.message.length });
+              if (line) {
+                try {
+                  const event = JSON.parse(line);
+                  if (event.type === 'message_chunk') {
+                    get().updateMessageContent(assistantPlaceholderId, event.content, true);
+                  } else if (event.type === 'complete_response') {
+                    // Final message content is already updated by chunks, but ensure final state
+                    get().updateMessageContent(assistantPlaceholderId, event.content, false);
 
-            // Dispatch custom event to trigger TTS
-            window.dispatchEvent(new CustomEvent('tts:speak', {
-              detail: {
-                text: data.message,
-                type: 'complete_response'
+                    // If backend returns a new conversation ID, update it
+                    if (event.conversationId && event.conversationId !== conversationId) {
+                      set({ conversationId: event.conversationId });
+                      // FIX: Refresh conversation list when new conversation is created
+                      await get().fetchConversations(accessToken);
+                    }
+
+                    // Trigger TTS for complete response
+                    errorLogger.info('Triggering TTS for streaming response', { context: 'useConversationStore', messageLength: event.content.length });
+                    window.dispatchEvent(new CustomEvent('tts:speak', {
+                      detail: {
+                        text: event.content,
+                        type: 'complete_response'
+                      }
+                    }));
+                  } else if (event.type === 'error') {
+                    throw new Error(event.message || 'Streaming error');
+                  }
+                } catch (parseError) {
+                  errorLogger.error('Error parsing stream chunk', parseError as Error, { context: 'useConversationStore', chunk: line });
+                }
               }
-            }));
+            }
           }
         } catch (error: any) {
           if (error.name === 'AbortError') {
@@ -589,14 +608,17 @@ export const useConversationStore = create<ConversationStore>()(
         // Also notify backend to cancel processing
         if (conversationId && accessToken) {
           try {
-            await fetch(`${API_BASE_URL}/conversations/${conversationId}/cancel-stream`, {
-              method: 'POST',
-              headers: {
-                'x-auth-token': accessToken,
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify({ messageId: sessionId }) // sessionId is used as messageId/streamId context often
-            });
+            // STAGE 1: Use apiClient
+            await apiClient.post(
+              `/conversations/${conversationId}/cancel-stream`,
+              { messageId: sessionId },
+              {
+                headers: {
+                  'x-auth-token': accessToken,
+                  'Content-Type': 'application/json'
+                }
+              }
+            );
           } catch (e) {
             errorLogger.warn('Failed to notify backend of cancellation', { error: e });
           }
@@ -635,7 +657,7 @@ export const useConversationStore = create<ConversationStore>()(
         set({ isStreaming: true, abortController: controller });
 
         try {
-          const response = await fetch(`${API_BASE_URL}/conversations/${conversationId}/regenerate`, {
+          const response = await fetch(`${import.meta.env.VITE_API_URL}/conversations/${conversationId}/regenerate`, {
             method: 'POST',
             headers: {
               'x-auth-token': accessToken,
@@ -673,7 +695,7 @@ export const useConversationStore = create<ConversationStore>()(
         set({ isStreaming: true, abortController: controller });
 
         try {
-          const response = await fetch(`${API_BASE_URL}/conversations/${conversationId}/edit`, {
+          const response = await fetch(`${import.meta.env.VITE_API_URL}/conversations/${conversationId}/edit`, {
             method: 'POST',
             headers: {
               'x-auth-token': accessToken,
@@ -716,21 +738,13 @@ export const useConversationStore = create<ConversationStore>()(
         if (!conversationId || !accessToken) return;
 
         try {
-          const response = await fetch(`${API_BASE_URL}/conversations/${conversationId}/messages/${messageId}`, {
-            method: 'DELETE',
-            headers: { 'x-auth-token': accessToken }
-          });
+          // STAGE 1: Use apiClient
+          await apiClient.delete(`/conversations/${conversationId}/messages/${messageId}`);
 
-          if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.error || 'Failed to delete message');
-          }
-
-          const data = await response.json();
-
-          if (data.undoToken) {
-            set({ undoData: { messageId, undoToken: data.undoToken } });
-          }
+          // Remove message from local state
+          set((state) => ({
+            allMessages: state.allMessages.filter(m => m.id !== messageId && m._id !== messageId)
+          }));
 
           // STAGE R1: Invalidate cache before refresh
           messageCache.invalidate(conversationId);
@@ -745,12 +759,8 @@ export const useConversationStore = create<ConversationStore>()(
 
       deleteConversation: async (conversationId, accessToken) => {
         try {
-          const response = await fetch(`${API_BASE_URL}/conversations/${conversationId}`, {
-            method: 'DELETE',
-            headers: { 'x-auth-token': accessToken }
-          });
-
-          if (!response.ok) throw new Error('Failed to delete conversation');
+          // STAGE 1: Use apiClient
+          await apiClient.delete(`/conversations/${conversationId}`);
 
           // STAGE R1: Invalidate cache
           messageCache.invalidate(conversationId);
@@ -770,16 +780,17 @@ export const useConversationStore = create<ConversationStore>()(
 
       updateTitle: async (conversationId, title, accessToken) => {
         try {
-          const response = await fetch(`${API_BASE_URL}/conversations/${conversationId}/title`, {
-            method: 'PATCH',
-            headers: {
-              'x-auth-token': accessToken,
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ title })
-          });
-
-          if (!response.ok) throw new Error('Failed to update title');
+          // STAGE 1: Use apiClient
+          await apiClient.patch(
+            `/conversations/${conversationId}/title`,
+            { title },
+            {
+              headers: {
+                'x-auth-token': accessToken,
+                'Content-Type': 'application/json'
+              }
+            }
+          );
 
           // Update local list
           set((state) => ({
@@ -796,17 +807,8 @@ export const useConversationStore = create<ConversationStore>()(
 
       restoreMessage: async (messageId, undoToken, accessToken) => {
         try {
-          // Assuming endpoint is similar to delete but restore
-          const response = await fetch(`${API_BASE_URL}/conversations/messages/${messageId}/restore`, {
-            method: 'POST',
-            headers: {
-              'x-auth-token': accessToken,
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ undoToken })
-          });
-
-          if (!response.ok) throw new Error('Failed to restore message');
+          // STAGE 1: Use apiClient
+          await apiClient.post(`/conversations/messages/${messageId}/restore`, { undoToken });
 
           set({ undoData: null });
 

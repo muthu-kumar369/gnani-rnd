@@ -1,7 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-
-const API_BASE_URL = 'http://localhost:3000/api/v1';
+import apiClient from '../api/client'; // STAGE 1
 
 interface PreferencesStore {
     lastUsedModel: string | null;
@@ -31,16 +30,9 @@ export const usePreferencesStore = create<PreferencesStore>()(
 
             loadPreferences: async (accessToken) => {
                 try {
-                    const response = await fetch(`${API_BASE_URL}/user/preferences`, {
-                        headers: { 'x-auth-token': accessToken }
-                    });
-
-                    if (!response.ok) {
-                        console.warn('Failed to load preferences from server');
-                        return;
-                    }
-
-                    const data = await response.json();
+                    // STAGE 1: Use apiClient instead of fetch
+                    const response = await apiClient.get('/user/preferences');
+                    const data = response.data; // Axios returns response.data
 
                     if (data.lastUsedModel) {
                         set({ lastUsedModel: data.lastUsedModel });
@@ -57,16 +49,10 @@ export const usePreferencesStore = create<PreferencesStore>()(
                 const { lastUsedModel, lastUsedTemplate } = get();
 
                 try {
-                    await fetch(`${API_BASE_URL}/user/preferences`, {
-                        method: 'PATCH',
-                        headers: {
-                            'x-auth-token': accessToken,
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            lastUsedModel,
-                            lastUsedTemplate
-                        })
+                    // STAGE 1: Use apiClient instead of fetch
+                    await apiClient.patch('/user/preferences', {
+                        lastUsedModel,
+                        lastUsedTemplate
                     });
                 } catch (error) {
                     console.error('Error saving preferences:', error);
