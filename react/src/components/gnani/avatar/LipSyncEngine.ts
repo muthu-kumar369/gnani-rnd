@@ -1,13 +1,15 @@
 // react/src/components/gnani/avatar/LipSyncEngine.ts
+import { eventManager } from '../../../utils/eventManager';
 import { type Viseme } from './AvatarConfig';
 
 export class LipSyncEngine {
     private listeners: ((viseme: Viseme) => void)[] = [];
     private timeoutId: NodeJS.Timeout | null = null;
+    private cleanupFn: (() => void) | null = null;
 
     constructor() {
         // Bind to window event
-        window.addEventListener('tts:word', this.handleWordEvent as EventListener);
+        this.cleanupFn = eventManager.addEventListener('tts:word', this.handleWordEvent as EventListener, undefined, 'LipSyncEngine');
         console.log('[LipSyncEngine] Initialized');
     }
 
@@ -26,7 +28,7 @@ export class LipSyncEngine {
         const customEvent = event as CustomEvent<{ word: string }>;
         const word = customEvent.detail.word;
         // console.log('[LipSyncEngine] Word:', word);
-        
+
         const viseme = this.getVisemeForWord(word);
         this.notify(viseme);
 
@@ -45,12 +47,12 @@ export class LipSyncEngine {
         if (w.includes('oo') || w.includes('u') || w.includes('o')) return 'oo';
         if (w.includes('m') || w.includes('b') || w.includes('p')) return 'm';
         if (w.includes('a')) return 'aa';
-        
+
         return 'aa'; // Default open mouth
     }
 
     public cleanup() {
-        window.removeEventListener('tts:word', this.handleWordEvent as EventListener);
+        if (this.cleanupFn) this.cleanupFn();
         if (this.timeoutId) clearTimeout(this.timeoutId);
     }
 }

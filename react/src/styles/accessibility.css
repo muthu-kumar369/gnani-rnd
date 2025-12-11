@@ -40,8 +40,8 @@
 /* STAGE 25: Skip to main content link */
 .skip-link {
     position: absolute;
-    top: -40px;
-    left: 0;
+    top: -9999px;
+    left: -9999px;
     background: #0f172a;
     color: #22d3ee;
     padding: 8px 16px;

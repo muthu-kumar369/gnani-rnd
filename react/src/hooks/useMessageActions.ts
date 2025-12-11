@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { useConversationStore } from '../store/useConversationStore';
 import { useUserStore } from '../store/useUserStore';
 import apiClient from '../api/client'; // STAGE 1: Use API client with retry logic
+import errorLogger from '../utils/errorLogger';
 
 export const useMessageActions = (conversationId: string | null) => {
     const { accessToken } = useUserStore();
@@ -25,7 +26,7 @@ export const useMessageActions = (conversationId: string | null) => {
         try {
             await regenerateResponse(messageId, accessToken);
         } catch (error) {
-            console.error('Failed to regenerate message:', error);
+            errorLogger.error('Failed to regenerate message', error, { context: 'useMessageActions' });
         } finally {
             setIsLoading(false);
         }
@@ -38,7 +39,7 @@ export const useMessageActions = (conversationId: string | null) => {
             await storeEditMessage(messageId, newContent, accessToken);
             setIsEditing(false);
         } catch (error) {
-            console.error('Failed to edit message:', error);
+            errorLogger.error('Failed to edit message', error, { context: 'useMessageActions' });
             throw error;
         } finally {
             setIsLoading(false);
@@ -52,7 +53,7 @@ export const useMessageActions = (conversationId: string | null) => {
             await storeDeleteMessage(messageId, accessToken);
             setShowDeleteConfirm(false);
         } catch (error) {
-            console.error('Failed to delete message:', error);
+            errorLogger.error('Failed to delete message', error, { context: 'useMessageActions' });
             throw error;
         } finally {
             setIsLoading(false);
@@ -65,7 +66,7 @@ export const useMessageActions = (conversationId: string | null) => {
         try {
             await storeRestoreMessage(undoData.messageId, undoData.undoToken, accessToken);
         } catch (error) {
-            console.error('Failed to restore message:', error);
+            errorLogger.error('Failed to restore message', error, { context: 'useMessageActions' });
         } finally {
             setIsLoading(false);
         }
@@ -88,7 +89,7 @@ export const useMessageActions = (conversationId: string | null) => {
 
             return response.data.generations || [];
         } catch (error) {
-            console.error('Failed to fetch generations:', error);
+            errorLogger.error('Failed to fetch generations', error, { context: 'useMessageActions' });
             return [];
         }
     }, [conversationId, accessToken]);

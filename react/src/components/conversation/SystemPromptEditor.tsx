@@ -31,7 +31,9 @@ const SystemPromptEditor: React.FC<SystemPromptEditorProps> = ({
     useEffect(() => {
         const fetchTemplates = async () => {
             try {
-                const response = await apiClient.get<{ templates: PromptTemplate[] }>('/conversations/prompt-templates');
+                const response = await import('../../utils/circuitBreaker').then(m => m.apiCircuitBreaker.execute(() =>
+                    apiClient.get<{ templates: PromptTemplate[] }>('/conversations/prompt-templates')
+                ));
                 setTemplates(response.templates || []);
             } catch (error) {
                 console.error('Failed to fetch templates:', error);
@@ -52,9 +54,11 @@ const SystemPromptEditor: React.FC<SystemPromptEditorProps> = ({
 
         setSaving(true);
         try {
-            await apiClient.patch(`/conversations/${sessionId}/system-prompt`, {
-                systemPrompt: prompt
-            });
+            await import('../../utils/circuitBreaker').then(m => m.apiCircuitBreaker.execute(() =>
+                apiClient.patch(`/conversations/${sessionId}/system-prompt`, {
+                    systemPrompt: prompt
+                })
+            ));
             onUpdate(prompt);
             addToast('System prompt updated successfully', 'success');
         } catch (error) {

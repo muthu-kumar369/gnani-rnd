@@ -89,6 +89,9 @@ contextBridge.exposeInMainWorld("gnani", {
       logger.warn(`Unknown IPC receive channel: ${channel}`, { context: 'Preload' });
     }
   },
+  getListenerCount: (channel) => {
+     return ipcRenderer.listenerCount(channel);
+  },
 
   // --- Auth IPC ---
   auth: {
@@ -236,6 +239,10 @@ contextBridge.exposeInMainWorld("gnani", {
         "tts:ended",
         "tts:error",
         "stream:tts_stop",
+        "stream:conversation_id",
+        "stream:tool_status",
+        "stream:title_update",
+        "stream:typing_status",
       ];
       if (validStreamEvents.includes(event)) {
         const subscription = (ipcEvent, ...args) => callback(...args);

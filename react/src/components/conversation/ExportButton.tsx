@@ -34,10 +34,13 @@ const ExportButton: React.FC<ExportButtonProps> = ({ conversationId, className =
 
         try {
             // STAGE 1: Use API client instead of hardcoded URL
-            const response = await apiClient.get(
-                `/conversations/${conversationId}/export/${format}`,
-                { responseType: 'blob' }
-            );
+            // STAGE 2: Circuit Breaker
+            const response = await import('../../utils/circuitBreaker').then(m => m.apiCircuitBreaker.execute(() =>
+                apiClient.get(
+                    `/conversations/${conversationId}/export/${format}`,
+                    { responseType: 'blob' }
+                )
+            ));
 
             const blob = response.data;
             const filename = `conversation-${conversationId}.${format === 'markdown' ? 'md' : 'json'}`;

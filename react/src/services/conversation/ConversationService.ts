@@ -1,4 +1,5 @@
 import apiClient from '../../api/client';
+import errorLogger from '../../utils/errorLogger';
 import type { ConversationMessage, ConversationSummary } from '../../store/useConversationStore';
 
 /**

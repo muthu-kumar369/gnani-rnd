@@ -40,7 +40,9 @@ const SessionReplayViewer: React.FC<SessionReplayViewerProps> = ({ sessionId, on
     const fetchSessionData = async () => {
         try {
             setLoading(true);
-            const response = await api.get(`/session-replay/${sessionId}`);
+            const response = await import('../../utils/circuitBreaker').then(m => m.apiCircuitBreaker.execute(() =>
+                api.get(`/session-replay/${sessionId}`)
+            ));
             setEvents(response.data.events || []);
         } catch (error) {
             console.error('Failed to fetch session data:', error);
@@ -118,8 +120,8 @@ const SessionReplayViewer: React.FC<SessionReplayViewerProps> = ({ sessionId, on
                             key={event.id}
                             onClick={() => handleSeek(index)}
                             className={`absolute w-2 h-2 rounded-full transition-all ${index === currentIndex
-                                    ? 'bg-cyan-400 scale-150'
-                                    : 'bg-gray-600 hover:bg-cyan-500'
+                                ? 'bg-cyan-400 scale-150'
+                                : 'bg-gray-600 hover:bg-cyan-500'
                                 }`}
                             style={{ left: `${(index / (events.length - 1)) * 100}%` }}
                             title={formatTimestamp(event.timestamp)}
@@ -195,8 +197,8 @@ const SessionReplayViewer: React.FC<SessionReplayViewerProps> = ({ sessionId, on
                             key={speed}
                             onClick={() => setPlaybackSpeed(speed)}
                             className={`px-3 py-1 rounded text-sm transition-colors ${playbackSpeed === speed
-                                    ? 'bg-cyan-600 text-white'
-                                    : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+                                ? 'bg-cyan-600 text-white'
+                                : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
                                 }`}
                         >
                             {speed}x

@@ -23,10 +23,12 @@ export const login = async (
 ): Promise<LoginResponse> => {
   try {
     // STAGE 1: Use API client with retry logic
-    const response = await apiClient.post('/auth/login', {
-      loginIdentifier,
-      password
-    });
+    const response = await import('../utils/circuitBreaker').then(m => m.apiCircuitBreaker.execute(() =>
+      apiClient.post('/auth/login', {
+        loginIdentifier,
+        password
+      })
+    ));
 
     return response.data;
   } catch (error) {
@@ -42,11 +44,13 @@ export const register = async (
 ): Promise<RegisterResponse> => {
   try {
     // STAGE 1: Use API client with retry logic
-    const response = await apiClient.post('/auth/register', {
-      username,
-      email,
-      password
-    });
+    const response = await import('../utils/circuitBreaker').then(m => m.apiCircuitBreaker.execute(() =>
+      apiClient.post('/auth/register', {
+        username,
+        email,
+        password
+      })
+    ));
 
     return response.data;
   } catch (error) {
@@ -60,9 +64,11 @@ export const refreshToken = async (
 ): Promise<LoginResponse> => {
   try {
     // STAGE 1: Use API client with retry logic
-    const response = await apiClient.post('/auth/refresh', {
-      refreshToken: currentRefreshToken
-    });
+    const response = await import('../utils/circuitBreaker').then(m => m.apiCircuitBreaker.execute(() =>
+      apiClient.post('/auth/refresh', {
+        refreshToken: currentRefreshToken
+      })
+    ));
 
     return response.data;
   } catch (error) {
@@ -76,7 +82,9 @@ export const refreshToken = async (
 export const logout = async (refreshToken?: string): Promise<void> => {
   try {
     // STAGE 1: Use API client with retry logic
-    await apiClient.post('/auth/logout', { refreshToken });
+    await import('../utils/circuitBreaker').then(m => m.apiCircuitBreaker.execute(() =>
+      apiClient.post('/auth/logout', { refreshToken })
+    ));
   } catch (error) {
     // Log but don't block client-side logout
     errorLogger.error("Logout API error:", error, { context: "AuthService" });

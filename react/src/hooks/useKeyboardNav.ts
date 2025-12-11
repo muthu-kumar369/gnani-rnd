@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { eventManager } from '../utils/eventManager';
 
 export const useKeyboardNav = () => {
     useEffect(() => {
@@ -35,7 +36,7 @@ export const useKeyboardNav = () => {
             }
         };
 
-        window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
+        const cleanup = eventManager.addEventListener('keydown', handleKeyDown as EventListener, undefined, 'useKeyboardNav');
+        return cleanup;
     }, []);
 };

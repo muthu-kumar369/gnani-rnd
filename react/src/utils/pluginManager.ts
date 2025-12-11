@@ -4,6 +4,7 @@ import { persist } from 'zustand/middleware';
 
 import { pluginWorkerManager } from './pluginWorker';
 import { pluginPermissionManager, type PluginPermissionRequest } from './pluginPermissions';
+import errorLogger from './errorLogger';
 
 class PluginManager {
     private plugins: Map<string, GnaniPlugin> = new Map();
@@ -21,7 +22,7 @@ class PluginManager {
 
                 // This awaits user approval via dialog
                 const granted = await pluginPermissionManager.requestPermissions(request);
-                console.log(`Permissions granted for ${plugin.name}:`, granted);
+                errorLogger.info(`Permissions granted for ${plugin.name}`, { context: 'PluginManager', extra: { granted } });
 
                 // STAGE R3: Load into Web Worker if code provided
                 if (plugin.code) {
@@ -31,9 +32,9 @@ class PluginManager {
 
             await plugin.onInstall?.();
             this.plugins.set(plugin.id, plugin);
-            console.log(`Plugin ${plugin.name} installed successfully`);
+            errorLogger.info(`Plugin ${plugin.name} installed successfully`, { context: 'PluginManager' });
         } catch (error) {
-            console.error(`Failed to install plugin ${plugin.name}:`, error);
+            errorLogger.error(`Failed to install plugin ${plugin.name}`, error, { context: 'PluginManager' });
             throw error;
         }
     }
@@ -57,9 +58,9 @@ class PluginManager {
 
             await plugin.onUninstall?.();
             this.plugins.delete(pluginId);
-            console.log(`Plugin ${plugin.name} uninstalled successfully`);
+            errorLogger.info(`Plugin ${plugin.name} uninstalled successfully`, { context: 'PluginManager' });
         } catch (error) {
-            console.error(`Failed to uninstall plugin ${plugin.name}:`, error);
+            errorLogger.error(`Failed to uninstall plugin ${plugin.name}`, error, { context: 'PluginManager' });
             throw error;
         }
     }
@@ -74,9 +75,9 @@ class PluginManager {
             await plugin.onEnable?.();
             this.enabledPlugins.add(pluginId);
             plugin.enabled = true;
-            console.log(`Plugin ${plugin.name} enabled`);
+            errorLogger.info(`Plugin ${plugin.name} enabled`, { context: 'PluginManager' });
         } catch (error) {
-            console.error(`Failed to enable plugin ${plugin.name}:`, error);
+            errorLogger.error(`Failed to enable plugin ${plugin.name}`, error, { context: 'PluginManager' });
             throw error;
         }
     }
@@ -91,9 +92,9 @@ class PluginManager {
             await plugin.onDisable?.();
             this.enabledPlugins.delete(pluginId);
             plugin.enabled = false;
-            console.log(`Plugin ${plugin.name} disabled`);
+            errorLogger.info(`Plugin ${plugin.name} disabled`, { context: 'PluginManager' });
         } catch (error) {
-            console.error(`Failed to disable plugin ${plugin.name}:`, error);
+            errorLogger.error(`Failed to disable plugin ${plugin.name}`, error, { context: 'PluginManager' });
             throw error;
         }
     }
@@ -111,7 +112,7 @@ class PluginManager {
                     const result = await pluginWorkerManager.executePlugin(pluginId, hookName as string, args);
                     results.push(result);
                 } catch (error) {
-                    console.error(`Plugin ${plugin.name} (worker) hook ${hookName} failed:`, error);
+                    errorLogger.error(`Plugin ${plugin.name} (worker) hook ${hookName} failed`, error, { context: 'PluginManager' });
                 }
                 continue;
             }
@@ -123,7 +124,7 @@ class PluginManager {
                     const result = await (hook as Function).apply(plugin, args);
                     results.push(result);
                 } catch (error) {
-                    console.error(`Plugin ${plugin.name} hook ${hookName} failed:`, error);
+                    errorLogger.error(`Plugin ${plugin.name} hook ${hookName} failed`, error, { context: 'PluginManager' });
                 }
             }
         }

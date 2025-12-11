@@ -27,13 +27,15 @@ const FeedbackButtons: React.FC<FeedbackButtonsProps> = ({ messageId, conversati
     const submitFeedback = async (feedbackRating: 'positive' | 'negative', feedbackComment?: string, feedbackCategory?: string) => {
         setSubmitting(true);
         try {
-            await api.post('/feedback', {
-                conversationId,
-                messageId,
-                rating: feedbackRating,
-                comment: feedbackComment || comment,
-                category: feedbackCategory || category,
-            });
+            await import('../../utils/circuitBreaker').then(m => m.apiCircuitBreaker.execute(() =>
+                api.post('/feedback', {
+                    conversationId,
+                    messageId,
+                    rating: feedbackRating,
+                    comment: feedbackComment || comment,
+                    category: feedbackCategory || category,
+                })
+            ));
             setShowModal(false);
         } catch (error) {
             console.error('Failed to submit feedback:', error);
@@ -54,8 +56,8 @@ const FeedbackButtons: React.FC<FeedbackButtonsProps> = ({ messageId, conversati
                 <button
                     onClick={() => handleRating('positive')}
                     className={`p-1.5 rounded transition-colors ${rating === 'positive'
-                            ? 'bg-green-500/20 text-green-400'
-                            : 'text-cyan-500/60 hover:text-green-400 hover:bg-green-500/10'
+                        ? 'bg-green-500/20 text-green-400'
+                        : 'text-cyan-500/60 hover:text-green-400 hover:bg-green-500/10'
                         }`}
                     title="Good response"
                 >
@@ -64,8 +66,8 @@ const FeedbackButtons: React.FC<FeedbackButtonsProps> = ({ messageId, conversati
                 <button
                     onClick={() => handleRating('negative')}
                     className={`p-1.5 rounded transition-colors ${rating === 'negative'
-                            ? 'bg-red-500/20 text-red-400'
-                            : 'text-cyan-500/60 hover:text-red-400 hover:bg-red-500/10'
+                        ? 'bg-red-500/20 text-red-400'
+                        : 'text-cyan-500/60 hover:text-red-400 hover:bg-red-500/10'
                         }`}
                     title="Bad response"
                 >

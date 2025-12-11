@@ -24,7 +24,12 @@ export const useConversationHistory = () => {
     const { accessToken } = useUserStore();
 
     const fetchConversations = useCallback(async (pageNum = 1, query = '') => {
-        if (!accessToken) return;
+        if (!accessToken) {
+            console.warn('[useConversationHistory] fetchConversations skipped: No access token');
+            return;
+        }
+
+        console.log('[useConversationHistory] Fetching conversations...', { pageNum, query });
 
         setIsLoading(true);
         try {
@@ -35,6 +40,13 @@ export const useConversationHistory = () => {
             } else {
                 response = await apiClient.get(`/conversations?page=${pageNum}&limit=20&sortBy=${sortBy}&sortOrder=${sortOrder}`);
             }
+
+
+            console.log('[useConversationHistory] API Response received:', {
+                status: response.status,
+                itemCount: response.data?.conversations?.length,
+                hasMore: response.data?.hasMore
+            });
 
             const data = response.data;
 

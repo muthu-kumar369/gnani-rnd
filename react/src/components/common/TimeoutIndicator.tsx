@@ -1,55 +1,60 @@
 import React from 'react';
-import { Clock } from 'lucide-react';
+import { AlertTriangle, RefreshCw, X, Clock, Plus } from 'lucide-react';
 
 interface TimeoutIndicatorProps {
-    timeLeft: number;
-    onExtend: (seconds: number) => void;
+    onRetry?: () => void;
+    onCancel?: () => void;
+    timeLeft?: number;
+    onExtend?: (seconds: number) => void;
 }
 
-const TimeoutIndicator: React.FC<TimeoutIndicatorProps> = ({ timeLeft, onExtend }) => {
-    // Calculate progress percentage
-    const maxTime = 30; // Assuming 30 seconds default
-    const progress = (timeLeft / maxTime) * 100;
-
-    // Determine color based on time left
-    const getColor = () => {
-        if (timeLeft > 20) return 'text-cyan-500 border-cyan-500/50';
-        if (timeLeft > 10) return 'text-yellow-500 border-yellow-500/50';
-        return 'text-red-500 border-red-500/50';
-    };
-
-    return (
-        <div className={`flex items-center gap-3 px-3 py-2 rounded-lg border ${getColor()} bg-black/40 backdrop-blur-sm`}>
-            <Clock size={16} />
-            <div className="flex items-center gap-2">
-                <span className="text-sm font-mono">{timeLeft}s</span>
-                <span className="text-xs opacity-60">remaining</span>
-            </div>
-
-            {/* Progress bar */}
-            <div className="w-24 h-1 bg-gray-700 rounded-full overflow-hidden">
-                <div
-                    className="h-full bg-current transition-all duration-1000"
-                    style={{ width: `${progress}%` }}
-                />
-            </div>
-
-            {/* Extend buttons */}
-            <div className="flex gap-1">
+const TimeoutIndicator: React.FC<TimeoutIndicatorProps> = ({ onRetry, onCancel, timeLeft, onExtend }) => {
+    // If timeLeft is provided, show countdown mode
+    if (timeLeft !== undefined && onExtend) {
+        return (
+            <div className="flex items-center gap-4 px-4 py-3 rounded-lg border border-yellow-500/30 bg-yellow-500/10 backdrop-blur-sm animate-in fade-in slide-in-from-bottom-2">
+                <div className="flex items-center gap-2 text-yellow-500">
+                    <Clock size={16} />
+                    <span className="text-sm font-medium">Timeout in {timeLeft}s</span>
+                </div>
                 <button
                     onClick={() => onExtend(30)}
-                    className="px-2 py-1 text-xs bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/30 rounded transition-colors"
-                    title="Add 30 seconds"
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-white/10 hover:bg-white/20 rounded-md transition-colors"
                 >
-                    +30s
+                    <Plus size={12} />
+                    Extend
                 </button>
-                <button
-                    onClick={() => onExtend(60)}
-                    className="px-2 py-1 text-xs bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/30 rounded transition-colors"
-                    title="Add 1 minute"
-                >
-                    +1m
-                </button>
+            </div>
+        );
+    }
+
+    // Default mode (Retry/Cancel)
+    return (
+        <div className="flex items-center gap-4 px-4 py-3 rounded-lg border border-yellow-500/30 bg-yellow-500/10 backdrop-blur-sm animate-in fade-in slide-in-from-bottom-2">
+            <div className="flex items-center gap-2 text-yellow-500">
+                <AlertTriangle size={18} />
+                <span className="text-sm font-medium">taking longer than usual...</span>
+            </div>
+
+            <div className="flex items-center gap-2">
+                {onRetry && (
+                    <button
+                        onClick={onRetry}
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-white/10 hover:bg-white/20 rounded-md transition-colors"
+                    >
+                        <RefreshCw size={12} />
+                        Retry
+                    </button>
+                )}
+                {onCancel && (
+                    <button
+                        onClick={onCancel}
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-md transition-colors"
+                    >
+                        <X size={12} />
+                        Cancel
+                    </button>
+                )}
             </div>
         </div>
     );

@@ -8,9 +8,11 @@ export const ExportButton: React.FC = () => {
     const handleExport = async (format: 'csv' | 'json') => {
         setExporting(true);
         try {
-            const response = await api.get(`/analytics/export?format=${format}`, {
-                responseType: 'blob' // Important for file download
-            });
+            const response = await import('../../utils/circuitBreaker').then(m => m.apiCircuitBreaker.execute(() =>
+                api.get(`/analytics/export?format=${format}`, {
+                    responseType: 'blob' // Important for file download
+                })
+            ));
 
             const url = window.URL.createObjectURL(new Blob([response.data]));
             const link = document.createElement('a');

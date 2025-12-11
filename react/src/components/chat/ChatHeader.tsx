@@ -1,22 +1,25 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Wifi, WifiOff, Battery, BatteryCharging, ChevronDown, Cpu, Activity, Check, Search } from 'lucide-react';
+import { Wifi, WifiOff, Battery, BatteryCharging, ChevronDown, Cpu, Activity, Check, Search, Share } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useDeviceAwareness } from '../../hooks/useDeviceAwareness';
 import { useConversationStore } from '../../store/useConversationStore';
 import { useUserStore } from '../../store/useUserStore';
+import ShareModal from '../common/ShareModal';
 
 interface ChatHeaderProps {
     modelName?: string; // Fallback if not in store
     className?: string;
+    onOpenSearch?: () => void;
 }
 
-const ChatHeader: React.FC<ChatHeaderProps> = ({ modelName = 'Gnani v2.0 (GPT-4o)', className = '' }) => {
+const ChatHeader: React.FC<ChatHeaderProps> = ({ modelName = 'Gnani v2.0 (GPT-4o)', className = '', onOpenSearch }) => {
     const { batteryStatus, connectivityStatus, systemStatus } = useDeviceAwareness();
     const { models, fetchModels, selectedModel, setSelectedModel, conversationId, updateConversationModel } = useConversationStore();
     const { accessToken } = useUserStore();
     const navigate = useNavigate();
 
     const [isOpen, setIsOpen] = useState(false);
+    const [isShareModalOpen, setIsShareModalOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -84,51 +87,65 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ modelName = 'Gnani v2.0 (GPT-4o
                 )}
             </div>
 
-            {/* Right: Device Indicators */}
-            <div className="flex items-center gap-4 text-gray-400">
-                {/* STAGE 2: Advanced Search Button */}
-                <button
-                    onClick={() => navigate('/search')}
-                    className="flex items-center gap-2 px-3 py-1.5 text-gray-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
-                    title="Advanced Search"
-                >
-                    <Search size={18} />
-                    <span className="text-sm hidden md:inline">Search</span>
-                </button>
+            {/* Share Button (Task 2.7) */}
+            <button
+                onClick={() => setIsShareModalOpen(true)}
+                className="flex items-center gap-2 px-3 py-1.5 text-gray-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
+                title="Share Conversation"
+            >
+                <Share size={18} />
+                <span className="text-sm hidden md:inline">Share</span>
+            </button>
 
-                {/* System Stats (CPU/RAM) if available */}
-                {systemStatus && (
-                    <div className="hidden md:flex items-center gap-3 mr-2">
-                        <div className="flex items-center gap-1.5 text-xs font-mono bg-white/5 px-2 py-1 rounded border border-white/5">
-                            <Cpu className="w-3 h-3 text-cyan-400" />
-                            <span>{Math.round(systemStatus.cpu.usage)}%</span>
-                        </div>
-                        <div className="flex items-center gap-1.5 text-xs font-mono bg-white/5 px-2 py-1 rounded border border-white/5">
-                            <Activity className="w-3 h-3 text-purple-400" />
-                            <span>{Math.round(systemStatus.memory.usagePercent)}%</span>
-                        </div>
-                    </div>
-                )}
+            {/* STAGE 2: Advanced Search Button */}
+            <button
+                onClick={() => onOpenSearch ? onOpenSearch() : navigate('/search')}
+                className="flex items-center gap-2 px-3 py-1.5 text-gray-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
+                title="Advanced Search"
+            >
+                <Search size={18} />
+                <span className="text-sm hidden md:inline">Search</span>
+            </button>
 
-                {/* Network */}
-                {connectivityStatus && (
-                    <div className={`flex items-center gap-1.5 text-xs font-mono bg-black/20 px-2 py-1 rounded border ${connectivityStatus.online ? 'border-green-500/20 text-green-400' : 'border-red-500/20 text-red-400'}`}>
-                        {connectivityStatus.online ? <Wifi className="w-3.5 h-3.5" /> : <WifiOff className="w-3.5 h-3.5" />}
-                        <span>{connectivityStatus.online ? 'ONLINE' : 'OFFLINE'}</span>
+            {/* System Stats (CPU/RAM) if available */}
+            {systemStatus && (
+                <div className="hidden md:flex items-center gap-3 mr-2">
+                    <div className="flex items-center gap-1.5 text-xs font-mono bg-white/5 px-2 py-1 rounded border border-white/5">
+                        <Cpu className="w-3 h-3 text-cyan-400" />
+                        <span>{Math.round(systemStatus.cpu.usage)}%</span>
                     </div>
-                )}
+                    <div className="flex items-center gap-1.5 text-xs font-mono bg-white/5 px-2 py-1 rounded border border-white/5">
+                        <Activity className="w-3 h-3 text-purple-400" />
+                        <span>{Math.round(systemStatus.memory.usagePercent)}%</span>
+                    </div>
+                </div>
+            )}
 
-                {/* Battery */}
-                {batteryStatus && batteryStatus.hasBattery && (
-                    <div className={`flex items-center gap-1.5 text-xs font-mono bg-black/20 px-2 py-1 rounded border ${batteryStatus.isCharging ? 'border-jarvis-blue/30 text-jarvis-blue' : 'border-white/10'}`}>
-                        {batteryStatus.isCharging ?
-                            <BatteryCharging className="w-3.5 h-3.5" /> :
-                            <Battery className="w-3.5 h-3.5" />
-                        }
-                        <span>{Math.round(batteryStatus.level)}%</span>
-                    </div>
-                )}
-            </div>
+            {/* Network */}
+            {connectivityStatus && (
+                <div className={`flex items-center gap-1.5 text-xs font-mono bg-black/20 px-2 py-1 rounded border ${connectivityStatus.online ? 'border-green-500/20 text-green-400' : 'border-red-500/20 text-red-400'}`}>
+                    {connectivityStatus.online ? <Wifi className="w-3.5 h-3.5" /> : <WifiOff className="w-3.5 h-3.5" />}
+                    <span>{connectivityStatus.online ? 'ONLINE' : 'OFFLINE'}</span>
+                </div>
+            )}
+
+            {/* Battery */}
+            {batteryStatus && batteryStatus.hasBattery && (
+                <div className={`flex items-center gap-1.5 text-xs font-mono bg-black/20 px-2 py-1 rounded border ${batteryStatus.isCharging ? 'border-jarvis-blue/30 text-jarvis-blue' : 'border-white/10'}`}>
+                    {batteryStatus.isCharging ?
+                        <BatteryCharging className="w-3.5 h-3.5" /> :
+                        <Battery className="w-3.5 h-3.5" />
+                    }
+                    <span>{Math.round(batteryStatus.level)}%</span>
+                </div>
+            )}
+            {/* Share Modal */}
+            {isShareModalOpen && conversationId && (
+                <ShareModal
+                    conversationId={conversationId}
+                    onClose={() => setIsShareModalOpen(false)}
+                />
+            )}
         </div>
     );
 };

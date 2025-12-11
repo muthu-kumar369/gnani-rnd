@@ -5,6 +5,7 @@ export interface Conversation {
     title: string;
     timestamp: Date;
     updatedAt: Date;
+    messageCount: number;
     preview: string;
 }
 

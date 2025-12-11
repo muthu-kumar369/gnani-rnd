@@ -27,34 +27,58 @@ function formatMessage(level: LogLevel, message: string, options: LogOptions): s
   return `${timestamp} ${level.toUpperCase()} ${context} ${message} ${tags}`;
 }
 
+// History buffer for Monitoring Dashboard
+const history: { timestamp: number; level: string; message: string; context?: string; error?: any }[] = [];
+const MAX_HISTORY = 100;
+
+const logToHistory = (level: string, message: string, options: LogOptions, error?: any) => {
+  history.unshift({
+    timestamp: Date.now(),
+    level,
+    message,
+    context: options.context,
+    error
+  });
+  if (history.length > MAX_HISTORY) {
+    history.pop();
+  }
+};
+
 const errorLogger = {
   log: (message: string, options?: LogOptions) => {
     const opts = { ...defaultOptions, ...options };
     console.log(formatMessage('info', message, opts), opts.extra || '');
     if (window.gnani) window.gnani.send('log', { level: 'info', message, context: opts.context, extra: opts.extra });
+    logToHistory('info', message, opts);
   },
   info: (message: string, options?: LogOptions) => {
     const opts = { ...defaultOptions, ...options };
     console.info(formatMessage('info', message, opts), opts.extra || '');
     if (window.gnani) window.gnani.send('log', { level: 'info', message, context: opts.context, extra: opts.extra });
+    logToHistory('info', message, opts);
   },
   warn: (message: string, options?: LogOptions) => {
     const opts = { ...defaultOptions, ...options };
     console.warn(formatMessage('warn', message, opts), opts.extra || '');
     if (window.gnani) window.gnani.send('log', { level: 'warn', message, context: opts.context, extra: opts.extra });
+    logToHistory('warn', message, opts);
   },
   error: (message: string, error?: Error | any, options?: LogOptions) => {
     const opts = { ...defaultOptions, ...options };
     console.error(formatMessage('error', message, opts), error, opts.extra || '');
     if (window.gnani) window.gnani.send('log', { level: 'error', message, context: opts.context, extra: { ...opts.extra, error: error?.message || error } });
+    logToHistory('error', message, opts, error);
   },
   debug: (message: string, options?: LogOptions) => {
-    if (process.env.NODE_ENV === 'development') {
+    if (import.meta.env.MODE === 'development') {
       const opts = { ...defaultOptions, ...options };
       console.debug(formatMessage('debug', message, opts), opts.extra || '');
       if (window.gnani) window.gnani.send('log', { level: 'debug', message, context: opts.context, extra: opts.extra });
     }
+    // Note: Debug logs are NOT stored in history to avoid noise
   },
+  getHistory: () => [...history],
+  clearHistory: () => { history.length = 0; }
 };
 
 export default errorLogger;

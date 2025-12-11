@@ -92,80 +92,150 @@ interface NotesMessageResponse extends MessageResponse {
 export const userService = {
     // Profile Management
     async getProfile(): Promise<ProfileResponse> {
-        return apiClient.get<ProfileResponse>('/user/profile');
+        try {
+            return await import('../utils/circuitBreaker').then(m => m.apiCircuitBreaker.execute(() =>
+                apiClient.get<ProfileResponse>('/user/profile')
+            ));
+        } catch (error) {
+            const { DEFAULT_PROFILE, isCircuitOpenError } = await import('../utils/fallbacks');
+            if (isCircuitOpenError(error)) {
+                return DEFAULT_PROFILE;
+            }
+            throw error;
+        }
     },
 
     async updateProfile(profileData: Partial<IProfile>): Promise<UpdateProfileResponse> {
-        return apiClient.put<UpdateProfileResponse>('/user/profile', profileData);
+        return import('../utils/circuitBreaker').then(m => m.apiCircuitBreaker.execute(() =>
+            apiClient.put<UpdateProfileResponse>('/user/profile', profileData)
+        ));
     },
 
     // Settings Management
     async getSettings(): Promise<SettingsResponse> {
-        return apiClient.get<SettingsResponse>('/user/settings');
+        try {
+            return await import('../utils/circuitBreaker').then(m => m.apiCircuitBreaker.execute(() =>
+                apiClient.get<SettingsResponse>('/user/settings')
+            ));
+        } catch (error) {
+            const { DEFAULT_SETTINGS, isCircuitOpenError } = await import('../utils/fallbacks');
+            if (isCircuitOpenError(error)) {
+                return DEFAULT_SETTINGS;
+            }
+            throw error;
+        }
     },
 
     async updateSettings(settingsData: { settings?: Partial<ISettings>; preferences?: Record<string, any> }): Promise<UpdateSettingsResponse> {
-        return apiClient.put<UpdateSettingsResponse>('/user/settings', settingsData);
+        return import('../utils/circuitBreaker').then(m => m.apiCircuitBreaker.execute(() =>
+            apiClient.put<UpdateSettingsResponse>('/user/settings', settingsData)
+        ));
     },
 
     // Device Management
     async getDevices(): Promise<DeviceResponse[]> {
-        return apiClient.get<DeviceResponse[]>('/user/devices');
+        try {
+            return await import('../utils/circuitBreaker').then(m => m.apiCircuitBreaker.execute(() =>
+                apiClient.get<DeviceResponse[]>('/user/devices')
+            ));
+        } catch (error) {
+            const { isCircuitOpenError } = await import('../utils/fallbacks');
+            if (isCircuitOpenError(error)) return [];
+            throw error;
+        }
     },
 
     async addDevice(deviceData: { deviceId: string; deviceName: string; deviceType: string }): Promise<DevicesMessageResponse> {
-        return apiClient.post<DevicesMessageResponse>('/user/devices', deviceData);
+        return import('../utils/circuitBreaker').then(m => m.apiCircuitBreaker.execute(() =>
+            apiClient.post<DevicesMessageResponse>('/user/devices', deviceData)
+        ));
     },
 
     async updateDevice(deviceId: string, deviceData: { deviceName?: string; deviceType?: string; isActive?: boolean }): Promise<DevicesMessageResponse> {
-        return apiClient.put<DevicesMessageResponse>(`/user/devices/${deviceId}`, deviceData);
+        return import('../utils/circuitBreaker').then(m => m.apiCircuitBreaker.execute(() =>
+            apiClient.put<DevicesMessageResponse>(`/user/devices/${deviceId}`, deviceData)
+        ));
     },
 
     async removeDevice(deviceId: string): Promise<DevicesMessageResponse> {
-        return apiClient.delete<DevicesMessageResponse>(`/user/devices/${deviceId}`);
+        return import('../utils/circuitBreaker').then(m => m.apiCircuitBreaker.execute(() =>
+            apiClient.delete<DevicesMessageResponse>(`/user/devices/${deviceId}`)
+        ));
     },
 
     // Security Management
     async getSecurity(): Promise<SecurityResponse> {
-        return apiClient.get<SecurityResponse>('/user/security');
+        return import('../utils/circuitBreaker').then(m => m.apiCircuitBreaker.execute(() =>
+            apiClient.get<SecurityResponse>('/user/security')
+        ));
     },
 
     async updateSecurity(securityData: { mfaEnabled?: boolean; recoveryEmail?: string }): Promise<UpdateSecurityResponse> {
-        return apiClient.put<UpdateSecurityResponse>('/user/security', securityData);
+        return import('../utils/circuitBreaker').then(m => m.apiCircuitBreaker.execute(() =>
+            apiClient.put<UpdateSecurityResponse>('/user/security', securityData)
+        ));
     },
 
     // OAuth Provider Management
     async getOAuthProviders(): Promise<OAuthProviderResponse[]> {
-        return apiClient.get<OAuthProviderResponse[]>('/user/oauth');
+        return import('../utils/circuitBreaker').then(m => m.apiCircuitBreaker.execute(() =>
+            apiClient.get<OAuthProviderResponse[]>('/user/oauth')
+        ));
     },
 
     async unlinkOAuthProvider(provider: string): Promise<OAuthMessageResponse> {
-        return apiClient.delete<OAuthMessageResponse>(`/user/oauth/${provider}`);
+        return import('../utils/circuitBreaker').then(m => m.apiCircuitBreaker.execute(() =>
+            apiClient.delete<OAuthMessageResponse>(`/user/oauth/${provider}`)
+        ));
     },
 
     // History Management
     async getHistory(): Promise<HistoryResponse[]> {
-        return apiClient.get<HistoryResponse[]>('/user/history');
+        try {
+            return await import('../utils/circuitBreaker').then(m => m.apiCircuitBreaker.execute(() =>
+                apiClient.get<HistoryResponse[]>('/user/history')
+            ));
+        } catch (error) {
+            const { isCircuitOpenError } = await import('../utils/fallbacks');
+            if (isCircuitOpenError(error)) return [];
+            throw error;
+        }
     },
 
     async deleteHistoryItem(id: string): Promise<HistoryMessageResponse> {
-        return apiClient.delete<HistoryMessageResponse>(`/user/history/${id}`);
+        return import('../utils/circuitBreaker').then(m => m.apiCircuitBreaker.execute(() =>
+            apiClient.delete<HistoryMessageResponse>(`/user/history/${id}`)
+        ));
     },
 
     async clearHistory(): Promise<MessageResponse> {
-        return apiClient.delete<MessageResponse>('/user/history');
+        return import('../utils/circuitBreaker').then(m => m.apiCircuitBreaker.execute(() =>
+            apiClient.delete<MessageResponse>('/user/history')
+        ));
     },
 
     // Notes Management
     async getNotes(): Promise<string[]> {
-        return apiClient.get<string[]>('/user/notes');
+        try {
+            return await import('../utils/circuitBreaker').then(m => m.apiCircuitBreaker.execute(() =>
+                apiClient.get<string[]>('/user/notes')
+            ));
+        } catch (error) {
+            const { isCircuitOpenError } = await import('../utils/fallbacks');
+            if (isCircuitOpenError(error)) return [];
+            throw error;
+        }
     },
 
     async addNote(note: string): Promise<NotesMessageResponse> {
-        return apiClient.post<NotesMessageResponse>('/user/notes', { note });
+        return import('../utils/circuitBreaker').then(m => m.apiCircuitBreaker.execute(() =>
+            apiClient.post<NotesMessageResponse>('/user/notes', { note })
+        ));
     },
 
     async deleteNote(index: number): Promise<NotesMessageResponse> {
-        return apiClient.delete<NotesMessageResponse>(`/user/notes/${index}`);
+        return import('../utils/circuitBreaker').then(m => m.apiCircuitBreaker.execute(() =>
+            apiClient.delete<NotesMessageResponse>(`/user/notes/${index}`)
+        ));
     }
 };

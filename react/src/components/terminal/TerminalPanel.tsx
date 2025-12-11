@@ -233,7 +233,9 @@ const TerminalPanel: React.FC<TerminalPanelProps> = ({ isVisible, onToggle }) =>
                                     // Delete conversation from backend
                                     try {
                                         // STAGE 1: Use API client instead of hardcoded URL
-                                        await apiClient.delete(`/conversations/${sessionId}`);
+                                        await import('../../utils/circuitBreaker').then(m => m.apiCircuitBreaker.execute(() =>
+                                            apiClient.delete(`/conversations/${sessionId}`)
+                                        ));
                                         clearMessages(); // Clear frontend state
                                     } catch (error) {
                                         console.error('Failed to delete conversation:', error);

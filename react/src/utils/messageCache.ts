@@ -1,5 +1,6 @@
 // react/src/utils/messageCache.ts
 import type { ConversationMessage } from '../types/conversation';
+import errorLogger from './errorLogger';
 
 interface CacheEntry {
     conversationId: string;
@@ -29,7 +30,7 @@ class MessageCache {
 
         if (!entry) {
             this.misses++;
-            console.log(`[MessageCache] MISS for ${conversationId} (hit rate: ${this.getHitRate()}%)`);
+            errorLogger.debug(`[MessageCache] MISS for ${conversationId} (hit rate: ${this.getHitRate()}%)`, { context: 'MessageCache' });
             return null;
         }
 
@@ -38,7 +39,7 @@ class MessageCache {
         entry.accessCount++;
         this.hits++;
 
-        console.log(`[MessageCache] HIT for ${conversationId} (hit rate: ${this.getHitRate()}%)`);
+        errorLogger.debug(`[MessageCache] HIT for ${conversationId} (hit rate: ${this.getHitRate()}%)`, { context: 'MessageCache' });
         return entry.messages;
     }
 
@@ -59,6 +60,7 @@ class MessageCache {
         });
 
         console.log(`[MessageCache] SET ${conversationId} (size: ${this.cache.size}/${this.maxSize})`);
+        errorLogger.debug(`[MessageCache] SET ${conversationId} (size: ${this.cache.size}/${this.maxSize})`, { context: 'MessageCache' });
     }
 
     /**
@@ -67,7 +69,7 @@ class MessageCache {
     invalidate(conversationId: string): void {
         const deleted = this.cache.delete(conversationId);
         if (deleted) {
-            console.log(`[MessageCache] INVALIDATED ${conversationId}`);
+            errorLogger.debug(`[MessageCache] INVALIDATED ${conversationId}`, { context: 'MessageCache' });
         }
     }
 
@@ -78,7 +80,7 @@ class MessageCache {
         this.cache.clear();
         this.hits = 0;
         this.misses = 0;
-        console.log('[MessageCache] INVALIDATED ALL');
+        errorLogger.debug('[MessageCache] INVALIDATED ALL', { context: 'MessageCache' });
     }
 
     /**
@@ -97,7 +99,7 @@ class MessageCache {
 
         if (lruKey) {
             this.cache.delete(lruKey);
-            console.log(`[MessageCache] EVICTED LRU: ${lruKey}`);
+            errorLogger.debug(`[MessageCache] EVICTED LRU: ${lruKey}`, { context: 'MessageCache' });
         }
     }
 
@@ -140,7 +142,7 @@ class MessageCache {
             const messages = await fetchFn();
             this.set(conversationId, messages);
         } catch (error) {
-            console.error(`[MessageCache] Prefetch failed for ${conversationId}:`, error);
+            errorLogger.error(`[MessageCache] Prefetch failed for ${conversationId}:`, error, { context: 'MessageCache' });
         }
     }
 }

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import ReactDOM from 'react-dom';
 import { Share2, Copy, Check, X, Clock } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../../api/client';
@@ -17,10 +18,11 @@ const ShareModal: React.FC<ShareModalProps> = ({ conversationId, onClose }) => {
     const handleCreateShare = async () => {
         setLoading(true);
         try {
-            const response = await api.post('/share', {
-                conversationId,
-                expiresIn,
-            });
+            const response = await import('../../utils/circuitBreaker').then(m => m.apiCircuitBreaker.execute(() =>
+                api.post(`/conversations/${conversationId}/share`, {
+                    expiresIn,
+                })
+            ));
             setShareUrl(response.data.shareUrl);
         } catch (error) {
             console.error('Failed to create share:', error);
@@ -39,19 +41,21 @@ const ShareModal: React.FC<ShareModalProps> = ({ conversationId, onClose }) => {
         }
     };
 
-    return (
+    if (typeof document === 'undefined') return null;
+
+    return ReactDOM.createPortal(
         <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm"
             onClick={onClose}
         >
             <motion.div
                 initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.9, opacity: 0 }}
-                className="bg-gray-900 border border-cyan-500/30 rounded-lg p-6 max-w-md w-full mx-4"
+                className="bg-gray-900 border border-cyan-500/30 rounded-lg p-6 max-w-md w-full mx-4 relative"
                 onClick={(e) => e.stopPropagation()}
             >
                 <div className="flex items-center justify-between mb-4">
@@ -124,7 +128,8 @@ const ShareModal: React.FC<ShareModalProps> = ({ conversationId, onClose }) => {
                     </div>
                 )}
             </motion.div>
-        </motion.div>
+        </motion.div>,
+        document.body
     );
 };
 

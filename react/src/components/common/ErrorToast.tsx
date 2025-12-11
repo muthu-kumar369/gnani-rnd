@@ -57,6 +57,15 @@ const ErrorToast: React.FC<ErrorToastProps> = ({
                             </button>
                         )}
                         <button
+                            onClick={() => {
+                                const text = `${parsedError.title}\n${parsedError.message}\n${parsedError.code ? `Code: ${parsedError.code}` : ''}`;
+                                navigator.clipboard.writeText(text);
+                            }}
+                            className="px-3 py-1.5 text-xs bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-200 rounded"
+                        >
+                            Copy Error
+                        </button>
+                        <button
                             onClick={onDismiss}
                             className="px-3 py-1.5 text-xs bg-red-500/20 hover:bg-red-500/30 text-red-200 rounded"
                         >
@@ -65,7 +74,7 @@ const ErrorToast: React.FC<ErrorToastProps> = ({
                     </div>
 
                     {/* Error Code (Dev Mode) */}
-                    {process.env.NODE_ENV === 'development' && (
+                    {import.meta.env.MODE === 'development' && (
                         <p className="text-xs text-red-400/60 mt-2">
                             Error Code: {parsedError.code}
                         </p>

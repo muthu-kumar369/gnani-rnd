@@ -29,7 +29,9 @@ const SettingsPage = React.lazy(() => import('./pages/SettingsPage'));
 const SharedConversationPage = React.lazy(() => import('./pages/SharedConversationPage')); // STAGE 22
 // STAGE 2: Search Page
 const SearchPage = React.lazy(() => import('./pages/SearchPage'));
+const SessionReplayPage = React.lazy(() => import('./pages/SessionReplayPage')); // STAGE 3
 const AnalyticsPage = React.lazy(() => import('./components/common/AnalyticsDashboard')); // STAGE R8
+const MonitoringPage = React.lazy(() => import('./pages/MonitoringPage')); // STAGE 4.7
 
 // Protected Route Wrapper - only renders when authenticated
 function ProtectedRoute() {
@@ -61,9 +63,8 @@ function App() {
   useKeyboardNav(); // STAGE 25: Enable keyboard shortcuts
 
   // STAGE 1: Initialize user store on mount
-  useEffect(() => {
-    initialize();
-  }, [initialize]);
+  // STAGE 1: Initialize user store was moved to AppWrapper in main.tsx
+
 
   // STAGE 16: Process offline queue when coming back online
   useEffect(() => {
@@ -142,6 +143,24 @@ function App() {
               <RequireAuth>
                 <ErrorBoundary componentName="Search">
                   <SearchPage />
+                </ErrorBoundary>
+              </RequireAuth>
+            } />
+
+            {/* STAGE 3: Session Replay */}
+            <Route path="/session-replay" element={
+              <RequireAuth>
+                <ErrorBoundary componentName="SessionReplay">
+                  <SessionReplayPage />
+                </ErrorBoundary>
+              </RequireAuth>
+            } />
+
+            {/* STAGE 4.7: Monitoring Dashboard */}
+            <Route path="/monitor" element={
+              <RequireAuth>
+                <ErrorBoundary componentName="Monitoring">
+                  <MonitoringPage />
                 </ErrorBoundary>
               </RequireAuth>
             } />

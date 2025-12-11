@@ -18,7 +18,7 @@ class Logger {
 
     constructor() {
         // Set log level from environment
-        const envLevel = process.env.LOG_LEVEL as LogLevel;
+        const envLevel = import.meta.env.VITE_LOG_LEVEL as LogLevel;
         if (envLevel) {
             this.minLevel = envLevel;
         }

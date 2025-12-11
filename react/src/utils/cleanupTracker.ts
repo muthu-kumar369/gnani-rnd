@@ -11,7 +11,7 @@ interface CleanupInfo {
  */
 class CleanupTracker {
     private cleanups = new Map<string, CleanupInfo>();
-    private enabled = process.env.NODE_ENV === 'development';
+    private enabled = import.meta.env.MODE === 'development';
 
     /**
      * Register a cleanup function
@@ -89,7 +89,7 @@ class CleanupTracker {
 export const cleanupTracker = new CleanupTracker();
 
 // Verify cleanups periodically in development
-if (process.env.NODE_ENV === 'development') {
+if (import.meta.env.MODE === 'development') {
     setInterval(() => {
         cleanupTracker.verify();
     }, 60000); // Every minute

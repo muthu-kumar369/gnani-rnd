@@ -20,27 +20,27 @@ export function useGnaniState() {
     useEffect(() => {
         // Create state machine if it doesn't exist
         if (!stateMachineRef.current) {
-            console.log('[useGnaniState] Initializing state machine');
+            errorLogger.debug('[useGnaniState] Initializing state machine', { context: 'useGnaniState' });
             stateMachineRef.current = new GnaniStateMachine();
             errorLogger.info('useGnaniState initialized', { context: 'useGnaniState' });
         } else {
-            console.log('[useGnaniState] State machine already exists, re-registering listener');
+            errorLogger.debug('[useGnaniState] State machine already exists, re-registering listener', { context: 'useGnaniState' });
         }
 
         // Always subscribe to state changes (handles React Strict Mode double-mounting)
         const handleStateChange = (event: StateChangeEvent) => {
-            console.log('[useGnaniState] State change event received:', event);
+            errorLogger.debug('[useGnaniState] State change event received', { context: 'useGnaniState', extra: { event } });
             setCurrentState(event.to);
             setPreviousState(event.from);
             errorLogger.debug(`State changed: ${event.from} -> ${event.to}`, { context: 'useGnaniState' });
         };
 
         stateMachineRef.current.on('stateChange', handleStateChange);
-        console.log('[useGnaniState] Event listener registered');
+        errorLogger.debug('[useGnaniState] Event listener registered', { context: 'useGnaniState' });
 
         // Cleanup - remove this specific listener
         return () => {
-            console.log('[useGnaniState] Cleaning up event listener');
+            errorLogger.debug('[useGnaniState] Cleaning up event listener', { context: 'useGnaniState' });
             if (stateMachineRef.current) {
                 stateMachineRef.current.removeListener('stateChange', handleStateChange);
             }

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
-import Sidebar from '../components/chat/Sidebar';
+import { eventManager } from '../utils/eventManager';
+import ConversationSidebar from '../components/conversation/ConversationSidebar';
 import ChatHeader from '../components/chat/ChatHeader';
 import { useConversationStore } from '../store/useConversationStore';
 import { useUserStore } from '../store/useUserStore';
@@ -8,9 +9,16 @@ import AnalyticsModal from '../components/analytics/AnalyticsModal';
 import AdvancedSearch from '../components/common/AdvancedSearch';
 import UndoToastWrapper from '../components/common/UndoToastWrapper';
 import { ErrorBoundary } from '../components/ErrorBoundary';
+import errorLogger from '../utils/errorLogger';
 
 const ChatLayout: React.FC = () => {
-    const { createConversation, fetchConversations, conversationId } = useConversationStore();
+    const {
+        createConversation,
+        fetchConversations,
+        setConversationId,
+        refreshConversation,
+        conversationId
+    } = useConversationStore();
     const { accessToken } = useUserStore();
     const navigate = useNavigate();
     const [showAnalytics, setShowAnalytics] = React.useState(false);
@@ -22,14 +30,26 @@ const ChatLayout: React.FC = () => {
             await createConversation(accessToken);
             await fetchConversations(accessToken);
         } catch (error) {
-            console.error('Failed to create new chat', error);
+            errorLogger.error('Failed to create new chat', error, { context: 'ChatLayout' });
+        }
+    };
+
+    const handleSelectConversation = async (id: string) => {
+        if (!accessToken) return;
+        try {
+            // Match legacy Sidebar logic: Set ID first, then refresh (allows caching mechanisms to work)
+            setConversationId(id);
+            navigate('/');
+            await refreshConversation(accessToken);
+        } catch (error) {
+            errorLogger.error('Failed to load conversation', error, { context: 'ChatLayout' });
         }
     };
 
     // Sync conversation ID from Store to Electron (pushes local state to backend/electron)
     useEffect(() => {
         if (conversationId && window.gnani?.stream?.setConversationId) {
-            console.log('[ChatLayout] Pushing conversationId to Electron:', conversationId);
+            errorLogger.debug(`[ChatLayout] Pushing conversationId to Electron: ${conversationId}`, { context: 'ChatLayout' });
             window.gnani.stream.setConversationId(conversationId);
         }
     }, [conversationId]);
@@ -37,11 +57,11 @@ const ChatLayout: React.FC = () => {
     // Handle Open Analytics Event
     useEffect(() => {
         const handleOpenAnalytics = () => {
-            console.log('[ChatLayout] Opening Analytics Modal');
+            errorLogger.debug('[ChatLayout] Opening Analytics Modal', { context: 'ChatLayout' });
             setShowAnalytics(true);
         };
-        window.addEventListener('open-analytics', handleOpenAnalytics);
-        return () => window.removeEventListener('open-analytics', handleOpenAnalytics);
+        const cleanup = eventManager.addEventListener('open-analytics', handleOpenAnalytics as EventListener, undefined, 'ChatLayout');
+        return cleanup;
     }, []);
 
     // Handle Cmd+K / Ctrl+K for Advanced Search
@@ -52,18 +72,23 @@ const ChatLayout: React.FC = () => {
                 setShowAdvancedSearch(true);
             }
         };
-        window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
+        const cleanup = eventManager.addEventListener('keydown', handleKeyDown as EventListener, undefined, 'ChatLayout');
+        return cleanup;
     }, []);
 
     return (
         <div className="flex h-screen w-full bg-jarvis-bg overflow-hidden text-jarvis-text font-sans">
-            {/* Sidebar */}
-            <Sidebar onNewChat={handleNewChat} />
+            {/* Sidebar - Replaced legacy Sidebar with ConversationSidebar */}
+            <ConversationSidebar
+                isOpen={true}
+                onClose={() => { }}
+                onNewConversation={handleNewChat}
+                variant="static"
+            />
 
             {/* Main Content Area */}
             <div className="flex-1 flex flex-col min-w-0">
-                <ChatHeader />
+                <ChatHeader onOpenSearch={() => setShowAdvancedSearch(true)} />
 
                 {/* Page Content (ChatPage) */}
                 <div className="flex-1 relative overflow-hidden">

@@ -28,7 +28,7 @@ const CacheMetrics: React.FC = () => {
     }, []);
 
     // Only show in development
-    if (process.env.NODE_ENV !== 'development') {
+    if (import.meta.env.MODE !== 'development') {
         return null;
     }
 

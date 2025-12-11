@@ -17,7 +17,9 @@ export const UsageChart: React.FC = () => {
         const fetchData = async () => {
             try {
                 const days = timeRange === 'week' ? 7 : timeRange === 'month' ? 30 : 365;
-                const response = await api.get(`/analytics/usage?days=${days}`);
+                const response = await import('../../utils/circuitBreaker').then(m => m.apiCircuitBreaker.execute(() =>
+                    api.get(`/analytics/usage?days=${days}`)
+                ));
                 setData(response.data);
             } catch (error) {
                 console.error('Failed to fetch usage data', error);

@@ -1,0 +1,177 @@
+import type { StateCreator } from 'zustand';
+import type { ConversationStore, ConversationSlice } from './types';
+import { conversationService } from '../../services/conversationService';
+import errorLogger from '../../utils/errorLogger';
+import { useUserStore } from '../useUserStore';
+import { messageCache } from '../../utils/messageCache';
+
+export const createConversationSlice: StateCreator<ConversationStore, [], [], ConversationSlice> = (set, get) => ({
+    conversations: [],
+    isLoadingConversations: false,
+    conversationId: null,
+    title: null,
+    selectedModel: null,
+    selectedTemplate: null,
+    models: [],
+    isLoadingModels: false,
+    isSearching: false,
+
+    setConversationId: (id) => set({ conversationId: id }),
+    setSelectedModel: (modelId) => set({ selectedModel: modelId }),
+    setSelectedTemplate: (templateId) => set({ selectedTemplate: templateId }),
+
+    fetchConversations: async (accessToken) => {
+        set({ isLoadingConversations: true });
+        try {
+            const conversations = await conversationService.getAll(accessToken);
+            set({ conversations });
+        } catch (error) {
+            errorLogger.error('Error fetching conversations', error as Error, { context: 'useConversationStore' });
+        } finally {
+            set({ isLoadingConversations: false });
+        }
+    },
+
+    searchConversations: async (query: string) => {
+        set({ isSearching: true });
+        try {
+            const accessToken = useUserStore.getState().accessToken || '';
+            const conversations = await conversationService.search(query, accessToken);
+            set({ conversations });
+        } catch (error) {
+            errorLogger.error('Error searching conversations', error as Error);
+        } finally {
+            set({ isSearching: false });
+        }
+    },
+
+    createConversation: async (accessToken, systemPrompt) => {
+        try {
+            const result = await conversationService.create(accessToken, systemPrompt);
+            set({
+                conversationId: result.conversationId,
+                messages: [],
+                allMessages: [],
+                currentLeafId: null,
+                title: result.title
+            });
+            return result.conversationId;
+        } catch (error) {
+            errorLogger.error('Error creating conversation', error as Error, { context: 'useConversationStore' });
+            throw error;
+        }
+    },
+
+    deleteConversation: async (conversationId, accessToken) => {
+        try {
+            await conversationService.delete(conversationId, accessToken);
+            messageCache.invalidate(conversationId);
+            set((state) => ({
+                conversations: state.conversations.filter(c => c.id !== conversationId),
+                conversationId: state.conversationId === conversationId ? null : state.conversationId,
+                messages: state.conversationId === conversationId ? [] : state.messages
+            }));
+        } catch (error) {
+            errorLogger.error('Error deleting conversation', error as Error, { context: 'useConversationStore' });
+            throw error;
+        }
+    },
+
+    updateTitle: async (conversationId, title, accessToken) => {
+        try {
+            await conversationService.updateTitle(conversationId, title, accessToken);
+            set((state) => ({
+                conversations: state.conversations.map(c =>
+                    c.id === conversationId ? { ...c, title } : c
+                ),
+                title: state.conversationId === conversationId ? title : state.title
+            }));
+        } catch (error) {
+            errorLogger.error('Error updating title', error as Error, { context: 'useConversationStore' });
+            throw error;
+        }
+    },
+
+    updateConversationTemplate: async (conversationId, templateId, accessToken) => {
+        try {
+            await conversationService.updateTemplate(conversationId, templateId, accessToken);
+            set({ selectedTemplate: templateId });
+        } catch (error) {
+            errorLogger.error('Error updating conversation template', error as Error, { context: 'useConversationStore' });
+            throw error;
+        }
+    },
+
+    updateConversationModel: async (conversationId, modelId, accessToken) => {
+        try {
+            await conversationService.updateModel(conversationId, modelId, accessToken);
+            set({ selectedModel: modelId });
+        } catch (error) {
+            errorLogger.error('Error updating conversation model', error as Error, { context: 'useConversationStore' });
+            throw error;
+        }
+    },
+
+    loadConversation: async (conversationId, accessToken) => {
+        try {
+            const data = await conversationService.getById(conversationId, accessToken);
+            set({
+                conversationId,
+                allMessages: data.messages || [],
+                hasMoreMessages: data.hasMoreMessages || false,
+                currentLeafId: data.currentLeafId || null,
+                selectedModel: data.modelId || null,
+                selectedTemplate: data.templateId || null,
+                title: data.title
+            });
+            get()._deriveVisibleMessages();
+        } catch (error) {
+            errorLogger.error('Error loading conversation', error as Error, { context: 'useConversationStore' });
+            throw error;
+        }
+    },
+
+    fetchModels: async (accessToken) => {
+        set({ isLoadingModels: true });
+        try {
+            const models = await conversationService.getModels(accessToken);
+            set({ models });
+        } catch (error) {
+            errorLogger.error('Error fetching models', error as Error, { context: 'useConversationStore' });
+        } finally {
+            set({ isLoadingModels: false });
+        }
+    },
+
+    refreshConversation: async (accessToken) => {
+        const { conversationId, currentLeafId } = get();
+        if (!conversationId || !accessToken) return;
+
+        const cached = messageCache.get(conversationId);
+        if (cached) {
+            console.log(`[MessageCache] Using cached messages for ${conversationId}`);
+            set({
+                allMessages: cached,
+                currentLeafId: currentLeafId || (cached.length > 0 ? cached[cached.length - 1].id : null)
+            });
+            get()._deriveVisibleMessages();
+            return;
+        }
+
+        try {
+            const data = await conversationService.getById(conversationId, accessToken);
+            set({
+                title: data.title,
+                allMessages: data.messages,
+                currentLeafId: data.currentLeafId,
+                selectedModel: data.modelId,
+                selectedTemplate: data.templateId
+            });
+            messageCache.set(conversationId, data.messages);
+            get()._deriveVisibleMessages();
+            errorLogger.info('Refreshed conversation', { count: data.messages.length });
+        } catch (error) {
+            errorLogger.error('Error refreshing conversation', error as Error, { context: 'useConversationStore' });
+        }
+    },
+});

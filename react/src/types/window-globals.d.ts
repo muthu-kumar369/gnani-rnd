@@ -33,6 +33,7 @@ interface Window {
         // Methods for general IPC communication
         send: (channel: string, data?: any) => void;
         on: (channel: string, callback: (...args: any[]) => void) => () => void;
+        getListenerCount: (channel: string) => number;
 
         // Authentication-related methods
         auth?: {

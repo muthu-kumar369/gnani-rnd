@@ -17,14 +17,28 @@ export interface Tool {
 
 export const toolService = {
     getAll: async (): Promise<Tool[]> => {
-        return apiClient.get<Tool[]>('/tools');
+        try {
+            return await import('../utils/circuitBreaker').then(m => m.apiCircuitBreaker.execute(() =>
+                apiClient.get<Tool[]>('/tools')
+            ));
+        } catch (error) {
+            const { DEFAULT_TOOLS, isCircuitOpenError } = await import('../utils/fallbacks');
+            if (isCircuitOpenError(error)) {
+                return DEFAULT_TOOLS;
+            }
+            throw error;
+        }
     },
 
     toggle: async (id: string, isEnabled: boolean): Promise<Tool> => {
-        return apiClient.patch<Tool>(`/tools/${id}/toggle`, { isEnabled });
+        return import('../utils/circuitBreaker').then(m => m.apiCircuitBreaker.execute(() =>
+            apiClient.patch<Tool>(`/tools/${id}/toggle`, { isEnabled })
+        ));
     },
 
     updateConfig: async (id: string, config: Record<string, any>): Promise<Tool> => {
-        return apiClient.patch<Tool>(`/tools/${id}/config`, { config });
+        return import('../utils/circuitBreaker').then(m => m.apiCircuitBreaker.execute(() =>
+            apiClient.patch<Tool>(`/tools/${id}/config`, { config })
+        ));
     }
 };

@@ -24,9 +24,18 @@ export const useNetworkStatus = (): NetworkStatus => {
             setIsOnline(false);
         };
 
-        window.addEventListener('online', handleOnline);
-        window.addEventListener('offline', handleOffline);
+        import('../utils/eventManager').then(({ eventManager }) => {
+            const cleanup1 = eventManager.addEventListener('online', handleOnline as EventListener, undefined, 'useNetworkStatus');
+            const cleanup2 = eventManager.addEventListener('offline', handleOffline as EventListener, undefined, 'useNetworkStatus');
 
+            // Store cleanup functions
+            return () => {
+                cleanup1();
+                cleanup2();
+            };
+        });
+
+        // Fallback cleanup
         return () => {
             window.removeEventListener('online', handleOnline);
             window.removeEventListener('offline', handleOffline);

@@ -145,9 +145,9 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, isLast }) => {
                         </div>
                     </div>
                 ) : (
-                    <div className={`prose prose-invert prose-sm max-w-none rounded-2xl px-5 py-3 ${isUser
-                        ? 'bg-white/10 text-white rounded-tr-sm'
-                        : 'text-gray-100 rounded-tl-sm'
+                    <div className={`prose prose-invert prose-sm max-w-none rounded-2xl px-5 py-4 border backdrop-blur-sm shadow-md transition-colors duration-200 ${isUser
+                        ? 'bg-cyan-500/10 border-cyan-500/20 text-cyan-50 rounded-tr-sm'
+                        : 'bg-gray-800/40 border-white/5 text-gray-200 rounded-tl-sm hover:bg-gray-800/60'
                         }`}>
                         <ReactMarkdown>{message.message}</ReactMarkdown>
                     </div>

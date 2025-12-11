@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import ReactDOM from 'react-dom';
 import { Search, X, Clock } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSearchStore } from '../../store/useSearchStore';
@@ -90,13 +91,15 @@ const AdvancedSearch: React.FC<AdvancedSearchProps> = ({ isOpen, onClose }) => {
 
     if (!isOpen) return null;
 
-    return (
+    if (typeof document === 'undefined') return null;
+
+    return ReactDOM.createPortal(
         <AnimatePresence>
             <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="fixed inset-0 z-50 flex items-start justify-center bg-black/60 backdrop-blur-sm pt-20"
+                className="fixed inset-0 z-[100] flex items-start justify-center bg-black/80 backdrop-blur-md pt-20"
                 onClick={onClose}
             >
                 <div className="w-full max-w-3xl mx-4 relative" onClick={(e) => e.stopPropagation()}>
@@ -255,7 +258,8 @@ const AdvancedSearch: React.FC<AdvancedSearchProps> = ({ isOpen, onClose }) => {
                     </motion.div>
                 </div>
             </motion.div>
-        </AnimatePresence>
+        </AnimatePresence>,
+        document.body
     );
 };
 

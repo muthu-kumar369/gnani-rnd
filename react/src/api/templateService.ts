@@ -15,18 +15,34 @@ export interface Template {
 
 export const templateService = {
     getAll: async (): Promise<Template[]> => {
-        return apiClient.get<Template[]>('/templates');
+        try {
+            return await import('../utils/circuitBreaker').then(m => m.apiCircuitBreaker.execute(() =>
+                apiClient.get<Template[]>('/templates')
+            ));
+        } catch (error) {
+            const { DEFAULT_TEMPLATES, isCircuitOpenError } = await import('../utils/fallbacks');
+            if (isCircuitOpenError(error)) {
+                return DEFAULT_TEMPLATES;
+            }
+            throw error;
+        }
     },
 
     create: async (data: Partial<Template>): Promise<Template> => {
-        return apiClient.post<Template>('/templates', data);
+        return import('../utils/circuitBreaker').then(m => m.apiCircuitBreaker.execute(() =>
+            apiClient.post<Template>('/templates', data)
+        ));
     },
 
     update: async (id: string, data: Partial<Template>): Promise<Template> => {
-        return apiClient.put<Template>(`/templates/${id}`, data);
+        return import('../utils/circuitBreaker').then(m => m.apiCircuitBreaker.execute(() =>
+            apiClient.put<Template>(`/templates/${id}`, data)
+        ));
     },
 
     delete: async (id: string): Promise<void> => {
-        return apiClient.delete<void>(`/templates/${id}`);
+        return import('../utils/circuitBreaker').then(m => m.apiCircuitBreaker.execute(() =>
+            apiClient.delete<void>(`/templates/${id}`)
+        ));
     }
 };

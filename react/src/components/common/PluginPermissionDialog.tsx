@@ -1,5 +1,6 @@
 // react/src/components/common/PluginPermissionDialog.tsx
 import React, { useState, useEffect } from 'react';
+import { eventManager } from '../../utils/eventManager';
 import { X, Shield, AlertTriangle } from 'lucide-react';
 import type { PluginPermissionRequest, PluginPermissionGrant } from '../../utils/pluginPermissions';
 
@@ -29,10 +30,8 @@ export const PluginPermissionDialog: React.FC = () => {
             });
         };
 
-        window.addEventListener('plugin-permission-request', handleRequest);
-        return () => {
-            window.removeEventListener('plugin-permission-request', handleRequest);
-        };
+        const cleanup = eventManager.addEventListener('plugin-permission-request', handleRequest as EventListener, undefined, 'PluginPermissionDialog');
+        return cleanup;
     }, []);
 
     const handleApprove = () => {

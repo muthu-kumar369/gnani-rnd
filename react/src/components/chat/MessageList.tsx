@@ -2,7 +2,12 @@ import React, { useEffect, useRef } from 'react';
 import { User, Sparkles, Copy, ThumbsUp } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import MessageItem from './MessageItem';
+import StreamingProgress from '../common/StreamingProgress';
+import TimeoutIndicator from '../common/TimeoutIndicator';
+import { useConversationStore } from '../../store/useConversationStore';
 import type { ConversationMessage } from '../../store/useConversationStore';
+
+import { useUserStore } from '../../store/useUserStore';
 
 interface MessageListProps {
     messages: ConversationMessage[];
@@ -19,10 +24,27 @@ const MessageList: React.FC<MessageListProps> = ({
     onLoadMore,
     isFetchingMore
 }) => {
+    const { isStreaming, streamProgress, cancelStream, regenerateResponse, conversationId, currentLeafId } = useConversationStore();
+    const { accessToken } = useUserStore();
     const bottomRef = useRef<HTMLDivElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     const [shouldAutoScroll, setShouldAutoScroll] = React.useState(true);
     const prevScrollHeightRef = useRef<number>(0);
+    const [streamDuration, setStreamDuration] = React.useState(0);
+
+    // Track streaming duration
+    useEffect(() => {
+        let interval: NodeJS.Timeout;
+        if (isStreaming) {
+            setStreamDuration(0);
+            interval = setInterval(() => {
+                setStreamDuration(prev => prev + 1);
+            }, 1000);
+        } else {
+            setStreamDuration(0);
+        }
+        return () => clearInterval(interval);
+    }, [isStreaming]);
 
     // Auto-scroll to bottom behavior
     useEffect(() => {
@@ -85,6 +107,31 @@ const MessageList: React.FC<MessageListProps> = ({
                     <div className="w-8 h-8 rounded-full bg-jarvis-blue/20 flex items-center justify-center shrink-0 border border-jarvis-blue/30">
                         <Sparkles className="w-5 h-5 text-jarvis-blue animate-pulse" />
                     </div>
+                </div>
+            )}
+
+            {/* Streaming Progress Indicator (Task 2.8) */}
+            {isStreaming && (
+                <div className="px-4 md:px-0 max-w-4xl mx-auto w-full space-y-4">
+                    <StreamingProgress isStreaming={isStreaming} progress={streamProgress} />
+
+                    {/* Timeout Indicator (Task 2.9) */}
+                    {streamDuration > 30 && (
+                        <div className="flex justify-center">
+                            <TimeoutIndicator
+                                onCancel={() => {
+                                    if (conversationId && accessToken) {
+                                        cancelStream(conversationId, accessToken);
+                                    }
+                                }}
+                                onRetry={() => {
+                                    if (currentLeafId && accessToken) {
+                                        regenerateResponse(currentLeafId, accessToken);
+                                    }
+                                }}
+                            />
+                        </div>
+                    )}
                 </div>
             )}
 

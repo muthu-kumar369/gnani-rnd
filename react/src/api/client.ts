@@ -48,19 +48,15 @@ api.interceptors.request.use(
             config.headers['x-auth-token'] = token;
         }
 
-        // STAGE 1: Request deduplication for GET requests
-        if (config.method === 'get') {
-            const key = getRequestKey(config);
-            const pending = pendingRequests.get(key);
-            if (pending) {
-                console.log('[API Client] Deduplicating request:', key);
-                // Return the pending promise instead of making a new request
-                return Promise.reject({
-                    __DEDUPLICATED__: true,
-                    promise: pending
-                }) as any;
-            }
+        if (import.meta.env.DEV) {
+            console.log(`[API Client] Request: ${config.method?.toUpperCase()} ${config.url}`, {
+                token: !!token,
+                deduplication: config.method === 'get'
+            });
         }
+
+        // STAGE 1: Request deduplication logic removed from interceptor
+        // It is now handled exclusively by the api.get wrapper to avoid circular dependencies (request waiting for itself)
 
         return config;
     },
@@ -77,19 +73,12 @@ api.interceptors.response.use(
             useRateLimitStore.getState().updateRateLimit(response.headers as any);
         }
 
-        // Clean up deduplication cache
-        if (response.config.method === 'get') {
-            const key = getRequestKey(response.config);
-            pendingRequests.delete(key);
-        }
+        // Clean up deduplication cache - REMOVED (Handled by wrapper)
 
         return response;
     },
     async (error: AxiosError) => {
-        // Handle deduplicated requests
-        if ((error as any).__DEDUPLICATED__) {
-            return (error as any).promise;
-        }
+        // Handle deduplicated requests - REMOVED
 
         const config = error.config as AxiosRequestConfig & { __retryCount?: number };
 
@@ -117,11 +106,7 @@ api.interceptors.response.use(
             return api.request(config);
         }
 
-        // Clean up deduplication cache on error
-        if (config?.method === 'get') {
-            const key = getRequestKey(config);
-            pendingRequests.delete(key);
-        }
+        // Clean up deduplication cache on error - REMOVED (Handled by wrapper)
 
         // Get user-friendly error message
         const parsedError = parseError(error);
@@ -164,10 +149,12 @@ api.get = function <T = any, R = AxiosResponse<T>, D = any>(url: string, config?
     }
 
     const request = originalGet<T, R, D>(url, config).finally(() => {
+        // console.log('[API Client] Request finished (success/fail), clearing cache:', key);
         pendingRequests.delete(key);
     });
 
     pendingRequests.set(key, request as any);
+    // console.log('[API Client] New GET request started:', key);
     return request;
 };
 

@@ -15,7 +15,9 @@ export const CostEstimator: React.FC = () => {
     useEffect(() => {
         const fetchSummary = async () => {
             try {
-                const response = await api.get('/analytics/stats');
+                const response = await import('../../utils/circuitBreaker').then(m => m.apiCircuitBreaker.execute(() =>
+                    api.get('/analytics/stats')
+                ));
                 setSummary(response.data);
             } catch (error) {
                 console.error('Failed to fetch stats', error);

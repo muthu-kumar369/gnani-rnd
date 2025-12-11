@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
+import { eventManager } from "../../utils/eventManager";
 import { motion, AnimatePresence } from "framer-motion";
 import { Terminal, History } from "lucide-react";
 import { useGnaniUIState } from "../../hooks/useGnaniUIState";
@@ -110,10 +111,8 @@ const GnaniCore: React.FC<GnaniCoreProps> = ({ isOverlayMode = false, onOverlayC
       setShowSettings(true);
     };
 
-    window.addEventListener('open-settings', handleOpenSettings);
-    return () => {
-      window.removeEventListener('open-settings', handleOpenSettings);
-    };
+    const cleanup = eventManager.addEventListener('open-settings', handleOpenSettings as EventListener, undefined, 'GnaniCore');
+    return cleanup;
   }, []);
 
   // Timeout tracking for thinking state
@@ -277,10 +276,8 @@ const GnaniCore: React.FC<GnaniCoreProps> = ({ isOverlayMode = false, onOverlayC
       }
     };
 
-    window.addEventListener('tts:speak', handleTtsSpeak);
-    return () => {
-      window.removeEventListener('tts:speak', handleTtsSpeak);
-    };
+    const cleanup = eventManager.addEventListener('tts:speak', handleTtsSpeak as EventListener, undefined, 'GnaniCore');
+    return cleanup;
   }, []);
 
   const handleBargeIn = useCallback(() => {

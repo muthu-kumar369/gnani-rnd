@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { eventManager } from '../../../utils/eventManager';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const SpeakingAnimation: React.FC = () => {
@@ -19,8 +20,8 @@ const SpeakingAnimation: React.FC = () => {
             }, 1000);
         };
 
-        window.addEventListener('tts:word', handleWord);
-        return () => window.removeEventListener('tts:word', handleWord);
+        const cleanup = eventManager.addEventListener('tts:word', handleWord as EventListener, undefined, 'SpeakingAnimation');
+        return cleanup;
     }, []);
 
     return (

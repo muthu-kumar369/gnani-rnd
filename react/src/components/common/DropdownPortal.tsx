@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
+import { eventManager } from '../../utils/eventManager';
 import { createPortal } from 'react-dom';
 import { AnimatePresence } from 'framer-motion';
 
@@ -58,14 +59,14 @@ const DropdownPortal: React.FC<DropdownPortalProps> = ({ children, isOpen, butto
             const timer1 = setTimeout(updatePosition, 50);
             const timer2 = setTimeout(updatePosition, 150);
 
-            window.addEventListener('scroll', updatePosition, true);
-            window.addEventListener('resize', updatePosition);
+            const cleanup1 = eventManager.addEventListener('scroll', updatePosition as EventListener, { capture: true }, 'DropdownPortal');
+            const cleanup2 = eventManager.addEventListener('resize', updatePosition as EventListener, undefined, 'DropdownPortal');
 
             return () => {
                 clearTimeout(timer1);
                 clearTimeout(timer2);
-                window.removeEventListener('scroll', updatePosition, true);
-                window.removeEventListener('resize', updatePosition);
+                cleanup1();
+                cleanup2();
             };
         }
     }, [isOpen, buttonRef, updatePosition]);

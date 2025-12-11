@@ -1,4 +1,5 @@
 import React, { useEffect } from "react";
+import { eventManager } from '../../../utils/eventManager';
 import { motion, useAnimation } from "framer-motion";
 import type { GnaniAppStatus } from '../../../hooks/useGnaniUIState';
 
@@ -85,8 +86,8 @@ const CoreOrb: React.FC<CoreOrbProps> = ({ status, audioLevel }) => {
             });
         };
 
-        window.addEventListener('tts:word', handleWord);
-        return () => window.removeEventListener('tts:word', handleWord);
+        const cleanup = eventManager.addEventListener('tts:word', handleWord as EventListener, undefined, 'CoreOrb');
+        return cleanup;
     }, [status, controls]);
 
     return (

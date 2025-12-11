@@ -8,10 +8,11 @@ import ConfirmationModal from '../ui/ConfirmationModal';
 
 interface SidebarProps {
     onNewChat: () => void;
+    onOpenAnalytics: () => void;
     className?: string;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ onNewChat, className = '' }) => {
+const Sidebar: React.FC<SidebarProps> = ({ onNewChat, onOpenAnalytics, className = '' }) => {
     const { user, logout, accessToken } = useUserStore();
     const navigate = useNavigate();
 
@@ -287,9 +288,9 @@ const Sidebar: React.FC<SidebarProps> = ({ onNewChat, className = '' }) => {
                                 </button>
                                 <button
                                     onClick={() => {
-                                        console.log('Dispatching open-analytics event');
+                                        console.log('Opening Analytics via prop');
                                         setIsProfileOpen(false);
-                                        window.dispatchEvent(new Event('open-analytics'));
+                                        onOpenAnalytics();
                                     }}
                                     className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-300 hover:text-white hover:bg-white/10 rounded-md transition-colors"
                                 >

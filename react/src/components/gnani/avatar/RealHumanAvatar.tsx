@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useMemo, useRef } from 'react';
+import { eventManager } from '../../../utils/eventManager';
 import { motion, useSpring, useTransform } from 'framer-motion';
 import { type GnaniAppStatus } from '../../../hooks/useGnaniUIState';
 import { AVATAR_ASSETS, MOUTH_SPRITE_CONFIG, type AvatarGender, type Viseme } from './AvatarConfig';
@@ -28,8 +29,8 @@ const RealHumanAvatar: React.FC<RealHumanAvatarProps> = ({ status, isSpeaking, g
             mouseY.set(y);
         };
 
-        window.addEventListener('mousemove', handleMouseMove);
-        return () => window.removeEventListener('mousemove', handleMouseMove);
+        const cleanup = eventManager.addEventListener('mousemove', handleMouseMove as EventListener, undefined, 'RealHumanAvatar');
+        return cleanup;
     }, [mouseX, mouseY]);
 
     const rotateX = useTransform(mouseY, [-1, 1], [10, -10]); // Look up/down

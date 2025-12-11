@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import { eventManager } from '../../utils/eventManager';
 
 interface Particle {
     x: number;
@@ -94,12 +95,12 @@ const ParticleMotionLayer: React.FC = () => {
             requestRef.current = requestAnimationFrame(animate);
         };
 
-        window.addEventListener('resize', resizeCanvas);
+        const cleanup = eventManager.addEventListener('resize', resizeCanvas as EventListener, undefined, 'ParticleMotionLayer');
         resizeCanvas();
         animate();
 
         return () => {
-            window.removeEventListener('resize', resizeCanvas);
+            cleanup();
             if (requestRef.current) cancelAnimationFrame(requestRef.current);
         };
     }, []);

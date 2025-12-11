@@ -54,6 +54,8 @@ export const fileApi = {
      * Delete a file
      */
     async deleteFile(fileId: string, _userId: string): Promise<void> {
-        return apiClient.delete(`/files/${fileId}`);
+        return import('../utils/circuitBreaker').then(m => m.apiCircuitBreaker.execute(() =>
+            apiClient.delete(`/files/${fileId}`)
+        ));
     }
 };

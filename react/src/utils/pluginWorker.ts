@@ -1,4 +1,5 @@
 // react/src/utils/pluginWorker.ts
+import errorLogger from './errorLogger';
 
 export interface PluginMessage {
     type: 'init' | 'execute' | 'api_call' | 'response' | 'error';
@@ -54,7 +55,7 @@ export class PluginWorkerManager {
         };
 
         worker.onerror = (error) => {
-            console.error(`[PluginWorker] Error in ${pluginId}:`, error);
+            errorLogger.error(`[PluginWorker] Error in ${pluginId}`, error, { context: 'PluginWorkerManager' });
             this.unloadPlugin(pluginId);
         };
 
@@ -64,7 +65,7 @@ export class PluginWorkerManager {
             payload: { permissions }
         });
 
-        console.log(`[PluginWorker] Loaded plugin: ${pluginId}`);
+        errorLogger.info(`[PluginWorker] Loaded plugin: ${pluginId}`, { context: 'PluginWorkerManager' });
     }
 
     /**
@@ -114,7 +115,7 @@ export class PluginWorkerManager {
                 break;
 
             default:
-                console.warn(`[PluginWorker] Unknown message type: ${message.type}`);
+                errorLogger.warn(`[PluginWorker] Unknown message type: ${message.type}`, { context: 'PluginWorkerManager' });
         }
     }
 
@@ -165,7 +166,10 @@ export class PluginWorkerManager {
 
         try {
             // Make API call on behalf of plugin
-            const response = await fetch(payload.url, payload.options);
+            // STAGE 2: Circuit Breaker for Plugins
+            const response = await import('./circuitBreaker').then(m => m.apiCircuitBreaker.execute(() =>
+                fetch(payload.url, payload.options)
+            ));
             const data = await response.json();
 
             this.sendMessage(pluginId, {
@@ -201,7 +205,7 @@ export class PluginWorkerManager {
             worker.terminate();
             this.workers.delete(pluginId);
             this.permissions.delete(pluginId);
-            console.log(`[PluginWorker] Unloaded plugin: ${pluginId}`);
+            errorLogger.info(`[PluginWorker] Unloaded plugin: ${pluginId}`, { context: 'PluginWorkerManager' });
         }
     }
 

@@ -68,18 +68,20 @@ export const useSearchStore = create<SearchState>()(
                 set({ isSearching: true });
 
                 try {
-                    const response = await apiClient.post('/search', {
-                        query,
-                        mode: searchMode,
-                        filters: {
-                            dateFrom: filters.dateFrom,
-                            dateTo: filters.dateTo,
-                            models: filters.models,
-                            folders: filters.folders,
-                            tags: filters.tags,
-                        },
-                        limit: 50,
-                    });
+                    const response = await import('../utils/circuitBreaker').then(m => m.searchCircuitBreaker.execute(() =>
+                        apiClient.post('/search', {
+                            query,
+                            mode: searchMode,
+                            filters: {
+                                dateFrom: filters.dateFrom,
+                                dateTo: filters.dateTo,
+                                models: filters.models,
+                                folders: filters.folders,
+                                tags: filters.tags,
+                            },
+                            limit: 50,
+                        })
+                    ));
 
                     set({ results: response.data.results || [] });
                 } catch (error) {

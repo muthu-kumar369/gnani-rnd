@@ -6,6 +6,7 @@ interface CircuitBreakerOptions {
     threshold?: number;      // Number of failures before opening
     timeout?: number;        // Time in ms before attempting half-open
     resetTimeout?: number;   // Time in ms before resetting failure count
+    shouldFail?: (error: any) => boolean; // Optional predicate to determine if failure counts
 }
 
 /**
@@ -21,12 +22,14 @@ export class CircuitBreaker {
     private resetTimer?: NodeJS.Timeout;
     private openTimer?: NodeJS.Timeout;
     private name: string;
+    private shouldFail: (error: any) => boolean;
 
     constructor(name: string, options: CircuitBreakerOptions = {}) {
         this.name = name;
         this.threshold = options.threshold || 5;
         this.timeout = options.timeout || 60000; // 1 minute
         this.resetTimeout = options.resetTimeout || 10000; // 10 seconds
+        this.shouldFail = options.shouldFail || (() => true); // Default: all errors count
     }
 
     /**
@@ -78,6 +81,15 @@ export class CircuitBreaker {
      * Handle failed execution
      */
     private onFailure(error: Error) {
+        // Check if this error should count as a failure
+        if (!this.shouldFail(error)) {
+            logger.debug('Circuit breaker ignoring non-critical failure', {
+                circuit: this.name,
+                error: error.message
+            });
+            return;
+        }
+
         this.failures++;
 
         logger.error('Circuit breaker failure', error, {
@@ -160,8 +172,13 @@ export class CircuitBreaker {
 
 // Create circuit breakers for common services
 export const apiCircuitBreaker = new CircuitBreaker('API', {
-    threshold: 5,
-    timeout: 60000
+    threshold: 20, // Increased to handle parallel startup requests
+    timeout: 60000,
+    // Only trip on 5xx or network errors (no response)
+    shouldFail: (error: any) => {
+        if (!error.response) return true; // Network error
+        return error.response.status >= 500; // Server error
+    }
 });
 
 export const llmCircuitBreaker = new CircuitBreaker('LLM', {

@@ -20,7 +20,9 @@ export const useSwitchModel = () => {
         // Update conversation model on backend if conversation exists
         if (conversationId) {
             try {
-                await api.patch(`/conversations/${conversationId}/model`, { model: modelId });
+                await import('../utils/circuitBreaker').then(m => m.apiCircuitBreaker.execute(() =>
+                    api.patch(`/conversations/${conversationId}/model`, { model: modelId })
+                ));
 
                 // Add system message to show model switch
                 addMessage({

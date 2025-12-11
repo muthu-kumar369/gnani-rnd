@@ -103,18 +103,18 @@ body {
 }
 
 .custom-scrollbar::-webkit-scrollbar-track {
-    background: rgba(0, 0, 0, 0.1);
+    background: transparent;
     border-radius: 3px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: var(--jarvis-border);
+    background: rgba(0, 240, 255, 0.2); /* Using jarvis-border equivalent directly for visibility check */
     border-radius: 3px;
     transition: all 0.3s ease;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: var(--jarvis-blue);
+    background: rgba(0, 240, 255, 0.5); /* using jarvis-blue/glow equivalent */
     box-shadow: 0 0 10px var(--jarvis-glow);
 }
 

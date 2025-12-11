@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { eventManager } from '../../utils/eventManager';
 
 export const LiveRegion: React.FC = () => {
     const [announcement, setAnnouncement] = useState('');
@@ -10,8 +11,8 @@ export const LiveRegion: React.FC = () => {
             setTimeout(() => setAnnouncement(''), 1000);
         };
 
-        window.addEventListener('announce', handleAnnouncement as EventListener);
-        return () => window.removeEventListener('announce', handleAnnouncement as EventListener);
+        const cleanup = eventManager.addEventListener('announce', handleAnnouncement as EventListener, undefined, 'LiveRegion');
+        return cleanup;
     }, []);
 
     return (

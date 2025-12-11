@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { eventManager } from '../utils/eventManager';
 import { useFolderStore } from '../store/useFolderStore';
 
 export const useFolderDragDrop = () => {
@@ -21,8 +22,8 @@ export const useFolderDragDrop = () => {
             }));
         };
 
-        window.addEventListener('folder:drop', handleDrop as EventListener);
-        return () => window.removeEventListener('folder:drop', handleDrop as EventListener);
+        const cleanup = eventManager.addEventListener('folder:drop', handleDrop as EventListener, undefined, 'useFolderDragDrop');
+        return cleanup;
     }, [moveConversation, getFolderByConversation]);
 
     const makeDraggable = (conversationId: string) => ({

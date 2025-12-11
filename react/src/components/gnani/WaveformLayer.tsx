@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import { eventManager } from '../../utils/eventManager';
 
 const WaveformLayer: React.FC = () => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -88,12 +89,12 @@ const WaveformLayer: React.FC = () => {
             requestRef.current = requestAnimationFrame(animate);
         };
 
-        window.addEventListener('resize', resizeCanvas);
+        const cleanup = eventManager.addEventListener('resize', resizeCanvas as EventListener, undefined, 'WaveformLayer');
         resizeCanvas();
         animate();
 
         return () => {
-            window.removeEventListener('resize', resizeCanvas);
+            cleanup();
             if (requestRef.current) cancelAnimationFrame(requestRef.current);
         };
     }, []);

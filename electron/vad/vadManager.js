@@ -143,6 +143,20 @@ class VadManager extends EventEmitter {
     }
   }
 
+  processAudioFrame(audioBuffer) {
+    if (!this.currentVAD) return;
+
+    // Delegate to current VAD if it supports direct frame processing
+    if (this.currentVAD.processFrame) {
+      this.currentVAD.processFrame(audioBuffer);
+    } else if (this.currentVAD.type === 'legacy' && this.currentVAD.instance.processAudioFrame) {
+        this.currentVAD.instance.processAudioFrame(audioBuffer);
+    }
+    // Silero VAD (via vad-web) usually handles its own stream or might need explicit feed
+    // If Silero is used, we might verify how it receives data.
+    // However, since the error is "not a function", adding this wrapper prevents the crash.
+  }
+
   startProcessing() {
     if (!this.currentVAD) {
       logger.error('VAD not initialized', { context: 'VadManager' });
@@ -198,6 +212,10 @@ class VadManager extends EventEmitter {
       this.fallbackVAD.destroy?.();
     }
     logger.info('VAD Manager destroyed', { context: 'VadManager' });
+  }
+
+  cleanup() {
+    this.destroy();
   }
 
   getCurrentVADType() {

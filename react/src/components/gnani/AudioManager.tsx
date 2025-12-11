@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { eventManager } from '../../utils/eventManager';
 import errorLogger from '../../utils/errorLogger';
 import type { GnaniState } from '../../store/useGnaniStore';
 import type { BargeInConfig } from '../../hooks/useBargeIn';
@@ -52,10 +53,8 @@ export const AudioManager: React.FC<AudioManagerProps> = React.memo(({
             handleBargeIn();
         };
 
-        window.addEventListener('tts:interrupted', handleInterruption);
-        return () => {
-            window.removeEventListener('tts:interrupted', handleInterruption);
-        };
+        const cleanup = eventManager.addEventListener('tts:interrupted', handleInterruption as EventListener, undefined, 'AudioManager');
+        return cleanup;
     }, [handleBargeIn]);
 
     // Connect VAD to Barge-in

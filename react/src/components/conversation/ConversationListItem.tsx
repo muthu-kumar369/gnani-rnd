@@ -74,9 +74,9 @@ const ConversationListItem: React.FC<ConversationListItemProps> = ({
             import('../../utils/messageCache').then(({ messageCache }) => {
                 messageCache.prefetch(conversation.conversationId, async () => {
                     // STAGE 1: Use API client instead of hardcoded URL
-                    const response = await apiClient.get(
-                        `/conversations/${conversation.conversationId}`
-                    );
+                    const response = await import('../../utils/circuitBreaker').then(m => m.apiCircuitBreaker.execute(() =>
+                        apiClient.get(`/conversations/${conversation.conversationId}`)
+                    ));
                     const data = response.data;
                     return data.messages.map((msg: any) => ({
                         id: msg.id || msg._id,
@@ -153,6 +153,7 @@ const ConversationListItem: React.FC<ConversationListItemProps> = ({
                     </p>
                     <div className="flex items-center mt-2 text-[10px] text-gray-500">
                         <MessageSquare size={10} className="mr-1" />
+                        <span className="mr-1">{conversation.messageCount || 0} •</span>
                         <span>{formatDistanceToNow(new Date(conversation.updatedAt), { addSuffix: true })}</span>
                     </div>
                 </div>

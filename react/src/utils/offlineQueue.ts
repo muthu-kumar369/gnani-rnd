@@ -1,3 +1,5 @@
+import errorLogger from './errorLogger';
+
 interface QueuedRequest {
     id: string;
     url: string;
@@ -13,6 +15,18 @@ class OfflineQueue {
 
     constructor() {
         this.loadQueue();
+        this.startAutoProcessing();
+    }
+
+    private startAutoProcessing() {
+        if (typeof window !== 'undefined') {
+            window.addEventListener('online', () => {
+                errorLogger.info('[Offline Queue] Online detected, processing queue', { context: 'OfflineQueue' });
+                this.processQueue();
+            });
+            // Try periodically
+            setInterval(() => this.processQueue(), 60000);
+        }
     }
 
     private loadQueue() {
@@ -22,7 +36,7 @@ class OfflineQueue {
                 this.queue = JSON.parse(stored);
             }
         } catch (error) {
-            console.error('Failed to load offline queue:', error);
+            errorLogger.error('Failed to load offline queue', error, { context: 'OfflineQueue' });
         }
     }
 
@@ -30,7 +44,7 @@ class OfflineQueue {
         try {
             localStorage.setItem(this.STORAGE_KEY, JSON.stringify(this.queue));
         } catch (error) {
-            console.error('Failed to save offline queue:', error);
+            errorLogger.error('Failed to save offline queue', error, { context: 'OfflineQueue' });
         }
     }
 
@@ -47,13 +61,13 @@ class OfflineQueue {
         this.queue.push(request);
         this.saveQueue();
 
-        console.log('[Offline Queue] Added request:', request.id);
+        errorLogger.info('[Offline Queue] Added request', { context: 'OfflineQueue', extra: { requestId: request.id } });
     }
 
     async processQueue(): Promise<void> {
         if (this.queue.length === 0) return;
 
-        console.log(`[Offline Queue] Processing ${this.queue.length} queued requests`);
+        errorLogger.info(`[Offline Queue] Processing ${this.queue.length} queued requests`, { context: 'OfflineQueue' });
 
         const requests = [...this.queue];
         this.queue = [];
@@ -61,23 +75,25 @@ class OfflineQueue {
 
         for (const request of requests) {
             try {
-                const response = await fetch(request.url, {
-                    method: request.method,
-                    headers: request.headers,
-                    body: request.body ? JSON.stringify(request.body) : undefined,
-                });
+                const response = await import('./circuitBreaker').then(m => m.apiCircuitBreaker.execute(() =>
+                    fetch(request.url, {
+                        method: request.method,
+                        headers: request.headers,
+                        body: request.body ? JSON.stringify(request.body) : undefined,
+                    })
+                ));
 
                 if (!response.ok) {
                     // Re-queue if failed
                     this.queue.push(request);
-                    console.error('[Offline Queue] Request failed:', request.id);
+                    errorLogger.error('[Offline Queue] Request failed', null, { context: 'OfflineQueue', extra: { requestId: request.id, status: response.status } });
                 } else {
-                    console.log('[Offline Queue] Request succeeded:', request.id);
+                    errorLogger.info('[Offline Queue] Request succeeded', { context: 'OfflineQueue', extra: { requestId: request.id } });
                 }
             } catch (error) {
                 // Re-queue if network error
                 this.queue.push(request);
-                console.error('[Offline Queue] Network error:', error);
+                errorLogger.error('[Offline Queue] Network error', error, { context: 'OfflineQueue' });
             }
         }
 
