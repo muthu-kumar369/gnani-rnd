@@ -10,6 +10,7 @@ import { useFileUpload } from '../../hooks/useFileUpload';
 import { useImageUpload } from '../../hooks/useImageUpload';
 import { useUserStore } from '../../store/useUserStore';
 import { useAudioStream } from '../../hooks/useAudioStream';
+import apiClient from '../../api/client'; // STAGE 1: Use API client
 import MessageBubble from './MessageBubble';
 import DateSeparator from './DateSeparator';
 import { isSameDate } from '../../utils/date-formatter';
@@ -231,13 +232,9 @@ const TerminalPanel: React.FC<TerminalPanelProps> = ({ isVisible, onToggle }) =>
                                 if (sessionId && accessToken) {
                                     // Delete conversation from backend
                                     try {
-                                        const response = await fetch(`http://localhost:3000/api/v1/conversations/${sessionId}`, {
-                                            method: 'DELETE',
-                                            headers: { 'x-auth-token': accessToken }
-                                        });
-                                        if (response.ok) {
-                                            clearMessages(); // Clear frontend state
-                                        }
+                                        // STAGE 1: Use API client instead of hardcoded URL
+                                        await apiClient.delete(`/conversations/${sessionId}`);
+                                        clearMessages(); // Clear frontend state
                                     } catch (error) {
                                         console.error('Failed to delete conversation:', error);
                                     }

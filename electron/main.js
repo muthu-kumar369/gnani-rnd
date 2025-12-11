@@ -57,11 +57,11 @@ async function captureScreenshot() {
       types: ['screen'],
       thumbnailSize: { width: 1920, height: 1080 }
     });
-    
+
     // Get primary screen
     const primarySource = sources[0];
     const screenshot = primarySource.thumbnail.toPNG();
-    
+
     return screenshot;
   } catch (error) {
     logger.error(`Failed to capture screenshot: ${error.message}`, { context: 'MainProcess' });
@@ -72,7 +72,7 @@ async function captureScreenshot() {
 function registerGlobalHotkey() {
   const hotkey = store.get('globalHotkey') || 'CommandOrControl+Shift+Space';
   const screenshotHotkey = 'CommandOrControl+Shift+S';
-  
+
   // Unregister existing to avoid conflicts if changing
   globalShortcut.unregisterAll();
 
@@ -80,17 +80,17 @@ function registerGlobalHotkey() {
     // Register Mic Activation Hotkey
     const success = globalShortcut.register(hotkey, () => {
       logger.info(`Global hotkey ${hotkey} pressed`, { context: 'MainProcess' });
-      
+
       if (mainWindow) {
         if (mainWindow.isMinimized()) mainWindow.restore();
         mainWindow.show();
         mainWindow.focus();
-        
+
         // Trigger mic activation
         mainWindow.webContents.send('hotkey:activate-mic');
       }
     });
-    
+
     if (!success) {
       logger.error(`Failed to register global hotkey: ${hotkey}`, { context: 'MainProcess' });
     } else {
@@ -121,13 +121,13 @@ function registerGlobalHotkey() {
 }
 
 function createTray() {
-  const iconPath = process.platform === 'darwin' 
+  const iconPath = process.platform === 'darwin'
     ? path.join(__dirname, 'assets/tray-icon-mac.png')
     : path.join(__dirname, 'assets/tray-icon.png');
-  
+
   try {
     tray = new Tray(iconPath);
-    
+
     const contextMenu = Menu.buildFromTemplate([
       {
         label: 'Activate Mic',
@@ -160,10 +160,10 @@ function createTray() {
         }
       }
     ]);
-    
+
     tray.setContextMenu(contextMenu);
     tray.setToolTip('Gnani AI Assistant');
-    
+
     tray.on('click', () => {
       if (mainWindow) {
         if (mainWindow.isVisible()) {
@@ -174,7 +174,7 @@ function createTray() {
         }
       }
     });
-    
+
     logger.info('System tray created successfully', { context: 'MainProcess' });
   } catch (error) {
     logger.error(`Failed to create system tray: ${error.message}`, { context: 'MainProcess' });
@@ -407,14 +407,21 @@ async function main() {
     vadManager.on('speech:start', () => {
       logger.info('VAD detected speech.', { context: 'MainProcess' });
 
-      // Barge-in logic: If TTS is playing, stop it immediately
-      if (isFrontendSpeaking) {
+      // STAGE 1: Barge-in logic with state machine
+      if (audioState.isTTSPlaying && audioState.bargeInEnabled) {
         logger.info('Barge-in detected! Stopping TTS.', { context: 'MainProcess' });
         if (ttsPlayer) {
           ttsPlayer.stopPlayback();
         }
-        isFrontendSpeaking = false; // Reset flag immediately
+        audioState.isTTSPlaying = false;
+
+        // Notify frontend of interruption
+        if (mainWindow) {
+          mainWindow.webContents.send('tts:interrupted');
+        }
       }
+
+      audioState.isUserSpeaking = true;
 
       logger.info('Starting audio stream.', { context: 'MainProcess' });
       streamingClient.startAudioStreaming(true);
@@ -422,6 +429,7 @@ async function main() {
 
     vadManager.on('speech:end', () => {
       logger.info('VAD detected silence, stopping audio stream.', { context: 'MainProcess' });
+      audioState.isUserSpeaking = false;
       streamingClient.stopAudioStreaming();
     });
 
@@ -440,7 +448,7 @@ async function main() {
 
     // Register Global Hotkey
     registerGlobalHotkey();
-    
+
     // Create System Tray
     createTray();
   } catch (error) {
@@ -483,7 +491,12 @@ app.on("activate", () => {
   }
 });
 
-let isFrontendSpeaking = false;
+// STAGE 1: Audio state machine for barge-in
+let audioState = {
+  isTTSPlaying: false,
+  isUserSpeaking: false,
+  bargeInEnabled: true
+};
 
 ipcMain.on('mic:start', async () => {
   logger.info('Received mic:start IPC from renderer. Starting microphone and VAD...', { context: 'MainProcess' });
@@ -497,15 +510,49 @@ ipcMain.on('mic:stop', () => {
   vadManager.stopProcessing();
 });
 
+// STAGE 1: TTS state management
 ipcMain.on('tts:started', () => {
-  logger.info('Received tts:started IPC from renderer. Marking as speaking.', { context: 'MainProcess' });
-  isFrontendSpeaking = true;
-  // Do NOT stop VAD here to allow barge-in
+  logger.info('Received tts:started IPC from renderer.', { context: 'MainProcess' });
+  audioState.isTTSPlaying = true;
+  audioState.isUserSpeaking = false;
 });
 
 ipcMain.on('tts:ended', () => {
-  logger.info('Received tts:ended IPC from renderer. Marking as not speaking.', { context: 'MainProcess' });
-  isFrontendSpeaking = false;
+  logger.info('Received tts:ended IPC from renderer.', { context: 'MainProcess' });
+  audioState.isTTSPlaying = false;
+});
+
+// STAGE 1: Additional IPC handlers for state machine
+ipcMain.on('tts:start', () => {
+  logger.info('Received tts:start IPC from renderer.', { context: 'MainProcess' });
+  audioState.isTTSPlaying = true;
+  audioState.isUserSpeaking = false;
+});
+
+ipcMain.on('tts:end', () => {
+  logger.info('Received tts:end IPC from renderer.', { context: 'MainProcess' });
+  audioState.isTTSPlaying = false;
+});
+
+// STAGE 1: VAD speech IPC handlers (in addition to event listeners)
+ipcMain.on('vad:speech-start', () => {
+  logger.info('Received vad:speech-start IPC from renderer.', { context: 'MainProcess' });
+
+  if (audioState.isTTSPlaying && audioState.bargeInEnabled) {
+    logger.info('Barge-in detected via IPC - stopping TTS', { context: 'MainProcess' });
+
+    if (ttsPlayer) {
+      ttsPlayer.stopPlayback();
+    }
+    audioState.isTTSPlaying = false;
+
+    // Notify frontend
+    if (mainWindow) {
+      mainWindow.webContents.send('tts:interrupted');
+    }
+  }
+
+  audioState.isUserSpeaking = true;
 });
 
 ipcMain.on('log', (event, { level, message, context, extra }) => {

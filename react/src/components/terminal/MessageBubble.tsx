@@ -13,6 +13,7 @@ import MessageContent from './MessageContent';
 import { GenerationNavigator } from './GenerationNavigator';
 import FeedbackButtons from '../common/FeedbackButtons'; // STAGE 21
 import { InlineMessageEditor } from './InlineMessageEditor'; // STAGE R2
+import StreamingProgress from '../common/StreamingProgress'; // STAGE 2.5
 import '../../styles/messageActions.css';
 
 interface MessageBubbleProps {
@@ -22,7 +23,7 @@ interface MessageBubbleProps {
 }
 
 const MessageBubble: React.FC<MessageBubbleProps> = memo(({ message, isLatest, showTimestamp = true }) => {
-    const { navigateToBranch, navigateToGeneration, conversationId, allMessages } = useConversationStore();
+    const { navigateToBranch, navigateToGeneration, conversationId, allMessages, isStreaming } = useConversationStore();
     const { accessToken } = useUserStore();
     const actions = useMessageActions(conversationId);
 
@@ -240,11 +241,25 @@ const MessageBubble: React.FC<MessageBubbleProps> = memo(({ message, isLatest, s
                                 autoRegenerate={true}
                             />
                         ) : (
-                            <MessageContent
-                                content={message.message}
-                                type={message.type}
-                                isLatest={isLatest}
-                            />
+                            <>
+                                <MessageContent
+                                    content={message.message}
+                                    type={message.type}
+                                    isLatest={isLatest}
+                                />
+
+                                {/* Streaming Progress Indicator */}
+                                {isGnani && isLatest && isStreaming && (
+                                    <div className="mt-2">
+                                        <StreamingProgress
+                                            progress={75}
+                                            isStreaming={true}
+                                            className=""
+                                        />
+                                        <p className="text-xs text-cyan-500/60 mt-1">Streaming response...</p>
+                                    </div>
+                                )}
+                            </>
                         )}
 
                         {/* Generation Navigator for assistant messages with multiple generations */}

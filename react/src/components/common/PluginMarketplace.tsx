@@ -1,86 +1,99 @@
 import React, { useState } from 'react';
 import type { PluginMetadata } from '../../types/plugin';
 import { usePluginStore } from '../../utils/pluginManager';
-import { EXAMPLE_PLUGINS } from '../../plugins/examplePlugins';
-import PluginCard from './PluginCard';
+/**
+ * PLUGIN MARKETPLACE - FUTURE IMPLEMENTATION
+ * 
+ * This component is for the future plugin marketplace system where users
+ * can browse and install community-created plugins.
+ * 
+ * STATUS: NOT NEEDED YET
+ * - Current system uses built-in plugin/tool structure for system operations
+ * - Marketplace will be implemented post-Stage 4
+ * - Code preserved for future use
+ * 
+ * See: D:\learning\hey\gnani-rnd\reports\implementation-remaining\PLUGIN_SYSTEM_IMPLEMENTATION_PLAN.md
+ */
+
+/* COMMENTED OUT - FUTURE USE
+
+import React, { useState } from 'react';
+import { Search, Download, Star, Filter } from 'lucide-react';
+import { PluginCard } from './PluginCard';
+import type { PluginMetadata } from '../../types/plugin';
 
 const PluginMarketplace: React.FC = () => {
-    const { installedPlugins, enabledPlugins, installPlugin, uninstallPlugin, enablePlugin, disablePlugin } = usePluginStore();
+    const [searchQuery, setSearchQuery] = useState('');
     const [selectedCategory, setSelectedCategory] = useState<string>('all');
+    const [plugins, setPlugins] = useState<PluginMetadata[]>([
+        {
+            id: 'weather-plugin',
+            name: 'Weather Info',
+            version: '1.0.0',
+            author: 'Gnani Team',
+            description: 'Get real-time weather information for any location',
+            icon: '🌤️',
+            category: 'utility',
+            downloads: 1250,
+            rating: 4.5,
+            installed: false,
+            enabled: false,
+        },
+        {
+            id: 'calculator-plugin',
+            name: 'Advanced Calculator',
+            version: '2.1.0',
+            author: 'Gnani Team',
+            description: 'Perform complex mathematical calculations',
+            icon: '🧮',
+            category: 'utility',
+            downloads: 3400,
+            rating: 4.8,
+            installed: true,
+            enabled: true,
+        },
+        {
+            id: 'notion-plugin',
+            name: 'Notion Integration',
+            version: '1.2.0',
+            author: 'Community',
+            description: 'Connect Gnani with your Notion workspace',
+            icon: '📝',
+            category: 'productivity',
+            downloads: 890,
+            rating: 4.3,
+            installed: false,
+            enabled: false,
+        },
+    ]);
 
-    // Mock marketplace plugins (in real app, fetch from API)
-    const marketplacePlugins: PluginMetadata[] = EXAMPLE_PLUGINS.map((plugin) => ({
-        id: plugin.id,
-        name: plugin.name,
-        version: plugin.version,
-        author: plugin.author,
-        description: plugin.description || '',
-        icon: plugin.icon || '🔌',
-        category: 'utility',
-        downloads: Math.floor(Math.random() * 10000),
-        rating: 4 + Math.random(),
-        installed: installedPlugins.includes(plugin.id),
-        enabled: enabledPlugins.includes(plugin.id),
-    }));
+    const categories = ['all', 'productivity', 'utility', 'integration', 'ui', 'other'];
 
-    const handleInstall = async (pluginId: string) => {
-        await installPlugin(pluginId);
-    };
-
-    const handleUninstall = async (pluginId: string) => {
-        await uninstallPlugin(pluginId);
-    };
-
-    const handleToggle = async (pluginId: string, enabled: boolean) => {
-        if (enabled) {
-            await disablePlugin(pluginId);
-        } else {
-            await enablePlugin(pluginId);
-        }
-    };
-
-    const categories = ['all', 'productivity', 'utility', 'integration', 'ui'];
-
-    const filteredPlugins = selectedCategory === 'all'
-        ? marketplacePlugins
-        : marketplacePlugins.filter((p) => p.category === selectedCategory);
+    const filteredPlugins = plugins.filter((plugin) => {
+        const matchesSearch =
+            plugin.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            plugin.description.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesCategory = selectedCategory === 'all' || plugin.category === selectedCategory;
+        return matchesSearch && matchesCategory;
+    });
 
     return (
-        <div className="p-6">
+        <div className="flex flex-col h-full bg-gray-900 text-white p-6">
             <div className="mb-6">
-                <h2 className="text-2xl font-bold text-cyan-400 mb-2">Plugin Marketplace</h2>
-                <p className="text-cyan-500/60">Extend Gnani with powerful plugins</p>
+                <h1 className="text-3xl font-bold mb-2">Plugin Marketplace</h1>
+                <p className="text-gray-400">Extend Gnani with community plugins</p>
             </div>
 
-            {/* Categories */}
-            <div className="flex gap-2 mb-6">
-                {categories.map((category) => (
-                    <button
-                        key={category}
-                        onClick={() => setSelectedCategory(category)}
-                        className={`px-4 py-2 rounded transition-colors capitalize ${selectedCategory === category
-                                ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30'
-                                : 'bg-black/40 text-cyan-500/60 hover:text-cyan-400 border border-cyan-500/20'
-                            }`}
-                    >
-                        {category}
-                    </button>
-                ))}
-            </div>
-
-            {/* Plugin Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {filteredPlugins.map((plugin) => (
-                    <PluginCard
-                        key={plugin.id}
-                        plugin={plugin}
-                        onInstall={() => handleInstall(plugin.id)}
-                        onUninstall={() => handleUninstall(plugin.id)}
-                        onToggle={() => handleToggle(plugin.id, plugin.enabled)}
+            <div className="flex gap-4 mb-6">
+                <div className="flex-1 relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                    <input
+                        type="text"
+                        placeholder="Search plugins..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full pl-10 pr-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:border-cyan-500"
                     />
-                ))}
-            </div>
-
             {filteredPlugins.length === 0 && (
                 <div className="text-center text-cyan-500/60 py-12">
                     No plugins found in this category
@@ -90,4 +103,4 @@ const PluginMarketplace: React.FC = () => {
     );
 };
 
-export default PluginMarketplace;
+export default PluginMarketplace; */

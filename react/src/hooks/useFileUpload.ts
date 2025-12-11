@@ -49,7 +49,23 @@ export const useFileUpload = (userId: string) => {
         } catch (error: any) {
             // Remove temp file on error
             removeAttachedFile(tempId);
-            throw error;
+
+            // STAGE 1: Enhanced error handling for file validation
+            const errorMessage = error?.response?.data?.error || error?.message || 'Upload failed';
+
+            // User-friendly error messages
+            if (errorMessage.includes('File too large') || errorMessage.includes('too large')) {
+                throw new Error(`File exceeds maximum size limit. Please upload a smaller file.`);
+            }
+            if (errorMessage.includes('Invalid file type') || errorMessage.includes('file type')) {
+                throw new Error(`File type not supported. Please upload a valid document.`);
+            }
+            if (errorMessage.includes('No file uploaded')) {
+                throw new Error(`No file selected. Please choose a file to upload.`);
+            }
+
+            // Generic error
+            throw new Error(errorMessage);
         } finally {
             setIsUploading(false);
         }

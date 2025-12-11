@@ -19,10 +19,11 @@ const AdvancedSearch: React.FC<AdvancedSearchProps> = ({ isOpen, onClose }) => {
         results,
         isSearching,
         searchHistory,
+        searchMode,
         setQuery,
         setFilters,
-        setResults,
-        setIsSearching,
+        setSearchMode,
+        search,
         addToHistory,
         clearResults,
     } = useSearchStore();
@@ -40,42 +41,12 @@ const AdvancedSearch: React.FC<AdvancedSearchProps> = ({ isOpen, onClose }) => {
     const [showSuggestions, setShowSuggestions] = useState(false);
     const searchInputRef = useRef<HTMLInputElement>(null);
 
-    const handleSearch = async (searchQuery?: string) => {
-        const q = searchQuery || query;
-        if (!q.trim()) return;
-
-        setIsSearching(true);
+    // Use store's search method instead of direct API call
+    const handleSearch = () => {
+        if (!query.trim()) return;
+        addToHistory(query);
         setShowSuggestions(false);
-        addToHistory(q);
-
-        try {
-            const response = await api.post('/search', {
-                query: q.trim(),
-                filters: {
-                    ...filters,
-                    // Ensure arrays are passed if backend expects them (or handle singular if needed)
-                    // Currently store has 'models' and 'folders' as arrays.
-                },
-            });
-
-            const rawResults = response.data.results || [];
-            // Ensure results match our interface
-            const safeResults = rawResults.map((r: any) => ({
-                conversationId: r.conversationId,
-                title: r.title,
-                snippet: r.snippet,
-                score: r.score,
-                createdAt: r.createdAt,
-                model: r.model
-            }));
-
-            setResults(safeResults);
-        } catch (error) {
-            console.error('Search failed:', error);
-            setResults([]);
-        } finally {
-            setIsSearching(false);
-        }
+        search(); // Use store method
     };
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -97,6 +68,16 @@ const AdvancedSearch: React.FC<AdvancedSearchProps> = ({ isOpen, onClose }) => {
             // Better wait for Enter to avoid spamming
         }
     };
+
+    // Debounced auto-search when query or filters change
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            if (query.trim()) {
+                search();
+            }
+        }, 300);
+        return () => clearTimeout(timer);
+    }, [query, filters, searchMode]);
 
     useEffect(() => {
         if (!isOpen) {
@@ -158,7 +139,7 @@ const AdvancedSearch: React.FC<AdvancedSearchProps> = ({ isOpen, onClose }) => {
                                                             className="w-full text-left px-4 py-2 hover:bg-cyan-500/10 text-cyan-100 text-sm flex items-center gap-2"
                                                             onClick={() => {
                                                                 setQuery(s);
-                                                                handleSearch(s);
+                                                                handleSearch();
                                                             }}
                                                         >
                                                             <Search size={12} className="text-cyan-500/60" />
@@ -178,7 +159,7 @@ const AdvancedSearch: React.FC<AdvancedSearchProps> = ({ isOpen, onClose }) => {
                                                             className="w-full text-left px-4 py-2 hover:bg-cyan-500/10 text-cyan-200/70 text-sm flex items-center gap-2"
                                                             onClick={() => {
                                                                 setQuery(h);
-                                                                handleSearch(h);
+                                                                handleSearch();
                                                             }}
                                                         >
                                                             <Clock size={12} className="text-cyan-500/40" />
@@ -189,6 +170,22 @@ const AdvancedSearch: React.FC<AdvancedSearchProps> = ({ isOpen, onClose }) => {
                                             )}
                                         </div>
                                     )}
+                                </div>
+
+                                {/* Search Mode Selector */}
+                                <div className="flex gap-2 mt-3">
+                                    {(['basic', 'semantic', 'hybrid'] as const).map(mode => (
+                                        <button
+                                            key={mode}
+                                            onClick={() => setSearchMode(mode)}
+                                            className={`px-4 py-2 rounded-lg capitalize transition-colors text-sm ${searchMode === mode
+                                                ? 'bg-cyan-600 text-white'
+                                                : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+                                                }`}
+                                        >
+                                            {mode}
+                                        </button>
+                                    ))}
                                 </div>
 
                                 <SearchFilters

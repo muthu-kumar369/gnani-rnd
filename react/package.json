@@ -19,6 +19,7 @@
     "@tailwindcss/postcss": "^4.1.17",
     "@tailwindcss/vite": "^4.1.17",
     "@types/react-syntax-highlighter": "^15.5.13",
+    "@xstate/react": "^6.0.0",
     "axios": "^1.13.2",
     "date-fns": "^4.1.0",
     "events": "^3.3.0",
@@ -41,6 +42,7 @@
     "remark-gfm": "^4.0.1",
     "remark-math": "^6.0.0",
     "tailwindcss": "^4.1.17",
+    "xstate": "^5.25.0",
     "zustand": "^5.0.9"
   },
   "devDependencies": {

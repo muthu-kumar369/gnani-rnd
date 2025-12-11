@@ -7,9 +7,6 @@ import { useAnalyticsStore } from './useAnalyticsStore'; // STAGE 20
 import { useModelStore } from './useModelStore'; // STAGE 23
 import apiClient from '../api/client'; // STAGE 1
 import { MessageTreeValidator } from '../utils/messageTreeValidator'; // STAGE 1: Message validation
-// STAGE 4: Architecture Improvements
-import { logger } from '../utils/logger';
-import { apiCircuitBreaker, llmCircuitBreaker } from '../utils/circuitBreaker';
 
 export interface ConversationMessage {
   id: string;
@@ -44,11 +41,8 @@ export interface ConversationMessage {
 
 export interface ConversationSummary {
   id: string;
-  conversationId: string; // Added for compatibility
   title: string;
   updatedAt: string;
-  timestamp: Date; // Added for compatibility
-  preview: string; // Added for compatibility
 }
 
 export interface LlmModel {
@@ -56,15 +50,6 @@ export interface LlmModel {
   displayName: string;
   description?: string;
   provider?: string;
-}
-
-// STAGE 2: Undo stack for message actions
-export interface UndoAction {
-  type: 'delete' | 'edit' | 'regenerate';
-  messageId: string;
-  previousState: any;
-  timestamp: number;
-  undoToken?: string;
 }
 
 interface ConversationStore {
@@ -83,9 +68,6 @@ interface ConversationStore {
   abortController: AbortController | null;
 
   undoData: { messageId: string; undoToken: string } | null;
-  // STAGE 2: Undo stack
-  undoStack: UndoAction[];
-  currentUndoToast: { message: string; onUndo: () => void; expiresAt: number } | null;
 
   // Actions
   setConversationId: (id: string | null) => void;
@@ -101,13 +83,6 @@ interface ConversationStore {
   setUndoData: (data: { messageId: string; undoToken: string } | null) => void;
   executeUndo: (accessToken: string) => Promise<void>;
   dismissUndo: () => void;
-  // STAGE 2: Undo stack methods
-  pushUndo: (action: UndoAction) => void;
-  popUndo: (messageId: string) => UndoAction | undefined;
-  showUndoToast: (message: string, onUndo: () => void) => void;
-  undoDelete: (messageId: string, accessToken: string) => Promise<void>;
-  undoEdit: (messageId: string, accessToken: string) => Promise<void>;
-  undoRegenerate: (messageId: string, accessToken: string) => Promise<void>;
   refreshConversation: (accessToken: string) => Promise<void>;
   fetchConversations: (accessToken: string) => Promise<void>;
   fetchModels: (accessToken: string) => Promise<void>;
@@ -127,15 +102,6 @@ interface ConversationStore {
 
   // Helpers
   _deriveVisibleMessages: () => void;
-
-  // Pagination
-  hasMoreMessages: boolean;
-  isFetchingMessages: boolean;
-  fetchPreviousMessages: (conversationId: string, before?: string) => Promise<void>;
-
-  // Search
-  isSearching: boolean;
-  searchConversations: (query: string) => Promise<void>;
 }
 
 const generateId = () => `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -152,102 +118,13 @@ export const useConversationStore = create<ConversationStore>()(
       conversationId: null,
       currentLeafId: null,
       title: null,
-      selectedModel: null, // Removed duplicate
+      selectedModel: null,
       selectedTemplate: null,
       models: [],
       isLoadingModels: false,
       isStreaming: false,
       abortController: null,
-
-      // Pagination State
-      hasMoreMessages: false,
-      isFetchingMessages: false,
-
-      // Search State
-      isSearching: false,
-
-      searchConversations: async (query: string) => {
-        set({ isSearching: true });
-        try {
-          const response = await apiClient.post('/conversations/search', { query });
-          const conversationList = response.data || [];
-
-          const mapped: ConversationSummary[] = conversationList.map((c: any) => ({
-            id: c.conversationId || c.id || c._id,
-            conversationId: c.conversationId || c.id || c._id,
-            title: c.title || 'Untitled Conversation',
-            updatedAt: c.updatedAt || new Date().toISOString(),
-            timestamp: new Date(c.updatedAt || Date.now()), // Map to Date object
-            preview: c.lastMessage || c.preview || 'No preview available', // Backend should provide this
-          }));
-
-          set({ conversations: mapped });
-        } catch (error) {
-          errorLogger.error('Error searching conversations', error as Error);
-        } finally {
-          set({ isSearching: false });
-        }
-      },
-
-      fetchPreviousMessages: async (conversationId: string, before?: string) => {
-        const { isFetchingMessages, hasMoreMessages } = get();
-        if (isFetchingMessages || !hasMoreMessages) return;
-
-        set({ isFetchingMessages: true });
-        try {
-          const response = await apiClient.get(`/conversations/${conversationId}/messages`, {
-            params: {
-              limit: 50,
-              before: before
-            }
-          });
-
-          const { messages: newMessages, hasMore } = response.data;
-
-          // Map messages
-          const mappedMessages: ConversationMessage[] = newMessages.map((msg: any) => ({
-            id: msg.id || msg._id,
-            _id: msg.id || msg._id,
-            type: msg.role === 'assistant' ? 'gnani' : msg.role,
-            message: msg.content,
-            timestamp: new Date(msg.timestamp).getTime(),
-            parentId: msg.parentId,
-            children: msg.children,
-            branchIndex: msg.branchIndex,
-            metadata: msg.metadata
-          }));
-
-          // Prepend to allMessages
-          // Note: backend returns sorts newest first, but mapped array is often ordered by query. 
-          // We need to ensure we merge correctly.
-          // Assuming backend returns [newest, ..., oldest] chunk.
-          // We want to add them to our tree. 
-          // Since our tree logic relies on ID/ParentID, order in allMessages doesn't strictly matter 
-          // for structure, but helps for linear fallbacks.
-
-          set(state => ({
-            allMessages: [...mappedMessages, ...state.allMessages],
-            hasMoreMessages: hasMore
-          }));
-
-          // Re-derive (though usually visible messages shouldn't change if looking at end)
-          // But if user scrolls up, they might want to see them?
-          // Messages visible are determined by "Leaf -> Root".
-          // If we load parents of current path, they will appear?
-          // _deriveVisibleMessages walks up. If parents were missing, they stopped appearing.
-          // Now they will appear.
-          get()._deriveVisibleMessages();
-
-        } catch (error) {
-          errorLogger.error('Error fetching previous messages', error as Error);
-        } finally {
-          set({ isFetchingMessages: false });
-        }
-      },
       undoData: null,
-      // STAGE 2: Undo stack
-      undoStack: [],
-      currentUndoToast: null,
 
       setConversationId: (id) => set({ conversationId: id }),
 
@@ -460,15 +337,11 @@ export const useConversationStore = create<ConversationStore>()(
 
       fetchConversations: async (accessToken) => {
         set({ isLoadingConversations: true });
-        logger.debug('Fetching conversations', { context: 'useConversationStore' }); // STAGE 4: Logging
-
         try {
-          // STAGE 4: Circuit breaker protection
-          const response = await apiCircuitBreaker.execute(() =>
-            apiClient.get('/conversations')
-          );
-
+          // STAGE 1: Use apiClient
+          const response = await apiClient.get('/conversations');
           const data = response.data;
+          // Backend returns { conversations: [], total, page, ... }
           const conversationList = data.conversations || [];
 
           const mapped = conversationList.map((c: any) => ({
@@ -477,15 +350,11 @@ export const useConversationStore = create<ConversationStore>()(
             updatedAt: c.updatedAt || new Date().toISOString()
           }));
 
+          // Sort by recent
           mapped.sort((a: any, b: any) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
 
           set({ conversations: mapped });
-          logger.info('Conversations fetched successfully', { // STAGE 4: Logging
-            context: 'useConversationStore',
-            count: mapped.length
-          });
         } catch (error) {
-          logger.error('Failed to fetch conversations', error); // STAGE 4: Logging
           errorLogger.error('Error fetching conversations', error as Error, { context: 'useConversationStore' });
         } finally {
           set({ isLoadingConversations: false });
@@ -502,7 +371,6 @@ export const useConversationStore = create<ConversationStore>()(
           set({
             conversationId,
             allMessages: data.messages || [],
-            hasMoreMessages: data.hasMoreMessages || false, // Consuming new flag
             currentLeafId: data.currentLeafId || null,
             selectedModel: data.modelId || null,
             selectedTemplate: data.templateId || null
@@ -515,23 +383,12 @@ export const useConversationStore = create<ConversationStore>()(
 
       fetchModels: async (accessToken) => {
         set({ isLoadingModels: true });
-        logger.debug('Fetching LLM models', { context: 'useConversationStore' }); // STAGE 4
-
         try {
-          // STAGE 4: Circuit breaker protection
-          const response = await llmCircuitBreaker.execute(() =>
-            apiClient.get('/llm/models')
-          );
-
+          // STAGE 1: Use apiClient
+          const response = await apiClient.get('/llm/models');
           const data = response.data;
           set({ models: data.models || [] });
-
-          logger.info('Models fetched successfully', { // STAGE 4
-            context: 'useConversationStore',
-            count: data.models?.length || 0
-          });
         } catch (error) {
-          logger.error('Failed to fetch models', error); // STAGE 4
           errorLogger.error('Error fetching models', error as Error, { context: 'useConversationStore' });
         } finally {
           set({ isLoadingModels: false });
@@ -555,16 +412,11 @@ export const useConversationStore = create<ConversationStore>()(
       },
 
       createConversation: async (accessToken, systemPrompt) => {
-        logger.debug('Creating new conversation', { context: 'useConversationStore' }); // STAGE 4
-
         try {
-          // STAGE 4: Circuit breaker protection
-          const response = await apiCircuitBreaker.execute(() =>
-            apiClient.post('/conversations', { systemPrompt })
-          );
-
+          // STAGE 1: Use apiClient
+          const response = await apiClient.post('/conversations', { systemPrompt });
           const data = response.data;
-          const conversationId = data.conversationId;
+          const conversationId = data.conversationId; // Backend returns conversationId
 
           set({
             conversationId,
@@ -574,14 +426,8 @@ export const useConversationStore = create<ConversationStore>()(
             title: data.title || 'New Conversation'
           });
 
-          logger.info('Conversation created successfully', { // STAGE 4
-            context: 'useConversationStore',
-            conversationId
-          });
-
           return conversationId;
         } catch (error) {
-          logger.error('Failed to create conversation', error); // STAGE 4
           errorLogger.error('Error creating conversation', error as Error, { context: 'useConversationStore' });
           throw error;
         }
@@ -809,36 +655,28 @@ export const useConversationStore = create<ConversationStore>()(
         const { conversationId } = get();
         if (!conversationId || !accessToken) return;
 
-        // STAGE 2: Save current response for undo
-        const message = get().allMessages.find(m => m.id === messageId || m._id === messageId);
-        if (message) {
-          get().pushUndo({
-            type: 'regenerate',
-            messageId,
-            previousState: message,
-            timestamp: Date.now()
-          });
-        }
-
         const controller = new AbortController();
         set({ isStreaming: true, abortController: controller });
 
         try {
-          // STAGE 1: Use API client with retry logic and deduplication
-          const response = await apiClient.post(`/conversations/${conversationId}/regenerate`,
-            { messageId },
-            { signal: controller.signal }
-          );
+          const response = await fetch(`${import.meta.env.VITE_API_URL}/conversations/${conversationId}/regenerate`, {
+            method: 'POST',
+            headers: {
+              'x-auth-token': accessToken,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ messageId }),
+            signal: controller.signal
+          });
 
-          const newAssistantMessage = response.data;
+          if (!response.ok) throw new Error('Failed to regenerate response');
+
+          const newAssistantMessage = await response.json();
           // Update currentLeafId to the new message to switch to this branch
           // Backend returns the message object directly
           set({ currentLeafId: newAssistantMessage._id || newAssistantMessage.id });
 
           await get().refreshConversation(accessToken);
-
-          // STAGE 2: Show undo toast
-          get().showUndoToast('Response regenerated', () => get().undoRegenerate(messageId, accessToken));
         } catch (error: any) {
           if (error.name === 'AbortError') {
             errorLogger.info('Regeneration cancelled by user');
@@ -855,28 +693,23 @@ export const useConversationStore = create<ConversationStore>()(
         const { conversationId } = get();
         if (!conversationId || !accessToken) return;
 
-        // STAGE 2: Save original content for undo
-        const message = get().allMessages.find(m => m.id === messageId || m._id === messageId);
-        if (message) {
-          get().pushUndo({
-            type: 'edit',
-            messageId,
-            previousState: { content: message.message },
-            timestamp: Date.now()
-          });
-        }
-
         const controller = new AbortController();
         set({ isStreaming: true, abortController: controller });
 
         try {
-          // STAGE 1: Use API client with retry logic and deduplication
-          const response = await apiClient.post(`/conversations/${conversationId}/edit`,
-            { messageId, content: newContent, autoRegenerate: true },
-            { signal: controller.signal }
-          );
+          const response = await fetch(`${import.meta.env.VITE_API_URL}/conversations/${conversationId}/edit`, {
+            method: 'POST',
+            headers: {
+              'x-auth-token': accessToken,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ messageId, content: newContent, autoRegenerate: true }),
+            signal: controller.signal
+          });
 
-          const { newResponse } = response.data;
+          if (!response.ok) throw new Error('Failed to edit message');
+
+          const { newResponse } = await response.json();
           // Update currentLeafId to the new assistant response to switch to this branch
           if (newResponse) {
             set({ currentLeafId: newResponse._id || newResponse.id });
@@ -890,9 +723,6 @@ export const useConversationStore = create<ConversationStore>()(
           messageCache.invalidate(conversationId);
 
           await get().refreshConversation(accessToken);
-
-          // STAGE 2: Show undo toast
-          get().showUndoToast('Message edited', () => get().undoEdit(messageId, accessToken));
         } catch (error: any) {
           if (error.name === 'AbortError') {
             errorLogger.info('Edit cancelled by user');
@@ -910,17 +740,6 @@ export const useConversationStore = create<ConversationStore>()(
         if (!conversationId || !accessToken) return;
 
         try {
-          // STAGE 2: Save message for undo before deleting
-          const message = get().allMessages.find(m => m.id === messageId || m._id === messageId);
-          if (message) {
-            get().pushUndo({
-              type: 'delete',
-              messageId,
-              previousState: message,
-              timestamp: Date.now()
-            });
-          }
-
           // STAGE 1: Use apiClient - backend may return undoToken
           const response = await apiClient.delete(`/conversations/${conversationId}/messages/${messageId}`);
 
@@ -952,9 +771,6 @@ export const useConversationStore = create<ConversationStore>()(
 
           // Refresh conversation
           await get().refreshConversation(accessToken);
-
-          // STAGE 2: Show undo toast
-          get().showUndoToast('Message deleted', () => get().undoDelete(messageId, accessToken));
         } catch (error) {
           errorLogger.error('Error deleting message', error as Error, { context: 'useConversationStore' });
           throw error;
@@ -962,13 +778,9 @@ export const useConversationStore = create<ConversationStore>()(
       },
 
       deleteConversation: async (conversationId, accessToken) => {
-        logger.debug('Deleting conversation', { context: 'useConversationStore', conversationId }); // STAGE 4
-
         try {
-          // STAGE 4: Circuit breaker protection
-          await apiCircuitBreaker.execute(() =>
-            apiClient.delete(`/conversations/${conversationId}`)
-          );
+          // STAGE 1: Use apiClient
+          await apiClient.delete(`/conversations/${conversationId}`);
 
           // STAGE R1: Invalidate cache
           messageCache.invalidate(conversationId);
@@ -980,42 +792,34 @@ export const useConversationStore = create<ConversationStore>()(
             conversationId: state.conversationId === conversationId ? null : state.conversationId,
             messages: state.conversationId === conversationId ? [] : state.messages
           }));
-
-          logger.info('Conversation deleted successfully', { // STAGE 4
-            context: 'useConversationStore',
-            conversationId
-          });
         } catch (error) {
-          logger.error('Failed to delete conversation', error); // STAGE 4
           errorLogger.error('Error deleting conversation', error as Error, { context: 'useConversationStore' });
           throw error;
         }
       },
 
       updateTitle: async (conversationId, title, accessToken) => {
-        logger.debug('Updating conversation title', { context: 'useConversationStore', conversationId }); // STAGE 4
-
         try {
-          // STAGE 4: Circuit breaker protection
-          await apiCircuitBreaker.execute(() =>
-            apiClient.patch(`/conversations/${conversationId}/title`, { title })
+          // STAGE 1: Use apiClient
+          await apiClient.patch(
+            `/conversations/${conversationId}/title`,
+            { title },
+            {
+              headers: {
+                'x-auth-token': accessToken,
+                'Content-Type': 'application/json'
+              }
+            }
           );
 
-          // Update local state
+          // Update local list
           set((state) => ({
             conversations: state.conversations.map(c =>
               c.id === conversationId ? { ...c, title } : c
             ),
             title: state.conversationId === conversationId ? title : state.title
           }));
-
-          logger.info('Title updated successfully', { // STAGE 4
-            context: 'useConversationStore',
-            conversationId,
-            title
-          });
         } catch (error) {
-          logger.error('Failed to update title', error); // STAGE 4
           errorLogger.error('Error updating title', error as Error, { context: 'useConversationStore' });
           throw error;
         }
@@ -1024,6 +828,10 @@ export const useConversationStore = create<ConversationStore>()(
       restoreMessage: async (messageId, undoToken, accessToken) => {
         try {
           // STAGE 1: Use apiClient
+          await apiClient.post(`/conversations/messages/${messageId}/restore`, { undoToken });
+
+          set({ undoData: null });
+
           // Refresh current conversation
           const { conversationId } = get();
           if (conversationId) {
@@ -1095,125 +903,6 @@ export const useConversationStore = create<ConversationStore>()(
 
         set({ currentLeafId: bestLeafId });
         get()._deriveVisibleMessages();
-      },
-
-      // STAGE 2: Undo stack methods
-      pushUndo: (action) => {
-        set((state) => {
-          const newStack = [...state.undoStack, action];
-          // Keep last 10 actions
-          if (newStack.length > 10) {
-            newStack.shift();
-          }
-          return { undoStack: newStack };
-        });
-      },
-
-      popUndo: (messageId) => {
-        const action = get().undoStack.find(a => a.messageId === messageId);
-        if (action) {
-          set((state) => ({
-            undoStack: state.undoStack.filter(a => a.messageId !== messageId)
-          }));
-        }
-        return action;
-      },
-
-      showUndoToast: (message, onUndo) => {
-        set({
-          currentUndoToast: {
-            message,
-            onUndo,
-            expiresAt: Date.now() + 5000 // 5 seconds
-          }
-        });
-
-        // Auto-dismiss after 5s
-        setTimeout(() => {
-          const current = get().currentUndoToast;
-          if (current && current.expiresAt <= Date.now() + 100) {
-            set({ currentUndoToast: null });
-          }
-        }, 5000);
-      },
-
-      undoDelete: async (messageId, accessToken) => {
-        const action = get().popUndo(messageId);
-        if (!action || action.type !== 'delete') return;
-
-        const { conversationId } = get();
-        if (!conversationId) return;
-
-        try {
-          // Restore message via backend
-          await apiClient.post(`/conversations/${conversationId}/messages/restore`, {
-            message: action.previousState
-          });
-
-          // Refresh conversation
-          await get().refreshConversation(accessToken);
-
-          // Clear toast
-          set({ currentUndoToast: null });
-
-          errorLogger.info('Message restored successfully');
-        } catch (error) {
-          errorLogger.error('Error restoring deleted message', error as Error, { context: 'useConversationStore' });
-          throw error;
-        }
-      },
-
-      undoEdit: async (messageId, accessToken) => {
-        const action = get().popUndo(messageId);
-        if (!action || action.type !== 'edit') return;
-
-        const { conversationId } = get();
-        if (!conversationId) return;
-
-        try {
-          // Restore original content
-          await apiClient.patch(`/conversations/${conversationId}/messages/${messageId}`, {
-            content: action.previousState.content
-          });
-
-          // Refresh conversation
-          await get().refreshConversation(accessToken);
-
-          // Clear toast
-          set({ currentUndoToast: null });
-
-          errorLogger.info('Message edit undone successfully');
-        } catch (error) {
-          errorLogger.error('Error undoing message edit', error as Error, { context: 'useConversationStore' });
-          throw error;
-        }
-      },
-
-      undoRegenerate: async (messageId, accessToken) => {
-        const action = get().popUndo(messageId);
-        if (!action || action.type !== 'regenerate') return;
-
-        const { conversationId } = get();
-        if (!conversationId) return;
-
-        try {
-          // Restore previous response
-          await apiClient.post(`/conversations/${conversationId}/messages/restore-generation`, {
-            messageId,
-            previousMessage: action.previousState
-          });
-
-          // Refresh conversation
-          await get().refreshConversation(accessToken);
-
-          // Clear toast
-          set({ currentUndoToast: null });
-
-          errorLogger.info('Regeneration undone successfully');
-        } catch (error) {
-          errorLogger.error('Error undoing regeneration', error as Error, { context: 'useConversationStore' });
-          throw error;
-        }
       }
     }),
     {

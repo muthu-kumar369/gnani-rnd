@@ -133,7 +133,10 @@ const Sidebar: React.FC<SidebarProps> = ({ onNewChat, className = '' }) => {
     return (
         <div className={`flex flex-col h-full bg-jarvis-bg border-r border-jarvis-border/30 w-64 ${className}`}>
             {/* Header / New Chat */}
-            <div className="p-4 pb-2">
+            <div
+                className="flex-1 overflow-y-auto p-4 pb-2 scrollbar-thin scrollbar-thumb-jarvis-border scrollbar-track-transparent"
+                onScroll={handleScroll}
+            >
                 {/* Branding Logo */}
                 <div className="flex items-center gap-3 px-2 mb-6 mt-1">
                     <div className="w-8 h-8 bg-cyan-500/10 rounded-lg flex items-center justify-center border border-cyan-500/20 shadow-[0_0_15px_rgba(6,182,212,0.15)]">
@@ -144,32 +147,36 @@ const Sidebar: React.FC<SidebarProps> = ({ onNewChat, className = '' }) => {
                     </span>
                 </div>
 
+                {/* New Chat Button */}
                 <button
                     onClick={onNewChat}
-                    className="w-full flex items-center gap-2 px-4 py-2 bg-jarvis-blue/10 hover:bg-jarvis-blue/20 text-jarvis-blue border border-jarvis-blue/30 rounded-lg transition-all duration-200 group mb-3"
+                    className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-jarvis-blue/20 to-purple-600/20 hover:from-jarvis-blue/30 hover:to-purple-600/30 text-white px-4 py-2.5 rounded-lg transition-all group border border-jarvis-blue/30 hover:border-jarvis-blue/50 mb-2"
                 >
                     <Plus className="w-5 h-5 group-hover:scale-110 transition-transform" />
                     <span className="font-medium">New Chat</span>
                 </button>
 
+                {/* STAGE 2: Advanced Search Button */}
+                <button
+                    onClick={() => navigate('/search')}
+                    className="w-full flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white px-4 py-2 rounded-lg transition-all group border border-white/10 hover:border-jarvis-blue/30 mb-2"
+                >
+                    <Search className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                    <span className="font-medium text-sm">Advanced Search</span>
+                </button>
+
                 {/* Search Input */}
-                <div className="relative">
+                <div className="relative mb-4">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={14} />
                     <input
                         type="text"
-                        placeholder="Search..."
+                        placeholder="Search conversations..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         className="w-full bg-black/50 border border-jarvis-blue/20 rounded-lg py-1.5 pl-9 pr-4 text-xs text-gray-300 focus:outline-none focus:border-jarvis-blue/50 transition-all placeholder-gray-600"
                     />
                 </div>
-            </div>
 
-            {/* Chat List */}
-            <div
-                className="flex-1 overflow-y-auto px-2 space-y-1 custom-scrollbar pb-4"
-                onScroll={handleScroll}
-            >
                 <div className="px-2 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
                     History
                 </div>
@@ -328,7 +335,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onNewChat, className = '' }) => {
                 isDangerous={true}
                 confirmLabel="Delete"
             />
-        </div>
+        </div >
     );
 };
 

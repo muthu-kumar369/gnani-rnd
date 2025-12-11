@@ -1,6 +1,5 @@
 // STAGE 1: Enhanced API client with retry logic
-import axios, { AxiosError, AxiosInstance, AxiosRequestConfig } from 'axios';
-import type { AxiosResponse } from 'axios';
+import axios, { type AxiosError, type AxiosInstance, type AxiosRequestConfig, type AxiosResponse } from 'axios';
 import { parseError } from '../utils/errorParser';
 import { useRateLimitStore } from '../store/useRateLimitStore';
 import { useErrorStore } from '../store/useErrorStore';
@@ -156,22 +155,20 @@ api.interceptors.response.use(
 
 // Wrapper to handle deduplication for GET requests
 const originalGet = api.get.bind(api);
-api.get = function <T = any>(url: string, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
+api.get = function <T = any, R = AxiosResponse<T>, D = any>(url: string, config?: AxiosRequestConfig<D>): Promise<R> {
     const key = getRequestKey({ method: 'get', url, ...config });
 
     if (pendingRequests.has(key)) {
         console.log('[API Client] Using cached pending request:', key);
-        return pendingRequests.get(key)!;
+        return pendingRequests.get(key)! as Promise<R>;
     }
 
-    const promise = originalGet<T>(url, config);
-    pendingRequests.set(key, promise);
-
-    promise.finally(() => {
+    const request = originalGet<T, R, D>(url, config).finally(() => {
         pendingRequests.delete(key);
     });
 
-    return promise;
+    pendingRequests.set(key, request as any);
+    return request;
 };
 
 export default api;

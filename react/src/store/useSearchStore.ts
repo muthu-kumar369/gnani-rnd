@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import apiClient from '../api/client';
 
 export interface SearchFilters {
     dateFrom?: string;
@@ -24,10 +25,13 @@ interface SearchState {
     results: SearchResult[];
     isSearching: boolean;
     searchHistory: string[];
+    searchMode: 'basic' | 'semantic' | 'hybrid';
     setQuery: (query: string) => void;
     setFilters: (filters: SearchFilters) => void;
     setResults: (results: SearchResult[]) => void;
     setIsSearching: (isSearching: boolean) => void;
+    setSearchMode: (mode: 'basic' | 'semantic' | 'hybrid') => void;
+    search: () => Promise<void>;
     addToHistory: (query: string) => void;
     clearHistory: () => void;
     clearResults: () => void;
@@ -35,12 +39,13 @@ interface SearchState {
 
 export const useSearchStore = create<SearchState>()(
     persist(
-        (set) => ({
+        (set, get) => ({
             query: '',
             filters: {},
             results: [],
             isSearching: false,
             searchHistory: [],
+            searchMode: 'hybrid',
 
             setQuery: (query: string) => set({ query }),
 
@@ -49,6 +54,41 @@ export const useSearchStore = create<SearchState>()(
             setResults: (results: SearchResult[]) => set({ results }),
 
             setIsSearching: (isSearching: boolean) => set({ isSearching }),
+
+            setSearchMode: (mode: 'basic' | 'semantic' | 'hybrid') => set({ searchMode: mode }),
+
+            search: async () => {
+                const { query, filters, searchMode } = get();
+
+                if (!query.trim()) {
+                    set({ results: [] });
+                    return;
+                }
+
+                set({ isSearching: true });
+
+                try {
+                    const response = await apiClient.post('/search', {
+                        query,
+                        mode: searchMode,
+                        filters: {
+                            dateFrom: filters.dateFrom,
+                            dateTo: filters.dateTo,
+                            models: filters.models,
+                            folders: filters.folders,
+                            tags: filters.tags,
+                        },
+                        limit: 50,
+                    });
+
+                    set({ results: response.data.results || [] });
+                } catch (error) {
+                    console.error('Search failed:', error);
+                    set({ results: [] });
+                } finally {
+                    set({ isSearching: false });
+                }
+            },
 
             addToHistory: (query: string) => {
                 if (!query.trim()) return;

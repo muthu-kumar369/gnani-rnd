@@ -1,8 +1,7 @@
 import { useCallback } from 'react';
 import { useConversationHistoryStore, type Conversation } from '../store/useConversationHistoryStore';
 import { useUserStore } from '../store/useUserStore';
-
-const API_BASE_URL = 'http://localhost:3000/api/v1'; // Adjust as needed
+import apiClient from '../api/client'; // STAGE 1: Use API client with retry logic
 
 export const useConversationHistory = () => {
     const {
@@ -15,7 +14,11 @@ export const useConversationHistory = () => {
         page,
         setPage,
         searchQuery,
-        setSearchQuery
+        setSearchQuery,
+        sortBy,
+        setSortBy,
+        sortOrder,
+        setSortOrder
     } = useConversationHistoryStore();
 
     const { accessToken } = useUserStore();
@@ -25,28 +28,15 @@ export const useConversationHistory = () => {
 
         setIsLoading(true);
         try {
-            let url = `${API_BASE_URL}/conversations?page=${pageNum}&limit=20`;
-            let method = 'GET';
-            let body = undefined;
-
+            // STAGE 1: Use API client with retry logic
+            let response;
             if (query) {
-                url = `${API_BASE_URL}/conversations/search`;
-                method = 'POST';
-                body = JSON.stringify({ query, limit: 20 });
+                response = await apiClient.post('/conversations/search', { query, limit: 20 });
+            } else {
+                response = await apiClient.get(`/conversations?page=${pageNum}&limit=20&sortBy=${sortBy}&sortOrder=${sortOrder}`);
             }
 
-            const response = await fetch(url, {
-                method,
-                headers: {
-                    'Content-Type': 'application/json',
-                    'x-auth-token': accessToken
-                },
-                body
-            });
-
-            if (!response.ok) throw new Error('Failed to fetch conversations');
-
-            const data = await response.json();
+            const data = response.data;
 
             if (query) {
                 // Search returns a list directly in data.conversations
@@ -66,7 +56,7 @@ export const useConversationHistory = () => {
         } finally {
             setIsLoading(false);
         }
-    }, [accessToken, setConversations, setHasMore, setPage, setIsLoading]);
+    }, [accessToken, setConversations, setHasMore, setPage, setIsLoading, sortBy, sortOrder]);
 
     const loadMore = useCallback(() => {
         if (!isLoading && hasMore && !searchQuery) {
@@ -83,14 +73,8 @@ export const useConversationHistory = () => {
         if (!accessToken) return;
 
         try {
-            const response = await fetch(`${API_BASE_URL}/conversations/${id}`, {
-                method: 'DELETE',
-                headers: {
-                    'x-auth-token': accessToken
-                }
-            });
-
-            if (!response.ok) throw new Error('Failed to delete conversation');
+            // STAGE 1: Use API client with retry logic
+            await apiClient.delete(`/conversations/${id}`);
 
             setConversations((prev: Conversation[]) => prev.filter((c: Conversation) => c.conversationId !== id));
         } catch (error) {
@@ -102,16 +86,8 @@ export const useConversationHistory = () => {
         if (!accessToken) return;
 
         try {
-            const response = await fetch(`${API_BASE_URL}/conversations/${id}/title`, {
-                method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'x-auth-token': accessToken
-                },
-                body: JSON.stringify({ title })
-            });
-
-            if (!response.ok) throw new Error('Failed to update title');
+            // STAGE 1: Use API client with retry logic
+            await apiClient.patch(`/conversations/${id}/title`, { title });
 
             setConversations((prev: Conversation[]) => prev.map((c: Conversation) =>
                 c.conversationId === id ? { ...c, title } : c
@@ -125,23 +101,15 @@ export const useConversationHistory = () => {
         if (!accessToken) return;
 
         try {
-            const response = await fetch(`${API_BASE_URL}/conversations/${conversationId}/title/generate`, {
-                method: 'POST',
-                headers: {
-                    'x-auth-token': accessToken
-                }
-            });
-
-            if (!response.ok) throw new Error('Failed to generate title');
-
-            const data = await response.json();
+            // STAGE 1: Use API client with retry logic
+            const response = await apiClient.post(`/conversations/${conversationId}/title/generate`);
 
             // Update local conversation list with new title
             setConversations((prev: Conversation[]) => prev.map((c: Conversation) =>
-                c.conversationId === conversationId ? { ...c, title: data.title } : c
+                c.conversationId === conversationId ? { ...c, title: response.data.title } : c
             ));
 
-            return data.title;
+            return response.data.title;
         } catch (error) {
             console.error('Error generating title:', error);
         }
@@ -156,6 +124,10 @@ export const useConversationHistory = () => {
         deleteConversation,
         updateTitle,
         fetchConversations,
-        generateTitle // Export new method
+        generateTitle, // Export new method
+        sortBy,
+        setSortBy,
+        sortOrder,
+        setSortOrder
     };
 };

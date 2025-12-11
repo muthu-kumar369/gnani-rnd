@@ -1,4 +1,4 @@
-import React, { Suspense, useEffect } from 'react';
+import React, { Suspense, useEffect, useState } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useUserStore } from './store/useUserStore';
 import { ToastProvider } from './context/ToastContext';
@@ -8,12 +8,15 @@ import OfflineIndicator from './components/common/OfflineIndicator'; // STAGE 16
 import ErrorDisplay from './components/common/ErrorDisplay'; // STAGE 17
 import { LiveRegion } from './components/common/LiveRegion'; // STAGE 25
 import SkipLink from './components/common/SkipLink'; // STAGE 25
+import { UndoToast } from './components/common/UndoToast'; // ADDED
+import { UndoToastWrapper } from './components/common/UndoToastWrapper'; // STAGE 2
 import { useNetworkStatus } from './hooks/useNetworkStatus'; // STAGE 16
 import { useKeyboardNav } from './hooks/useKeyboardNav'; // STAGE 25
 import { offlineQueue } from './utils/offlineQueue'; // STAGE 16
 import './styles/accessibility.css'; // STAGE 25
 import './styles/rtl.css'; // STAGE 29: RTL support
 import { PluginPermissionDialog } from './components/common/PluginPermissionDialog'; // STAGE R3
+import apiClient from './api/client'; // STAGE 1: API client initialization
 
 
 // Lazy load components
@@ -24,6 +27,8 @@ const ChatLayout = React.lazy(() => import('./layouts/ChatLayout'));
 const ChatPage = React.lazy(() => import('./pages/ChatPage'));
 const SettingsPage = React.lazy(() => import('./pages/SettingsPage'));
 const SharedConversationPage = React.lazy(() => import('./pages/SharedConversationPage')); // STAGE 22
+// STAGE 2: Search Page
+const SearchPage = React.lazy(() => import('./pages/SearchPage'));
 const AnalyticsPage = React.lazy(() => import('./components/common/AnalyticsDashboard')); // STAGE R8
 
 // Protected Route Wrapper - only renders when authenticated
@@ -51,9 +56,14 @@ function RequireAuth({ children }: { children: React.ReactNode }) {
 }
 
 function App() {
-  const { isAuthenticated, isInitialized } = useUserStore();
+  const { isAuthenticated, isInitialized, initialize } = useUserStore();
   const { isOnline, wasOffline } = useNetworkStatus(); // STAGE 16
   useKeyboardNav(); // STAGE 25: Enable keyboard shortcuts
+
+  // STAGE 1: Initialize user store on mount
+  useEffect(() => {
+    initialize();
+  }, [initialize]);
 
   // STAGE 16: Process offline queue when coming back online
   useEffect(() => {
@@ -80,6 +90,8 @@ function App() {
       <ErrorDisplay />
       {/* STAGE R3: Plugin Permission Dialog */}
       <PluginPermissionDialog />
+      {/* STAGE 2: Undo Toast */}
+      <UndoToastWrapper />
       <ToastProvider>
         <Suspense fallback={<LoadingScreen />}>
           <Routes>
@@ -121,6 +133,15 @@ function App() {
               <RequireAuth>
                 <ErrorBoundary>
                   <SettingsPage />
+                </ErrorBoundary>
+              </RequireAuth>
+            } />
+
+            {/* STAGE 2: Search Page */}
+            <Route path="/search" element={
+              <RequireAuth>
+                <ErrorBoundary componentName="Search">
+                  <SearchPage />
                 </ErrorBoundary>
               </RequireAuth>
             } />

@@ -8,7 +8,7 @@ import VoiceModeOverlay from '../components/chat/VoiceModeOverlay';
 
 const ChatPage: React.FC = () => {
     const { sendMessage, isThinking } = useChatSession();
-    const { messages, isStreaming, cancelStream, conversationId } = useConversationStore();
+    const { messages, isStreaming, cancelStream, conversationId, fetchPreviousMessages, hasMoreMessages, isFetchingMessages, allMessages } = useConversationStore();
     const { accessToken } = useUserStore();
     const [isVoiceMode, setIsVoiceMode] = useState(false);
 
@@ -18,15 +18,27 @@ const ChatPage: React.FC = () => {
 
     const handleStop = () => {
         if (conversationId && accessToken) {
-            // Use 'current' as sessionId placeholder if actual stream ID isn't tracked in component
-            // store handles logic
             cancelStream('current', accessToken);
+        }
+    };
+
+    const handleLoadMore = () => {
+        if (conversationId && allMessages.length > 0) {
+            // Use oldest message timestamp or ID as cursor
+            const oldest = allMessages[0];
+            fetchPreviousMessages(conversationId, new Date(oldest.timestamp).toISOString());
         }
     };
 
     return (
         <div className="flex flex-col h-full relative">
-            <MessageList messages={messages} isLoading={isThinking && !isStreaming} />
+            <MessageList
+                messages={messages}
+                isLoading={isThinking && !isStreaming}
+                hasMore={hasMoreMessages}
+                onLoadMore={handleLoadMore}
+                isFetchingMore={isFetchingMessages}
+            />
             <ChatInput
                 onSend={sendMessage}
                 onMicClick={handleMicClick}

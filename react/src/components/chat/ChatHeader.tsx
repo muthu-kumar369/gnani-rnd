@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Wifi, WifiOff, Battery, BatteryCharging, ChevronDown, Cpu, Activity, Check } from 'lucide-react';
+import { Wifi, WifiOff, Battery, BatteryCharging, ChevronDown, Cpu, Activity, Check, Search } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useDeviceAwareness } from '../../hooks/useDeviceAwareness';
 import { useConversationStore } from '../../store/useConversationStore';
 import { useUserStore } from '../../store/useUserStore';
@@ -13,6 +14,7 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ modelName = 'Gnani v2.0 (GPT-4o
     const { batteryStatus, connectivityStatus, systemStatus } = useDeviceAwareness();
     const { models, fetchModels, selectedModel, setSelectedModel, conversationId, updateConversationModel } = useConversationStore();
     const { accessToken } = useUserStore();
+    const navigate = useNavigate();
 
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
@@ -84,6 +86,16 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ modelName = 'Gnani v2.0 (GPT-4o
 
             {/* Right: Device Indicators */}
             <div className="flex items-center gap-4 text-gray-400">
+                {/* STAGE 2: Advanced Search Button */}
+                <button
+                    onClick={() => navigate('/search')}
+                    className="flex items-center gap-2 px-3 py-1.5 text-gray-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
+                    title="Advanced Search"
+                >
+                    <Search size={18} />
+                    <span className="text-sm hidden md:inline">Search</span>
+                </button>
+
                 {/* System Stats (CPU/RAM) if available */}
                 {systemStatus && (
                     <div className="hidden md:flex items-center gap-3 mr-2">

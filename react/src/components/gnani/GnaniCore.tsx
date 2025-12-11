@@ -28,6 +28,7 @@ import SystemIndicators from "../device/SystemIndicators";
 import DeviceStatsHUD from "../device/DeviceStatsHUD";
 import ConversationSidebar from "../conversation/ConversationSidebar";
 import ToolStatusIndicator from "./ToolStatusIndicator";
+import TimeoutIndicator from "../common/TimeoutIndicator";
 
 import { AudioManager } from "./AudioManager";
 import { StateManager } from "./StateManager";
@@ -68,6 +69,8 @@ const GnaniCore: React.FC<GnaniCoreProps> = ({ isOverlayMode = false, onOverlayC
   const [settingsInitialTab, setSettingsInitialTab] = useState<'profile' | 'assistant' | 'devices' | 'security' | 'accounts' | 'history' | 'preferences' | 'hotkey' | 'about' | 'avatar' | 'tools' | 'templates'>('profile');
   const [showHistory, setShowHistory] = useState(false);
   const lastProcessedFinalSTT = useRef<string | null>(null);
+  const [timeoutSeconds, setTimeoutSeconds] = useState(30);
+  const timeoutIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Initialize Gnani Store (State Machine)
   useEffect(() => {
@@ -112,6 +115,28 @@ const GnaniCore: React.FC<GnaniCoreProps> = ({ isOverlayMode = false, onOverlayC
       window.removeEventListener('open-settings', handleOpenSettings);
     };
   }, []);
+
+  // Timeout tracking for thinking state
+  useEffect(() => {
+    if (isThinking) {
+      setTimeoutSeconds(30);
+      timeoutIntervalRef.current = setInterval(() => {
+        setTimeoutSeconds(prev => Math.max(0, prev - 1));
+      }, 1000);
+    } else {
+      if (timeoutIntervalRef.current) {
+        clearInterval(timeoutIntervalRef.current);
+        timeoutIntervalRef.current = null;
+      }
+      setTimeoutSeconds(30);
+    }
+
+    return () => {
+      if (timeoutIntervalRef.current) {
+        clearInterval(timeoutIntervalRef.current);
+      }
+    };
+  }, [isThinking]);
 
   useEffect(() => {
     streamingTTSRef.current = new StreamingTTS();
@@ -498,6 +523,15 @@ const GnaniCore: React.FC<GnaniCoreProps> = ({ isOverlayMode = false, onOverlayC
               <AnimatePresence>
                 {toolStatus && toolStatus.status && <ToolStatusIndicator status={toolStatus} />}
               </AnimatePresence>
+
+              {/* Timeout Indicator */}
+              {isThinking && timeoutSeconds < 30 && (
+                <TimeoutIndicator
+                  timeLeft={timeoutSeconds}
+                  onExtend={(seconds) => setTimeoutSeconds(prev => prev + seconds)}
+                />
+              )}
+
               <div className="h-16 flex items-center justify-center">
                 <SpokenTextDisplay
                   words={spokenText.words}

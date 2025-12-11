@@ -1,16 +1,20 @@
-import React, { useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
 import Sidebar from '../components/chat/Sidebar';
 import ChatHeader from '../components/chat/ChatHeader';
 import { useConversationStore } from '../store/useConversationStore';
 import { useUserStore } from '../store/useUserStore';
 import AnalyticsModal from '../components/analytics/AnalyticsModal';
+import AdvancedSearch from '../components/common/AdvancedSearch';
+import UndoToastWrapper from '../components/common/UndoToastWrapper';
+import { ErrorBoundary } from '../components/ErrorBoundary';
 
 const ChatLayout: React.FC = () => {
     const { createConversation, fetchConversations, conversationId } = useConversationStore();
     const { accessToken } = useUserStore();
     const navigate = useNavigate();
     const [showAnalytics, setShowAnalytics] = React.useState(false);
+    const [showAdvancedSearch, setShowAdvancedSearch] = React.useState(false);
 
     const handleNewChat = async () => {
         if (!accessToken) return;
@@ -40,6 +44,18 @@ const ChatLayout: React.FC = () => {
         return () => window.removeEventListener('open-analytics', handleOpenAnalytics);
     }, []);
 
+    // Handle Cmd+K / Ctrl+K for Advanced Search
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+                e.preventDefault();
+                setShowAdvancedSearch(true);
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, []);
+
     return (
         <div className="flex h-screen w-full bg-jarvis-bg overflow-hidden text-jarvis-text font-sans">
             {/* Sidebar */}
@@ -57,6 +73,8 @@ const ChatLayout: React.FC = () => {
 
             {/* Global Modals */}
             <AnalyticsModal isOpen={showAnalytics} onClose={() => setShowAnalytics(false)} />
+            <AdvancedSearch isOpen={showAdvancedSearch} onClose={() => setShowAdvancedSearch(false)} />
+            <UndoToastWrapper />
         </div>
     );
 };

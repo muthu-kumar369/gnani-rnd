@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Download, FileJson, FileText } from 'lucide-react';
 import { downloadFile } from '../../utils/download';
+import apiClient from '../../api/client'; // STAGE 1: Use API client
 
 interface ExportButtonProps {
     conversationId: string;
@@ -30,23 +31,15 @@ const ExportButton: React.FC<ExportButtonProps> = ({ conversationId, className =
 
     const handleExport = async (format: 'markdown' | 'json') => {
         setIsOpen(false);
-        const API_BASE_URL = 'http://localhost:3000/api/v1';
-        const url = `${API_BASE_URL}/conversations/${conversationId}/export/${format}`;
 
         try {
-            const token = localStorage.getItem('accessToken');
-            const response = await fetch(url, {
-                headers: {
-                    'x-auth-token': token || ''
-                }
-            });
+            // STAGE 1: Use API client instead of hardcoded URL
+            const response = await apiClient.get(
+                `/conversations/${conversationId}/export/${format}`,
+                { responseType: 'blob' }
+            );
 
-            if (!response.ok) {
-                console.error('Export failed');
-                return;
-            }
-
-            const blob = await response.blob();
+            const blob = response.data;
             const filename = `conversation-${conversationId}.${format === 'markdown' ? 'md' : 'json'}`;
             downloadFile(blob, filename);
 

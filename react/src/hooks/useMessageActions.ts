@@ -1,8 +1,7 @@
 import { useState, useCallback } from 'react';
 import { useConversationStore } from '../store/useConversationStore';
 import { useUserStore } from '../store/useUserStore';
-
-const API_BASE_URL = 'http://localhost:3000/api/v1';
+import apiClient from '../api/client'; // STAGE 1: Use API client with retry logic
 
 export const useMessageActions = (conversationId: string | null) => {
     const { accessToken } = useUserStore();
@@ -82,17 +81,12 @@ export const useMessageActions = (conversationId: string | null) => {
         if (!conversationId || !accessToken) return [];
 
         try {
-            const response = await fetch(
-                `${API_BASE_URL}/conversations/${conversationId}/messages/${messageId}/generations`,
-                {
-                    headers: { 'x-auth-token': accessToken }
-                }
+            // STAGE 1: Use API client with retry logic and deduplication
+            const response = await apiClient.get(
+                `/conversations/${conversationId}/messages/${messageId}/generations`
             );
 
-            if (!response.ok) return [];
-
-            const data = await response.json();
-            return data.generations || [];
+            return response.data.generations || [];
         } catch (error) {
             console.error('Failed to fetch generations:', error);
             return [];

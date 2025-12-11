@@ -1,13 +1,15 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Plus, X, History, RefreshCw } from 'lucide-react';
+import { Search, Plus, X, History, RefreshCw, ArrowUpDown, ChevronDown, ChevronRight, Folder } from 'lucide-react';
 import { useConversationHistory } from '../../hooks/useConversationHistory';
 import ConversationListItem from './ConversationListItem';
 import { useConversationStore } from '../../store/useConversationStore';
 import { useUserStore } from '../../store/useUserStore';
+import { useFolderStore } from '../../store/useFolderStore';
 import Button from '../ui/Button';
 import ConfirmationModal from '../ui/ConfirmationModal';
 import { ConversationSkeleton } from '../common/SkeletonLoader';
+import FolderList from '../common/FolderList';
 
 interface ConversationSidebarProps {
     isOpen: boolean;
@@ -23,20 +25,28 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
     onSelectConversation
 }) => {
     const {
-        conversations,
+        conversations, // Using hook's conversations (paginated + search results)
+        isLoading,
+        hasMore,
         loadMore,
-        search,
+        search, // Hook's search method
         deleteConversation,
         updateTitle,
         fetchConversations,
-        isLoading,
-        hasMore
+        sortBy,
+        setSortBy,
+        sortOrder,
+        setSortOrder
     } = useConversationHistory();
 
     const { conversationId: currentConversationId, createConversation } = useConversationStore();
     const { accessToken } = useUserStore();
+    const { folders, moveConversation, getFolderByConversation } = useFolderStore();
+
     const [searchQuery, setSearchQuery] = React.useState('');
     const [deleteId, setDeleteId] = React.useState<string | null>(null);
+    const [selectedFolderId, setSelectedFolderId] = React.useState<string | null>(null);
+    const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
     const sidebarRef = useRef<HTMLDivElement>(null);
 
     // Initial load
@@ -46,13 +56,28 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
         }
     }, [isOpen, fetchConversations]);
 
+    // Handle folder drop event
+    useEffect(() => {
+        const handleFolderDrop = (event: Event) => {
+            const customEvent = event as CustomEvent<{ folderId: string; conversationId: string }>;
+            const { folderId, conversationId } = customEvent.detail;
+            const currentFolder = getFolderByConversation(conversationId);
+            moveConversation(conversationId, currentFolder?.id || null, folderId);
+        };
+
+        window.addEventListener('folder:drop', handleFolderDrop);
+        return () => window.removeEventListener('folder:drop', handleFolderDrop);
+    }, [moveConversation, getFolderByConversation]);
+
     // Debounced search
     useEffect(() => {
         const timer = setTimeout(() => {
-            if (isOpen) search(searchQuery);
-        }, 300);
+            if (!isOpen) return;
+            // Use hook's search method
+            search(searchQuery);
+        }, 500);
         return () => clearTimeout(timer);
-    }, [searchQuery, search, isOpen]);
+    }, [searchQuery, isOpen, search]);
 
     // Infinite scroll
     const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
@@ -74,6 +99,42 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
             }
         }
     };
+
+    // Toggle folder expand/collapse
+    const toggleFolder = (folderId: string) => {
+        setExpandedFolders(prev => {
+            const next = new Set(prev);
+            if (next.has(folderId)) {
+                next.delete(folderId);
+            } else {
+                next.add(folderId);
+            }
+            return next;
+        });
+    };
+
+    // Group conversations by folder
+    const conversationsByFolder = React.useMemo(() => {
+        const grouped: Record<string, typeof conversations> = {
+            unorganized: []
+        };
+
+        conversations.forEach(conv => {
+            const folder = getFolderByConversation(conv.conversationId);
+            const folderId = folder?.id || 'unorganized';
+            if (!grouped[folderId]) {
+                grouped[folderId] = [];
+            }
+            grouped[folderId].push(conv);
+        });
+
+        return grouped;
+    }, [conversations, getFolderByConversation]);
+
+    // Filter conversations if folder is selected
+    const filteredConversations = selectedFolderId
+        ? conversationsByFolder[selectedFolderId] || []
+        : conversations;
 
     return (
         <AnimatePresence>
@@ -145,55 +206,169 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                             </div>
                         </div>
 
+                        {/* Folders */}
+                        <div className="px-4 pb-2">
+                            <FolderList
+                                selectedFolderId={selectedFolderId}
+                                onSelectFolder={setSelectedFolderId}
+                            />
+                        </div>
+
+                        {/* Sort Controls */}
+                        <div className="px-4 pb-2 flex gap-2">
+                            <select
+                                value={sortBy}
+                                onChange={(e) => {
+                                    setSortBy(e.target.value as 'date' | 'name' | 'messageCount');
+                                    fetchConversations();
+                                }}
+                                className="flex-1 bg-black/50 border border-jarvis-blue/20 rounded py-1.5 px-2 text-xs text-gray-300 focus:outline-none focus:border-jarvis-cyan/50"
+                            >
+                                <option value="date">Sort by Date</option>
+                                <option value="name">Sort by Name</option>
+                                <option value="messageCount">Sort by Messages</option>
+                            </select>
+                            <button
+                                onClick={() => {
+                                    setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+                                    fetchConversations();
+                                }}
+                                className="p-1.5 bg-black/50 border border-jarvis-blue/20 rounded hover:bg-jarvis-blue/10 transition-colors"
+                                title={`Sort ${sortOrder === 'asc' ? 'Descending' : 'Ascending'}`}
+                            >
+                                <ArrowUpDown size={14} className={`text-gray-400 ${sortOrder === 'desc' ? 'rotate-180' : ''} transition-transform`} />
+                            </button>
+                        </div>
+
                         {/* List */}
                         <div
                             className="flex-1 overflow-y-auto p-4 space-y-1 custom-scrollbar"
                             onScroll={handleScroll}
                         >
-                            {conversations.length === 0 && !isLoading ? (
-                                <div className="text-center text-gray-500 mt-10 text-sm">
-                                    No conversations found.
-                                </div>
-                            ) : isLoading && conversations.length === 0 ? (
+                            {isLoading && conversations.length === 0 ? (
                                 <ConversationSkeleton className="mt-4" />
                             ) : (
-                                conversations.map(conv => (
-                                    <ConversationListItem
-                                        key={conv.conversationId}
-                                        conversation={conv}
-                                        isActive={conv.conversationId === currentConversationId}
-                                        onResume={(id) => {
-                                            if (onSelectConversation) {
-                                                onSelectConversation(id);
-                                            }
-                                            onClose();
-                                        }}
-                                        onDelete={(id) => setDeleteId(id)}
-                                        onEditTitle={updateTitle}
-                                        searchQuery={searchQuery}
-                                    />
-                                ))
-                            )}
+                                <>
+                                    {/* Folders with nested conversations */}
+                                    {folders.map(folder => {
+                                        const folderConvs = conversationsByFolder[folder.id] || [];
+                                        const isExpanded = expandedFolders.has(folder.id);
 
-                            {isLoading && conversations.length > 0 && (
-                                <div className="flex justify-center py-4">
-                                    <div className="w-5 h-5 border-2 border-jarvis-cyan/30 border-t-jarvis-cyan rounded-full animate-spin" />
-                                </div>
+                                        if (folderConvs.length === 0) return null;
+
+                                        return (
+                                            <div key={folder.id} className="mb-2">
+                                                {/* Folder Header */}
+                                                <div className="flex items-center gap-1 mb-1">
+                                                    <button
+                                                        onClick={() => toggleFolder(folder.id)}
+                                                        className="p-1 hover:bg-white/10 rounded transition-colors"
+                                                    >
+                                                        {isExpanded ? (
+                                                            <ChevronDown size={14} className="text-gray-400" />
+                                                        ) : (
+                                                            <ChevronRight size={14} className="text-gray-400" />
+                                                        )}
+                                                    </button>
+                                                    <button
+                                                        onClick={() => setSelectedFolderId(folder.id)}
+                                                        className={`flex-1 flex items-center gap-2 px-2 py-1.5 rounded-lg text-sm transition-colors ${selectedFolderId === folder.id
+                                                            ? 'bg-jarvis-blue/20 text-jarvis-cyan'
+                                                            : 'hover:bg-white/5 text-gray-300'
+                                                            }`}
+                                                    >
+                                                        <Folder size={14} />
+                                                        <span className="flex-1 text-left truncate">{folder.name}</span>
+                                                        <span className="text-xs text-gray-500">({folderConvs.length})</span>
+                                                    </button>
+                                                </div>
+
+                                                {/* Nested Conversations */}
+                                                {isExpanded && (
+                                                    <div className="ml-6 space-y-1">
+                                                        {folderConvs.map(conv => (
+                                                            <ConversationListItem
+                                                                key={conv.conversationId}
+                                                                conversation={conv as any} // Cast as any because ConversationSummary might miss some fields from ConversationListItem's expected type, but essential fields are there
+                                                                isActive={conv.conversationId === currentConversationId}
+                                                                onResume={(id) => {
+                                                                    if (onSelectConversation) {
+                                                                        onSelectConversation(id);
+                                                                    }
+                                                                    onClose();
+                                                                }}
+                                                                onDelete={(id) => setDeleteId(id)}
+                                                                onEditTitle={(id: string, title: string) => updateTitle(id, title)}
+                                                                searchQuery={searchQuery} // Pass query for highlighting
+                                                            />
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+
+                                    {/* Unorganized Conversations */}
+                                    {conversationsByFolder.unorganized && conversationsByFolder.unorganized.length > 0 && (
+                                        <div className="mt-4">
+                                            <div className="text-xs text-gray-500 px-2 mb-2 uppercase tracking-wider">
+                                                Unorganized ({conversationsByFolder.unorganized.length})
+                                            </div>
+                                            <div className="space-y-1">
+                                                {conversationsByFolder.unorganized.map(conv => (
+                                                    <ConversationListItem
+                                                        key={conv.conversationId}
+                                                        conversation={conv as any}
+                                                        isActive={conv.conversationId === currentConversationId}
+                                                        onResume={(id) => {
+                                                            if (onSelectConversation) {
+                                                                onSelectConversation(id);
+                                                            }
+                                                            onClose();
+                                                        }}
+                                                        onDelete={(id) => setDeleteId(id)}
+                                                        onEditTitle={(id: string, title: string) => updateTitle(id, title)}
+                                                        searchQuery={searchQuery}
+                                                    />
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* No conversations message */}
+                                    {conversations.length === 0 && !isLoading && (
+                                        <div className="text-center text-gray-500 mt-10 text-sm">
+                                            No conversations found.
+                                        </div>
+                                    )}
+
+                                    {/* Loading more indicator */}
+                                    {isLoading && conversations.length > 0 && (
+                                        <div className="text-center py-4">
+                                            <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-jarvis-cyan"></div>
+                                        </div>
+                                    )}
+                                </>
                             )}
                         </div>
-                    </motion.div>
 
-                    <ConfirmationModal
-                        isOpen={!!deleteId}
-                        onClose={() => setDeleteId(null)}
-                        onConfirm={() => {
-                            if (deleteId) deleteConversation(deleteId);
-                        }}
-                        title="Delete Conversation"
-                        message="Are you sure you want to delete this conversation? This action cannot be undone."
-                        isDangerous={true}
-                        confirmLabel="Delete"
-                    />
+                        {/* Delete Confirmation Modal */}
+                        <ConfirmationModal
+                            isOpen={deleteId !== null}
+                            onClose={() => setDeleteId(null)}
+                            onConfirm={async () => {
+                                if (deleteId) {
+                                    await deleteConversation(deleteId);
+                                    setDeleteId(null);
+                                }
+                            }}
+                            title="Delete Conversation"
+                            message="Are you sure you want to delete this conversation? This action cannot be undone."
+                            confirmLabel="Delete"
+                            cancelLabel="Cancel"
+                            isDangerous={true}
+                        />
+                    </motion.div>
                 </>
             )}
         </AnimatePresence>

@@ -1,10 +1,13 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { formatDistanceToNow } from 'date-fns';
-import { MessageSquare, Trash2, Edit2, Play, MoreVertical } from 'lucide-react';
+import { MessageSquare, Trash2, Edit2, Play, MoreVertical, FolderInput, Share2 } from 'lucide-react';
 import type { Conversation } from '../../store/useConversationHistoryStore';
 import { useConversationStore } from '../../store/useConversationStore';
 import { useUserStore } from '../../store/useUserStore';
+import { useFolderStore } from '../../store/useFolderStore';
 import ExportButton from './ExportButton';
+import ShareModal from '../common/ShareModal';
+import apiClient from '../../api/client'; // STAGE 1: Use API client
 
 interface ConversationListItemProps {
     conversation: Conversation;
@@ -26,8 +29,11 @@ const ConversationListItem: React.FC<ConversationListItemProps> = ({
     const [isEditing, setIsEditing] = useState(false);
     const [editTitle, setEditTitle] = useState(conversation.title);
     const [showMenu, setShowMenu] = useState(false);
+    const [showFolderModal, setShowFolderModal] = useState(false);
+    const [showShareModal, setShowShareModal] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
     const buttonRef = useRef<HTMLButtonElement>(null);
+    const { folders, moveConversation, getFolderByConversation } = useFolderStore();
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -67,11 +73,11 @@ const ConversationListItem: React.FC<ConversationListItemProps> = ({
             // Prefetch messages for instant switching
             import('../../utils/messageCache').then(({ messageCache }) => {
                 messageCache.prefetch(conversation.conversationId, async () => {
-                    const response = await fetch(
-                        `http://localhost:3000/api/v1/conversations/${conversation.conversationId}`,
-                        { headers: { 'x-auth-token': accessToken } }
+                    // STAGE 1: Use API client instead of hardcoded URL
+                    const response = await apiClient.get(
+                        `/conversations/${conversation.conversationId}`
                     );
-                    const data = await response.json();
+                    const data = response.data;
                     return data.messages.map((msg: any) => ({
                         id: msg.id || msg._id,
                         _id: msg.id || msg._id,
@@ -100,6 +106,19 @@ const ConversationListItem: React.FC<ConversationListItemProps> = ({
         );
     };
 
+    // Drag handlers for folder organization
+    const handleDragStart = (e: React.DragEvent) => {
+        e.dataTransfer.setData('conversationId', conversation.conversationId);
+        e.dataTransfer.effectAllowed = 'move';
+    };
+
+    const handleMoveToFolder = (folderId: string) => {
+        const currentFolder = getFolderByConversation(conversation.conversationId);
+        moveConversation(conversation.conversationId, currentFolder?.id || null, folderId);
+        setShowFolderModal(false);
+        setShowMenu(false);
+    };
+
     return (
         <div
             className={`group relative p-3 rounded-lg mb-2 cursor-pointer transition-all duration-200 border ${isActive
@@ -108,6 +127,8 @@ const ConversationListItem: React.FC<ConversationListItemProps> = ({
                 }`}
             onClick={() => onResume(conversation.conversationId)}
             onMouseEnter={handleMouseEnter}
+            draggable
+            onDragStart={handleDragStart}
         >
             <div className="flex items-start justify-between">
                 <div className="flex-1 min-w-0 mr-2">
@@ -173,6 +194,20 @@ const ConversationListItem: React.FC<ConversationListItemProps> = ({
                                 Edit Title
                             </button>
                             <button
+                                onClick={(e) => handleMenuAction(() => setShowFolderModal(true), e)}
+                                className="w-full px-3 py-2 text-left text-xs text-gray-300 hover:bg-jarvis-blue/10 hover:text-white transition-colors flex items-center gap-2"
+                            >
+                                <FolderInput size={12} />
+                                Move to Folder
+                            </button>
+                            <button
+                                onClick={(e) => handleMenuAction(() => setShowShareModal(true), e)}
+                                className="w-full px-3 py-2 text-left text-xs text-gray-300 hover:bg-jarvis-blue/10 hover:text-white transition-colors flex items-center gap-2"
+                            >
+                                <Share2 size={12} />
+                                Share
+                            </button>
+                            <button
                                 onClick={(e) => handleMenuAction(() => onDelete(conversation.conversationId), e)}
                                 className="w-full px-3 py-2 text-left text-xs text-red-300 hover:bg-red-500/10 hover:text-red-400 transition-colors flex items-center gap-2"
                             >
@@ -183,6 +218,59 @@ const ConversationListItem: React.FC<ConversationListItemProps> = ({
                     )}
                 </div>
             </div>
+
+            {/* Move to Folder Modal */}
+            {showFolderModal && (
+                <>
+                    <div
+                        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
+                        onClick={() => setShowFolderModal(false)}
+                    />
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                        <div
+                            className="bg-black/95 border border-jarvis-cyan/30 rounded-lg shadow-2xl w-full max-w-sm"
+                            onClick={e => e.stopPropagation()}
+                        >
+                            <div className="p-4 border-b border-jarvis-blue/20">
+                                <h3 className="text-lg font-semibold text-jarvis-cyan">Move to Folder</h3>
+                            </div>
+                            <div className="p-4 max-h-96 overflow-y-auto">
+                                <button
+                                    onClick={() => handleMoveToFolder(null as any)}
+                                    className="w-full text-left px-3 py-2 rounded hover:bg-jarvis-cyan/10 text-gray-300 hover:text-jarvis-cyan transition-colors mb-1"
+                                >
+                                    📂 Unorganized
+                                </button>
+                                {folders.map(folder => (
+                                    <button
+                                        key={folder.id}
+                                        onClick={() => handleMoveToFolder(folder.id)}
+                                        className="w-full text-left px-3 py-2 rounded hover:bg-jarvis-cyan/10 text-gray-300 hover:text-jarvis-cyan transition-colors mb-1"
+                                    >
+                                        {folder.icon} {folder.name}
+                                    </button>
+                                ))}
+                            </div>
+                            <div className="p-4 border-t border-jarvis-blue/20 flex justify-end">
+                                <button
+                                    onClick={() => setShowFolderModal(false)}
+                                    className="px-4 py-2 bg-jarvis-blue/20 hover:bg-jarvis-blue/30 text-jarvis-cyan rounded transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </>
+            )}
+
+            {/* Share Modal */}
+            {showShareModal && (
+                <ShareModal
+                    conversationId={conversation.conversationId}
+                    onClose={() => setShowShareModal(false)}
+                />
+            )}
         </div>
     );
 };
