@@ -17,6 +17,7 @@ interface StateManagerProps {
     transition: (eventName: any) => void;
     setIsStreaming: (isStreaming: boolean) => void;
     showNotification: (title: string, body: string) => void;
+    addMessage: (message: any) => void;
 }
 
 export const StateManager: React.FC<StateManagerProps> = React.memo(({
@@ -33,7 +34,8 @@ export const StateManager: React.FC<StateManagerProps> = React.memo(({
     streamingTTS,
     transition,
     setIsStreaming,
-    showNotification
+    showNotification,
+    addMessage
 }) => {
 
     // --- Transitions ---
@@ -51,11 +53,18 @@ export const StateManager: React.FC<StateManagerProps> = React.memo(({
     useEffect(() => {
         if (latestFinalSTT && isListening && latestFinalSTT !== lastProcessedFinalSTT.current) {
             errorLogger.info('Final STT received, transitioning to thinking', { context: 'StateManager', text: latestFinalSTT });
+
+            // Sync Voice Input to Chat History
+            addMessage({
+                type: 'user',
+                message: latestFinalSTT
+            });
+
             lastProcessedFinalSTT.current = latestFinalSTT;
             setIsStreaming(true);
             transition('vad-end');
         }
-    }, [latestFinalSTT, isListening, transition, setIsStreaming]);
+    }, [latestFinalSTT, isListening, transition, setIsStreaming, addMessage]);
     // Note: lastProcessedFinalSTT.current assignment is valid in effect.
 
     // TTS Start -> Speaking

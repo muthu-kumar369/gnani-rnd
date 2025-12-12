@@ -2,6 +2,8 @@ import React, { useEffect, useRef } from 'react';
 import { User, Sparkles, Copy, ThumbsUp } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import MessageItem from './MessageItem';
+import DateSeparator from './DateSeparator';
+import TypingIndicator from './TypingIndicator';
 import StreamingProgress from '../common/StreamingProgress';
 import TimeoutIndicator from '../common/TimeoutIndicator';
 import { useConversationStore } from '../../store/useConversationStore';
@@ -9,12 +11,15 @@ import type { ConversationMessage } from '../../store/useConversationStore';
 
 import { useUserStore } from '../../store/useUserStore';
 
+import MessageSkeleton from './MessageSkeleton';
+
 interface MessageListProps {
     messages: ConversationMessage[];
     isLoading?: boolean;
     hasMore?: boolean;
     onLoadMore?: () => void;
     isFetchingMore?: boolean;
+    isInitialLoading?: boolean;
 }
 
 const MessageList: React.FC<MessageListProps> = ({
@@ -22,7 +27,8 @@ const MessageList: React.FC<MessageListProps> = ({
     isLoading,
     hasMore,
     onLoadMore,
-    isFetchingMore
+    isFetchingMore,
+    isInitialLoading
 }) => {
     const { isStreaming, streamProgress, cancelStream, regenerateResponse, conversationId, currentLeafId } = useConversationStore();
     const { accessToken } = useUserStore();
@@ -85,7 +91,7 @@ const MessageList: React.FC<MessageListProps> = ({
     return (
         <div
             ref={containerRef}
-            className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-8 space-y-6"
+            className="flex-1 overflow-y-auto custom-scrollbar p-2 md:p-6 space-y-4 md:space-y-6 scroll-smooth"
             onScroll={handleScroll}
         >
             {isFetchingMore && (
@@ -94,19 +100,33 @@ const MessageList: React.FC<MessageListProps> = ({
                 </div>
             )}
 
-            {messages.map((msg, idx) => (
-                <MessageItem
-                    key={msg.id || idx}
-                    message={msg}
-                    isLast={idx === messages.length - 1}
-                />
-            ))}
+            {isInitialLoading && messages.length === 0 ? (
+                <div className="space-y-4">
+                    <MessageSkeleton />
+                    <MessageSkeleton />
+                    <MessageSkeleton />
+                </div>
+            ) : (
+                messages.map((msg, idx) => {
+                    const prevMsg = messages[idx - 1];
+                    const showDateSeparator = !prevMsg ||
+                        new Date(msg.timestamp).toDateString() !== new Date(prevMsg.timestamp).toDateString();
+
+                    return (
+                        <React.Fragment key={msg.id || idx}>
+                            {showDateSeparator && <DateSeparator timestamp={msg.timestamp} />}
+                            <MessageItem
+                                message={msg}
+                                isLast={idx === messages.length - 1}
+                            />
+                        </React.Fragment>
+                    );
+                })
+            )}
 
             {isLoading && (
-                <div className="flex gap-4 max-w-4xl mx-auto">
-                    <div className="w-8 h-8 rounded-full bg-jarvis-blue/20 flex items-center justify-center shrink-0 border border-jarvis-blue/30">
-                        <Sparkles className="w-5 h-5 text-jarvis-blue animate-pulse" />
-                    </div>
+                <div className="flex gap-4 max-w-4xl mx-auto pl-2">
+                    <TypingIndicator status="thinking" />
                 </div>
             )}
 

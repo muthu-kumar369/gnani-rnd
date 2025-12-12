@@ -75,7 +75,7 @@ const GnaniCore: React.FC<GnaniCoreProps> = ({ isOverlayMode = false, onOverlayC
 
   // Initialize Gnani Store (State Machine)
   useEffect(() => {
-    console.log('[GnaniCore] Initializing Gnani Store');
+    errorLogger.info('[GnaniCore] Initializing Gnani Store', { context: 'GnaniCore' });
     initGnaniStore();
   }, [initGnaniStore]);
 
@@ -115,6 +115,37 @@ const GnaniCore: React.FC<GnaniCoreProps> = ({ isOverlayMode = false, onOverlayC
     return cleanup;
   }, []);
 
+  // VERIFICATION: Simulation Event Listeners
+  useEffect(() => {
+    const handleTestWake = () => {
+      console.log('[Verification] Simulating Wake Word');
+      transition('wake-word-detected');
+    };
+
+    const handleTestSTT = (e: CustomEvent) => {
+      console.log('[Verification] Simulating STT:', e.detail.text);
+
+      // VERIFICATION: Manually add message to test store integration
+      addMessage({
+        type: 'user',
+        message: e.detail.text || "Simulated Voice Input",
+      });
+
+      transition('vad-end'); // Valid trigger to go from Listening -> Thinking
+      setTimeout(() => {
+        console.log('[Verification] STT Simulation: Message added to store.');
+      }, 1000);
+    };
+
+    window.addEventListener('test:wake', handleTestWake as EventListener);
+    window.addEventListener('test:stt', handleTestSTT as EventListener);
+
+    return () => {
+      window.removeEventListener('test:wake', handleTestWake as EventListener);
+      window.removeEventListener('test:stt', handleTestSTT as EventListener);
+    };
+  }, [transition]);
+
   // Timeout tracking for thinking state
   useEffect(() => {
     if (isThinking) {
@@ -140,7 +171,10 @@ const GnaniCore: React.FC<GnaniCoreProps> = ({ isOverlayMode = false, onOverlayC
   useEffect(() => {
     streamingTTSRef.current = new StreamingTTS();
     return () => {
+      errorLogger.info('[GnaniCore] Unmounting - Cleaning up resources', { context: 'GnaniCore' });
       streamingTTSRef.current?.cleanup();
+      stopMic(); // Ensure mic is stopped
+      transition('reset'); // Reset state machine to idle
     };
   }, []);
 
@@ -166,7 +200,7 @@ const GnaniCore: React.FC<GnaniCoreProps> = ({ isOverlayMode = false, onOverlayC
   // Sync conversation ID from Store to Electron
   useEffect(() => {
     if (conversationId && window.gnani?.stream?.setConversationId) {
-      console.log('[GnaniCore] Pushing conversationId to Electron:', conversationId);
+      errorLogger.debug('[GnaniCore] Pushing conversationId to Electron:', { context: 'GnaniCore', extra: { conversationId } });
       window.gnani.stream.setConversationId(conversationId);
     }
   }, [conversationId]);
@@ -174,7 +208,7 @@ const GnaniCore: React.FC<GnaniCoreProps> = ({ isOverlayMode = false, onOverlayC
   // Sync conversation ID from IPC to Store
   useEffect(() => {
     if (ipcConversationId && ipcConversationId !== conversationId) {
-      console.log('[GnaniCore] Syncing conversationId from IPC:', ipcConversationId);
+      errorLogger.debug('[GnaniCore] Syncing conversationId from IPC:', { context: 'GnaniCore', extra: { ipcConversationId } });
       setConversationId(ipcConversationId);
       if (accessToken) {
         refreshConversation(accessToken);
@@ -428,6 +462,7 @@ const GnaniCore: React.FC<GnaniCoreProps> = ({ isOverlayMode = false, onOverlayC
           transition={transition}
           setIsStreaming={setIsStreaming}
           showNotification={showNotification}
+          addMessage={addMessage}
         />
         <AudioManager
           state={state}

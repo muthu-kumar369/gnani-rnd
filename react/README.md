@@ -1,73 +1,55 @@
-# React + TypeScript + Vite
+# Gnani - AI Assistant
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Gnani is a local, voice-first AI assistant designed for desktop environments. It integrates real-time voice interaction with a robust chat interface, leveraging local LLMs (via Ollama/Whisper) for privacy and speed.
 
-Currently, two official plugins are available:
+## 🌟 Key Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+### 🎙️ Voice Mode
+- **Real-time Voice Interaction**: Wake-word detection ("Hey Gnani") and VAD (Voice Activity Detection).
+- **Interactive UI**: A futuristic "Jarvis-like" overlay (`VoiceModeOverlay`) with real-time audio visualization.
+- **State Machine Driven**: Robust handling of `Idle` -> `Listening` -> `Thinking` -> `Speaking` states.
+- **Barge-in Support**: Interrupt the assistant comfortably while it's speaking.
 
-## React Compiler
+### 💬 Chat Interface
+- **Rich Markdown Support**: Code blocks, tables, and Mermaid diagrams.
+- **Branching Conversations**: Edit and branch message history to explore different threads.
+- **System Integration**: Access to local files, system stats, and device awareness.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## 🛠️ Tech Stack
+- **Frontend**: React, TypeScript, Vite, TailwindCSS
+- **State Management**: Zustand, XState
+- **Animations**: Framer Motion
+- **Desktop**: Electron (IPC integration for Voice/Audio)
 
-## Expanding the ESLint configuration
+## 🚀 Getting Started
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+### Prerequisites
+- Node.js (v18+)
+- Backend Service (Running Python/Electron backend)
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+### Installation
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+### Development
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm run dev
 ```
+
+### Production Build
+
+```bash
+npm run build
+```
+
+## 🧪 Simulation & Testing
+
+For development without hardware access, Gnani includes **Simulation Controls** in the debug panel (`IntelligencePanel`).
+See [TESTING.md](./TESTING.md) for details on how to simulate Wake Words and STT inputs.
+
+## 📂 Architecture
+
+For a deep dive into the system architecture, state management, and file structure, see [ARCHITECTURE.md](./ARCHITECTURE.md).

@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useUserStore } from '../../store/useUserStore';
 import { useConversationStore } from '../../store/useConversationStore';
 import { useConversationHistory } from '../../hooks/useConversationHistory';
-import ConfirmationModal from '../ui/ConfirmationModal';
+import ConfirmationModal from '../../components/ui/ConfirmationModal';
 
 interface SidebarProps {
     onNewChat: () => void;

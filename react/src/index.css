@@ -1,4 +1,6 @@
 @import "tailwindcss";
+@import "./styles/design-tokens.css";
+@import "./styles/utilities.css";
 
 /* Define all your custom tokens */
 @theme {
@@ -32,7 +34,7 @@
     --jarvis-success: #00FF99;
     --jarvis-listening: #4CAF50;
     --jarvis-speaking: #9C27B0;
-    
+
     --jarvis-glow: rgba(0, 240, 255, 0.3);
     --jarvis-glow-strong: rgba(0, 240, 255, 0.5);
     --jarvis-glow-inset: rgba(0, 240, 255, 0.1);
@@ -40,12 +42,18 @@
 
 [data-theme="light"] {
     /* Light Theme */
-    --jarvis-blue: #0077CC; /* Darker blue for contrast */
-    --jarvis-cyan: #0088AA; /* Darker cyan */
-    --jarvis-bg: #F0F4F8; /* Light gray/white background */
-    --jarvis-panel: rgba(255, 255, 255, 0.8); /* White panel */
-    --jarvis-border: rgba(0, 119, 204, 0.3); /* Blueish border */
-    --jarvis-text: #1A2634; /* Dark text */
+    --jarvis-blue: #0077CC;
+    /* Darker blue for contrast */
+    --jarvis-cyan: #0088AA;
+    /* Darker cyan */
+    --jarvis-bg: #F0F4F8;
+    /* Light gray/white background */
+    --jarvis-panel: rgba(255, 255, 255, 0.8);
+    /* White panel */
+    --jarvis-border: rgba(0, 119, 204, 0.3);
+    /* Blueish border */
+    --jarvis-text: #1A2634;
+    /* Dark text */
     --jarvis-alert: #D32F2F;
     --jarvis-success: #388E3C;
     --jarvis-listening: #2E7D32;
@@ -108,13 +116,15 @@ body {
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: rgba(0, 240, 255, 0.2); /* Using jarvis-border equivalent directly for visibility check */
+    background: rgba(0, 240, 255, 0.2);
+    /* Using jarvis-border equivalent directly for visibility check */
     border-radius: 3px;
     transition: all 0.3s ease;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: rgba(0, 240, 255, 0.5); /* using jarvis-blue/glow equivalent */
+    background: rgba(0, 240, 255, 0.5);
+    /* using jarvis-blue/glow equivalent */
     box-shadow: 0 0 10px var(--jarvis-glow);
 }
 

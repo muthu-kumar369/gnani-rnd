@@ -1,4 +1,5 @@
 import type { GnaniState, StateTrigger } from '../../state/GnaniStateMachine';
+import type { ImageAttachment } from '../../types/vision.types';
 
 export interface ConversationMessage {
     id: string;
@@ -9,6 +10,7 @@ export interface ConversationMessage {
     parentId?: string;
     children?: string[];
     branchIndex?: number;
+    attachments?: ImageAttachment[];
     metadata?: {
         segmentId?: string;
         state?: GnaniState;

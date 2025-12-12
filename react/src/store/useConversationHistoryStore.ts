@@ -7,6 +7,8 @@ export interface Conversation {
     updatedAt: Date;
     messageCount: number;
     preview: string;
+    isPinned?: boolean;
+    model?: string;
 }
 
 interface ConversationHistoryStore {
@@ -26,6 +28,7 @@ interface ConversationHistoryStore {
     setSortBy: (sortBy: 'date' | 'name' | 'messageCount') => void;
     setSortOrder: (sortOrder: 'asc' | 'desc') => void;
     updateConversationTitle: (conversationId: string, title: string) => void;
+    togglePinConversation: (conversationId: string) => void;
 }
 
 export const useConversationHistoryStore = create<ConversationHistoryStore>((set) => ({
@@ -49,6 +52,11 @@ export const useConversationHistoryStore = create<ConversationHistoryStore>((set
     updateConversationTitle: (conversationId, title) => set((state) => ({
         conversations: state.conversations.map(conv =>
             conv.conversationId === conversationId ? { ...conv, title } : conv
+        )
+    })),
+    togglePinConversation: (conversationId) => set((state) => ({
+        conversations: state.conversations.map(conv =>
+            conv.conversationId === conversationId ? { ...conv, isPinned: !conv.isPinned } : conv
         )
     })),
 }));

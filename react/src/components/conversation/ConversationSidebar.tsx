@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { eventManager } from '../../utils/eventManager';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Plus, X, History, RefreshCw, ArrowUpDown, ChevronDown, ChevronRight, Folder } from 'lucide-react';
+import { Search, Plus, X, History, RefreshCw, ArrowUpDown, ChevronDown, ChevronRight, Folder, Trash2 } from 'lucide-react';
 import { useConversationHistory } from '../../hooks/useConversationHistory';
 import ConversationListItem from './ConversationListItem';
 import { useConversationStore } from '../../store/useConversationStore';
@@ -11,7 +11,7 @@ import Button from '../ui/Button';
 import ConfirmationModal from '../ui/ConfirmationModal';
 import { ConversationSkeleton } from '../common/SkeletonLoader';
 import FolderList from '../common/FolderList';
-import type { Conversation } from '../../store/useConversationHistoryStore';
+import { useConversationHistoryStore, type Conversation } from '../../store/useConversationHistoryStore';
 
 interface ConversationSidebarProps {
     isOpen: boolean;
@@ -52,7 +52,12 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
     const [deleteId, setDeleteId] = React.useState<string | null>(null);
     const [selectedFolderId, setSelectedFolderId] = React.useState<string | null>(null);
     const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
+
+    // NEW: Selection Mode State
+    const [selectionMode, setSelectionMode] = useState(false);
+    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const sidebarRef = useRef<HTMLDivElement>(null);
+    const { togglePinConversation } = useConversationHistoryStore();
 
     // Group conversations by folder
     const conversationsByFolder = React.useMemo(() => {
@@ -60,6 +65,8 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
             unorganized: []
         };
 
+        // First apply pinning sort within the source list if possible, or just pin logic here?
+        // Let's sort filtered lists later.
         conversations.forEach(conv => {
             const folder = getFolderByConversation(conv.conversationId);
             const folderId = folder?.id || 'unorganized';
@@ -69,17 +76,35 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
             grouped[folderId].push(conv);
         });
 
+        // Sort each group: Pinned first, then by current sort criteria (which is already applied by store mostly, but let's enforce pinned)
+        Object.keys(grouped).forEach(key => {
+            grouped[key].sort((a, b) => {
+                if (a.isPinned && !b.isPinned) return -1;
+                if (!a.isPinned && b.isPinned) return 1;
+                return 0; // Keep existing order (which should be dominated by store's sort)
+            });
+        });
+
         return grouped;
     }, [conversations, getFolderByConversation]);
 
     // Filter conversations if folder is selected
-    const filteredConversations = selectedFolderId
-        ? conversationsByFolder[selectedFolderId] || []
-        : conversations;
+    const filteredConversations = React.useMemo(() => {
+        const source = selectedFolderId
+            ? conversationsByFolder[selectedFolderId] || []
+            : conversations;
 
+        // Also apply pin sort to the flat list
+        return [...source].sort((a, b) => {
+            if (a.isPinned && !b.isPinned) return -1;
+            if (!a.isPinned && b.isPinned) return 1;
+            return 0;
+        });
+    }, [selectedFolderId, conversationsByFolder, conversations]);
+
+    // ... hooks useEffects ... (Keep existing hooks)
     // Initial load
     useEffect(() => {
-        // console.log('[ConversationSidebar] isOpen changed', { isOpen }); // Reduced logging
         if (isOpen) {
             fetchConversations();
         }
@@ -142,6 +167,38 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
         });
     };
 
+    // Bulk selection handlers
+    const toggleSelection = (id: string) => {
+        setSelectedIds(prev => {
+            const next = new Set(prev);
+            if (next.has(id)) next.delete(id);
+            else next.add(id);
+            return next;
+        });
+    };
+
+    const handleBulkDelete = async () => {
+        if (!confirm(`Delete ${selectedIds.size} conversations?`)) return;
+
+        for (const id of selectedIds) {
+            await deleteConversation(id);
+        }
+        setSelectedIds(new Set());
+        setSelectionMode(false);
+    };
+
+    const handleBulkMove = (targetFolderId: string | null) => {
+        // Need to iterate and move.
+        // Since moveConversation is store based, it might be fast enough.
+        selectedIds.forEach(id => {
+            const current = getFolderByConversation(id);
+            moveConversation(id, current?.id || null, targetFolderId);
+        });
+        setSelectedIds(new Set());
+        setSelectionMode(false);
+    };
+
+
     const SidebarContent = (
         <div
             className={`${isOverlay ? 'fixed top-0 left-0 h-full w-80 z-50 shadow-[0_0_30px_rgba(0,240,255,0.1)]' : 'w-80 h-full border-r border-jarvis-blue/30'} bg-black/90 flex flex-col`}
@@ -153,14 +210,33 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                         <History className="mr-2" size={20} />
                         History
                     </h2>
-                    {isOverlay && (
+                    <div className="flex gap-2">
+                        {/* Bulk Action Trigger */}
                         <button
-                            onClick={onClose}
-                            className="p-1 hover:bg-white/10 rounded-full text-gray-400 hover:text-white transition-colors"
+                            onClick={() => setSelectionMode(!selectionMode)}
+                            className={`p-1 rounded transition-colors ${selectionMode ? 'text-jarvis-cyan bg-jarvis-cyan/10' : 'text-gray-400 hover:text-white'}`}
+                            title="Select Multiple"
                         >
-                            <X size={20} />
+                            <Folder size={18} /> {/* Proxy icon for selection */}
                         </button>
-                    )}
+                        {isOverlay && (
+                            <>
+                                <button
+                                    onClick={onClose}
+                                    className="p-1 hover:bg-white/10 rounded-full text-gray-400 hover:text-white transition-colors"
+                                >
+                                    <X size={20} />
+                                </button>
+                                <button
+                                    onClick={onNewConversation}
+                                    className="p-2 bg-jarvis-cyan/10 text-jarvis-cyan hover:bg-jarvis-cyan/20 rounded-lg transition-colors border border-jarvis-cyan/30 shadow-[0_0_10px_rgba(0,255,255,0.1)]"
+                                    aria-label="New conversation"
+                                >
+                                    <Plus size={20} />
+                                </button>
+                            </>
+                        )}
+                    </div>
                 </div>
 
                 <Button
@@ -181,6 +257,30 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                     Refresh
                 </Button>
             </div>
+
+            {/* Bulk Action Bar during Selection Mode */}
+            {selectionMode && (
+                <div className="p-2 border-b border-jarvis-blue/20 bg-jarvis-blue/10 flex items-center justify-between animate-slide-down">
+                    <span className="text-xs text-jarvis-cyan font-mono">{selectedIds.size} Selected</span>
+                    <div className="flex gap-1">
+                        <button
+                            onClick={handleBulkDelete}
+                            disabled={selectedIds.size === 0}
+                            className="p-1.5 rounded bg-red-500/10 text-red-400 hover:bg-red-500/20 disabled:opacity-50"
+                            title="Delete Selected"
+                        >
+                            <Trash2 size={14} />
+                        </button>
+                        {/* We could add move logic here, simpler just delete for now unless folder menu added */}
+                        <button
+                            onClick={() => setSelectionMode(false)}
+                            className="p-1.5 rounded hover:bg-white/10 text-gray-400"
+                        >
+                            <X size={14} />
+                        </button>
+                    </div>
+                </div>
+            )}
 
             {/* Search */}
             <div className="p-4 pb-2">
@@ -262,6 +362,10 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                                         onDelete={(id) => setDeleteId(id)}
                                         onEditTitle={(id: string, title: string) => updateTitle(id, title)}
                                         searchQuery={searchQuery}
+                                        onTogglePin={togglePinConversation}
+                                        isSelectionMode={selectionMode}
+                                        isSelected={selectedIds.has(conv.conversationId)}
+                                        onToggleSelect={toggleSelection}
                                     />
                                 ))}
                             </div>
@@ -273,12 +377,6 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                                     const folderConvs = conversationsByFolder[folder.id] || [];
                                     const isExpanded = expandedFolders.has(folder.id);
 
-                                    // Don't hide empty folders in grouped view, but maybe user wants to see them?
-                                    // Existing logic hid them: if (folderConvs.length === 0) return null;
-                                    // Let's keep hiding empty ones to reduce clutter, or show them?
-                                    // User likely wants to see folders to drop into?
-                                    // But this is just the list.
-                                    // Consistent with previous logic:
                                     if (folderConvs.length === 0) return null;
 
                                     return (
@@ -325,6 +423,10 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                                                             onDelete={(id) => setDeleteId(id)}
                                                             onEditTitle={(id: string, title: string) => updateTitle(id, title)}
                                                             searchQuery={searchQuery}
+                                                            onTogglePin={togglePinConversation}
+                                                            isSelectionMode={selectionMode}
+                                                            isSelected={selectedIds.has(conv.conversationId)}
+                                                            onToggleSelect={toggleSelection}
                                                         />
                                                     ))}
                                                 </div>
@@ -354,6 +456,10 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                                                     onDelete={(id) => setDeleteId(id)}
                                                     onEditTitle={(id: string, title: string) => updateTitle(id, title)}
                                                     searchQuery={searchQuery}
+                                                    onTogglePin={togglePinConversation}
+                                                    isSelectionMode={selectionMode}
+                                                    isSelected={selectedIds.has(conv.conversationId)}
+                                                    onToggleSelect={toggleSelection}
                                                 />
                                             ))}
                                         </div>
@@ -361,6 +467,8 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                                 )}
                             </>
                         )}
+                        {/* ... existing footer code ... */}
+
 
                         {/* No conversations message */}
                         {conversations.length === 0 && !isLoading && (

@@ -57,7 +57,7 @@ const FeedbackButtons: React.FC<FeedbackButtonsProps> = ({ messageId, conversati
                     onClick={() => handleRating('positive')}
                     className={`p-1.5 rounded transition-colors ${rating === 'positive'
                         ? 'bg-green-500/20 text-green-400'
-                        : 'text-cyan-500/60 hover:text-green-400 hover:bg-green-500/10'
+                        : 'text-cyan-500/40 hover:text-green-400 hover:bg-green-500/10'
                         }`}
                     title="Good response"
                 >
@@ -67,7 +67,7 @@ const FeedbackButtons: React.FC<FeedbackButtonsProps> = ({ messageId, conversati
                     onClick={() => handleRating('negative')}
                     className={`p-1.5 rounded transition-colors ${rating === 'negative'
                         ? 'bg-red-500/20 text-red-400'
-                        : 'text-cyan-500/60 hover:text-red-400 hover:bg-red-500/10'
+                        : 'text-cyan-500/40 hover:text-red-400 hover:bg-red-500/10'
                         }`}
                     title="Bad response"
                 >
@@ -81,7 +81,7 @@ const FeedbackButtons: React.FC<FeedbackButtonsProps> = ({ messageId, conversati
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+                        className="fixed inset-0 z-[110] flex items-center justify-center bg-black/60 backdrop-blur-sm"
                         onClick={() => setShowModal(false)}
                     >
                         <motion.div

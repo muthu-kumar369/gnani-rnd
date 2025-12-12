@@ -37,7 +37,8 @@ const ChatPage: React.FC = () => {
                 isLoading={isThinking && !isStreaming}
                 hasMore={hasMoreMessages}
                 onLoadMore={handleLoadMore}
-                isFetchingMore={isFetchingMessages}
+                isFetchingMore={isFetchingMessages && messages.length > 0}
+                isInitialLoading={isFetchingMessages && messages.length === 0}
             />
             <ChatInput
                 onSend={sendMessage}

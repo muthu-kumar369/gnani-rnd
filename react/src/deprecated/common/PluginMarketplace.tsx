@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import type { PluginMetadata } from '../../types/plugin';
-import { usePluginStore } from '../../utils/pluginManager';
+// import type { PluginMetadata } from '../../types/plugin';
+// import { usePluginStore } from '../../utils/pluginManager';
 /**
  * PLUGIN MARKETPLACE - FUTURE IMPLEMENTATION
  * 

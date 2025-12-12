@@ -79,11 +79,25 @@ const IntelligencePanel: React.FC<IntelligencePanelProps> = ({ isVisible }) => {
                 <span className="text-red-500">{uiState.streamErrorMessage}</span>
               </p>
             )}
-            {/* Add more metrics here as they become available */}
-            {/* Example for future metrics: */}
-            {/* <p>STT Latency: <span className="text-cyan-300">N/A</span></p> */}
-            {/* <p>Model Latency: <span className="text-cyan-300">N/A</span></p> */}
-            {/* <p>Packets Sent: <span className="text-cyan-300">N/A</span></p> */}
+
+            {/* Simulation Controls for Verification */}
+            <div className="mt-4 pt-4 border-t border-cyan-700/50">
+              <h4 className="text-xs font-bold text-cyan-500 mb-2 uppercase">Simulation Controls</h4>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={() => window.dispatchEvent(new CustomEvent('test:wake'))}
+                  className="px-2 py-1 bg-cyan-900/40 hover:bg-cyan-800/60 border border-cyan-600/30 rounded text-xs text-cyan-300 transition-colors"
+                >
+                  Simulate Wake
+                </button>
+                <button
+                  onClick={() => window.dispatchEvent(new CustomEvent('test:stt', { detail: { text: "Hello Gnani" } }))}
+                  className="px-2 py-1 bg-cyan-900/40 hover:bg-cyan-800/60 border border-cyan-600/30 rounded text-xs text-cyan-300 transition-colors"
+                >
+                  Simulate STT
+                </button>
+              </div>
+            </div>
           </div>
         </motion.div>
       )}
