@@ -51,9 +51,23 @@ export const useConversationHistory = () => {
             const data = response.data;
 
             if (query) {
-                // Search returns a list directly in data.conversations
-                setConversations(data.conversations);
-                setHasMore(false); // Search usually doesn't paginate the same way
+                // Search returns { results: [...] }
+                const rawList = Array.isArray(data) ? data : (data?.results || data?.conversations || []);
+
+                // Map to ensure naming consistency
+                const mappedList = rawList.map((c: any) => ({
+                    conversationId: c.conversationId || c.id || c._id,
+                    title: c.title || 'Untitled Conversation',
+                    updatedAt: c.updatedAt || c.createdAt,
+                    timestamp: new Date(c.updatedAt || c.createdAt || Date.now()),
+                    messageCount: c.messageCount || 0,
+                    preview: c.snippet || c.lastMessage || c.preview || '', // API returns 'snippet'
+                    isPinned: c.isPinned || false,
+                    model: c.model
+                }));
+
+                setConversations(mappedList);
+                setHasMore(false);
             } else {
                 if (pageNum === 1) {
                     setConversations(data.conversations);

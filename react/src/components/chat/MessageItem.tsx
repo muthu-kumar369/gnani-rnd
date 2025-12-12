@@ -186,6 +186,7 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, isLast }) => {
                                     <FeedbackButtons
                                         messageId={message.id}
                                         conversationId={conversationId}
+                                        initialFeedback={message.feedback}
                                     />
                                 </div>
                             )}

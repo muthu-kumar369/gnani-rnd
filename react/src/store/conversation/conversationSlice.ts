@@ -113,6 +113,7 @@ export const createConversationSlice: StateCreator<ConversationStore, [], [], Co
     },
 
     loadConversation: async (conversationId, accessToken) => {
+        set({ isFetchingMessages: true, conversationId, allMessages: [], messages: [] });
         try {
             const data = await conversationService.getById(conversationId, accessToken);
             set({
@@ -128,6 +129,8 @@ export const createConversationSlice: StateCreator<ConversationStore, [], [], Co
         } catch (error) {
             errorLogger.error('Error loading conversation', error as Error, { context: 'useConversationStore' });
             throw error;
+        } finally {
+            set({ isFetchingMessages: false });
         }
     },
 

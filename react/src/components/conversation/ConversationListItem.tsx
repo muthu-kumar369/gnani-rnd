@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { formatDistanceToNow } from 'date-fns';
+import { motion } from 'framer-motion';
 import { MessageSquare, Trash2, Edit2, Play, MoreVertical, FolderInput, Share2, Pin, CheckSquare, Square } from 'lucide-react';
 import type { Conversation } from '../../store/useConversationHistoryStore';
 import { useConversationStore } from '../../store/useConversationStore';
@@ -7,7 +8,8 @@ import { useUserStore } from '../../store/useUserStore';
 import { useFolderStore } from '../../store/useFolderStore';
 import ExportButton from './ExportButton';
 import ShareModal from '../common/ShareModal';
-import apiClient from '../../api/client'; // STAGE 1: Use API client
+import apiClient from '../../api/client';
+import DropdownPortal from '../common/DropdownPortal';
 
 interface ConversationListItemProps {
     conversation: Conversation;
@@ -136,11 +138,16 @@ const ConversationListItem: React.FC<ConversationListItemProps> = ({
         }
     };
 
+    // DEBUG: Check pinned state
+    // console.log(`Conversation ${conversation.conversationId}: pinned=${conversation.isPinned}`);
+
     return (
         <div
             className={`group relative p-3 rounded-lg mb-2 cursor-pointer transition-all duration-200 border ${isActive
                 ? 'bg-jarvis-blue/20 border-jarvis-cyan/50 shadow-[0_0_10px_rgba(0,240,255,0.2)]'
-                : 'bg-black/40 border-transparent hover:bg-jarvis-blue/10 hover:border-jarvis-blue/30'
+                : conversation.isPinned
+                    ? 'bg-jarvis-purple/10 border-transparent hover:bg-jarvis-purple/15'
+                    : 'bg-black/40 border-transparent hover:bg-jarvis-blue/10 hover:border-jarvis-blue/30'
                 } ${isSelected ? 'bg-jarvis-blue/30 border-jarvis-cyan' : ''}`}
             onClick={handleItemClick}
             onMouseEnter={handleMouseEnter}
@@ -221,52 +228,56 @@ const ConversationListItem: React.FC<ConversationListItemProps> = ({
                 )}
             </div>
 
-            {/* Dropdown Menu (Moved outside conditional for cleaner DOM, but logic kept inside showMenu check) */}
-            {showMenu && (
-                <div
+            {/* Dropdown Menu Portal */}
+            <DropdownPortal isOpen={showMenu} buttonRef={buttonRef} placement="right-start" onClose={() => setShowMenu(false)}>
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.95, y: -5 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95, y: -5 }}
+                    transition={{ duration: 0.15, ease: 'easeOut' }}
                     ref={menuRef}
-                    className="absolute right-[-140px] top-6 w-40 bg-black/95 backdrop-blur-lg border border-jarvis-blue/40 rounded-lg shadow-[0_8px_32px_rgba(0,0,0,0.7),0_0_20px_rgba(0,240,255,0.2)] z-50 py-1"
+                    className="w-40 bg-[#0a0a0add] backdrop-blur-xl border border-white/10 rounded-lg shadow-2xl p-1 z-50 overflow-hidden"
                     onClick={e => e.stopPropagation()}
                 >
                     <button
                         onClick={(e) => handleMenuAction(() => onResume(conversation.conversationId), e)}
-                        className="w-full px-3 py-2 text-left text-xs text-gray-300 hover:bg-jarvis-cyan/10 hover:text-jarvis-cyan transition-colors flex items-center gap-2"
+                        className="w-full px-3 py-2 text-left text-xs text-gray-300 hover:bg-white/10 hover:text-white transition-all rounded flex items-center gap-2"
                     >
                         <Play size={12} />
                         Resume
                     </button>
                     <ExportButton conversationId={conversation.conversationId} asMenuItem />
-                    <div className="my-1 border-t border-jarvis-blue/20" />
+                    <div className="my-1 border-b border-white/10" />
                     <button
                         onClick={(e) => handleMenuAction(() => setIsEditing(true), e)}
-                        className="w-full px-3 py-2 text-left text-xs text-gray-300 hover:bg-jarvis-blue/10 hover:text-white transition-colors flex items-center gap-2"
+                        className="w-full px-3 py-2 text-left text-xs text-gray-300 hover:bg-white/10 hover:text-white transition-all rounded flex items-center gap-2"
                     >
                         <Edit2 size={12} />
                         Edit Title
                     </button>
                     <button
                         onClick={(e) => handleMenuAction(() => setShowFolderModal(true), e)}
-                        className="w-full px-3 py-2 text-left text-xs text-gray-300 hover:bg-jarvis-blue/10 hover:text-white transition-colors flex items-center gap-2"
+                        className="w-full px-3 py-2 text-left text-xs text-gray-300 hover:bg-white/10 hover:text-white transition-all rounded flex items-center gap-2"
                     >
                         <FolderInput size={12} />
                         Move to Folder
                     </button>
                     <button
                         onClick={(e) => handleMenuAction(() => setShowShareModal(true), e)}
-                        className="w-full px-3 py-2 text-left text-xs text-gray-300 hover:bg-jarvis-blue/10 hover:text-white transition-colors flex items-center gap-2"
+                        className="w-full px-3 py-2 text-left text-xs text-gray-300 hover:bg-white/10 hover:text-white transition-all rounded flex items-center gap-2"
                     >
                         <Share2 size={12} />
                         Share
                     </button>
                     <button
                         onClick={(e) => handleMenuAction(() => onDelete(conversation.conversationId), e)}
-                        className="w-full px-3 py-2 text-left text-xs text-red-300 hover:bg-red-500/10 hover:text-red-400 transition-colors flex items-center gap-2"
+                        className="w-full px-3 py-2 text-left text-xs text-red-400 hover:bg-red-500/10 transition-all rounded flex items-center gap-2"
                     >
                         <Trash2 size={12} />
                         Delete
                     </button>
-                </div>
-            )}
+                </motion.div>
+            </DropdownPortal>
 
             {/* Move to Folder Modal */}
             {showFolderModal && (

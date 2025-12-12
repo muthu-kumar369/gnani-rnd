@@ -16,7 +16,7 @@ export const useConversationStore = create<ConversationStore>()(
             name: 'gnani_conversation_history',
             storage: createJSONStorage(() => localStorage),
             partialize: (state) => ({
-                // Persistence config
+                // Only persist specific settings if needed, for now persist nothing to avoid stale data issues
             }),
             onRehydrateStorage: () => (state) => {
                 if (state) {

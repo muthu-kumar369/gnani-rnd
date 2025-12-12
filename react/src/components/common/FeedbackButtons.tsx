@@ -6,13 +6,18 @@ import api from '../../api/client';
 interface FeedbackButtonsProps {
     messageId: string;
     conversationId: string;
+    initialFeedback?: {
+        rating: 'positive' | 'negative';
+        comment?: string;
+        category?: string;
+    };
 }
 
-const FeedbackButtons: React.FC<FeedbackButtonsProps> = ({ messageId, conversationId }) => {
-    const [rating, setRating] = useState<'positive' | 'negative' | null>(null);
+const FeedbackButtons: React.FC<FeedbackButtonsProps> = ({ messageId, conversationId, initialFeedback }) => {
+    const [rating, setRating] = useState<'positive' | 'negative' | null>(initialFeedback?.rating || null);
     const [showModal, setShowModal] = useState(false);
-    const [comment, setComment] = useState('');
-    const [category, setCategory] = useState('');
+    const [comment, setComment] = useState(initialFeedback?.comment || '');
+    const [category, setCategory] = useState(initialFeedback?.category || '');
     const [submitting, setSubmitting] = useState(false);
 
     const handleRating = (newRating: 'positive' | 'negative') => {

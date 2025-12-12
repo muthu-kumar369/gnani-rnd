@@ -1,5 +1,6 @@
 import React from 'react';
 import { Copy, RefreshCw, Edit2, Trash2, Share2, CornerDownRight } from 'lucide-react';
+import GlassTooltip from '../ui/GlassTooltip';
 
 interface MessageActionsProps {
     role: 'user' | 'assistant' | 'system';
@@ -31,51 +32,61 @@ const MessageActions: React.FC<MessageActionsProps> = ({
 
     return (
         <div className={`message-actions ${isVisible ? 'visible' : ''}`}>
-            <button onClick={onCopy} title="Copy message">
-                <Copy size={14} />
-            </button>
+            <GlassTooltip content="Copy message">
+                <button onClick={onCopy}>
+                    <Copy size={14} />
+                </button>
+            </GlassTooltip>
 
             {role === 'assistant' && onRegenerate && (
-                <button
-                    onClick={onRegenerate}
-                    title="Regenerate response"
-                    disabled={isRegenerating}
-                    className={isRegenerating ? 'animate-spin' : ''}
-                >
-                    <RefreshCw size={14} />
-                </button>
+                <GlassTooltip content="Regenerate response">
+                    <button
+                        onClick={onRegenerate}
+                        disabled={isRegenerating}
+                        className={isRegenerating ? 'animate-spin' : ''}
+                    >
+                        <RefreshCw size={14} />
+                    </button>
+                </GlassTooltip>
             )}
 
             {role === 'user' && onEdit && (
-                <button onClick={onEdit} title="Edit message">
-                    <Edit2 size={14} />
-                </button>
+                <GlassTooltip content="Edit message">
+                    <button onClick={onEdit}>
+                        <Edit2 size={14} />
+                    </button>
+                </GlassTooltip>
             )}
 
             {/* RESTRICTION: Only show delete for user messages */}
             {role === 'user' && onDelete && (
-                <button
-                    onClick={onDelete}
-                    title="Delete message"
-                    className="hover:text-red-400"
-                    disabled={isDeleting}
-                >
-                    <Trash2 size={14} />
-                </button>
+                <GlassTooltip content="Delete message">
+                    <button
+                        onClick={onDelete}
+                        className="hover:text-red-400"
+                        disabled={isDeleting}
+                    >
+                        <Trash2 size={14} />
+                    </button>
+                </GlassTooltip>
             )}
 
             {/* Share button - available for all messages */}
             {onShare && (
-                <button onClick={onShare} title="Share message">
-                    <Share2 size={14} />
-                </button>
+                <GlassTooltip content="Share message">
+                    <button onClick={onShare}>
+                        <Share2 size={14} />
+                    </button>
+                </GlassTooltip>
             )}
 
             {/* Continue button - only for assistant messages */}
             {role === 'assistant' && onContinue && (
-                <button onClick={onContinue} title="Continue conversation">
-                    <CornerDownRight size={14} />
-                </button>
+                <GlassTooltip content="Continue conversation">
+                    <button onClick={onContinue}>
+                        <CornerDownRight size={14} />
+                    </button>
+                </GlassTooltip>
             )}
         </div>
     );

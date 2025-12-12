@@ -1,4 +1,6 @@
 import { create } from 'zustand';
+import { conversationService } from '../services/conversationService';
+import { useUserStore } from './useUserStore';
 
 export interface Conversation {
     conversationId: string;
@@ -28,10 +30,10 @@ interface ConversationHistoryStore {
     setSortBy: (sortBy: 'date' | 'name' | 'messageCount') => void;
     setSortOrder: (sortOrder: 'asc' | 'desc') => void;
     updateConversationTitle: (conversationId: string, title: string) => void;
-    togglePinConversation: (conversationId: string) => void;
+    togglePinConversation: (conversationId: string) => Promise<void>;
 }
 
-export const useConversationHistoryStore = create<ConversationHistoryStore>((set) => ({
+export const useConversationHistoryStore = create<ConversationHistoryStore>((set, get) => ({
     conversations: [],
     isLoading: false,
     hasMore: true,
@@ -54,9 +56,32 @@ export const useConversationHistoryStore = create<ConversationHistoryStore>((set
             conv.conversationId === conversationId ? { ...conv, title } : conv
         )
     })),
-    togglePinConversation: (conversationId) => set((state) => ({
-        conversations: state.conversations.map(conv =>
+    togglePinConversation: async (conversationId) => {
+        const { conversations } = get();
+        // Optimistic update
+        const updatedConversations = conversations.map(conv =>
             conv.conversationId === conversationId ? { ...conv, isPinned: !conv.isPinned } : conv
-        )
-    })),
+        );
+
+        // Re-sort: Pinned first, then by current sort criteria (default date)
+        const sorted = [...updatedConversations].sort((a, b) => {
+            if (a.isPinned && !b.isPinned) return -1;
+            if (!a.isPinned && b.isPinned) return 1;
+            // Fallback to date sort (assuming desc for now, or use store state if available)
+            return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+        });
+
+        set({ conversations: sorted });
+
+        try {
+            const accessToken = useUserStore.getState().accessToken;
+            if (accessToken) {
+                await conversationService.togglePin(conversationId, accessToken);
+            }
+        } catch (error) {
+            console.error('Failed to toggle pin:', error);
+            // Revert
+            set({ conversations });
+        }
+    },
 }));

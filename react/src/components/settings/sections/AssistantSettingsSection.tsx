@@ -9,6 +9,7 @@ import Input from '../../ui/Input';
 import Button from '../../ui/Button';
 import Card from '../../ui/Card';
 import axios from 'axios';
+import GlassDropdown from '../../ui/GlassDropdown';
 
 interface ModelOption {
     id: string;
@@ -82,16 +83,16 @@ const AssistantSettingsSection: React.FC = () => {
                         </div>
                         <div className="space-y-1">
                             <label className="text-xs font-mono text-jarvis-cyan/70 uppercase tracking-wider ml-1">Preferred Voice</label>
-                            <select
-                                name="preferredVoice"
+                            <GlassDropdown
                                 value={settings.preferredVoice || 'jarvis'}
-                                onChange={handleChange}
-                                className="w-full bg-jarvis-panel border-b-2 border-jarvis-border px-4 py-2 text-sm text-jarvis-text focus:outline-none focus:border-jarvis-blue focus:shadow-[0_4px_10px_-4px_rgba(0,240,255,0.3)] transition-all duration-300 rounded-t-sm"
-                            >
-                                <option value="jarvis">Jarvis (Male)</option>
-                                <option value="friday">Friday (Female)</option>
-                                <option value="edith">EDITH (Neutral)</option>
-                            </select>
+                                onChange={(val) => setSettings(prev => ({ ...prev, preferredVoice: val }))}
+                                options={[
+                                    { value: 'jarvis', label: 'Jarvis (Male)' },
+                                    { value: 'friday', label: 'Friday (Female)' },
+                                    { value: 'edith', label: 'EDITH (Neutral)' }
+                                ]}
+                                className="w-full"
+                            />
                         </div>
                         <div className="space-y-2 col-span-1 md:col-span-2">
                             <div className="flex justify-between">
@@ -116,17 +117,17 @@ const AssistantSettingsSection: React.FC = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-1">
                             <label className="text-xs font-mono text-jarvis-cyan/70 uppercase tracking-wider ml-1">Theme</label>
-                            <select
-                                name="theme"
+                            <GlassDropdown
                                 value={settings.theme || 'jarvis'}
-                                onChange={handleChange}
-                                className="w-full bg-jarvis-panel border-b-2 border-jarvis-border px-4 py-2 text-sm text-jarvis-text focus:outline-none focus:border-jarvis-blue focus:shadow-[0_4px_10px_-4px_rgba(0,240,255,0.3)] transition-all duration-300 rounded-t-sm"
-                            >
-                                <option value="jarvis">Jarvis HUD (Default)</option>
-                                <option value="dark">Dark Mode</option>
-                                <option value="light">Light Mode</option>
-                                <option value="system">System Default</option>
-                            </select>
+                                onChange={(val) => setSettings(prev => ({ ...prev, theme: val as any }))}
+                                options={[
+                                    { value: 'jarvis', label: 'Jarvis HUD (Default)' },
+                                    { value: 'dark', label: 'Dark Mode' },
+                                    { value: 'light', label: 'Light Mode' },
+                                    { value: 'system', label: 'System Default' }
+                                ]}
+                                className="w-full"
+                            />
                         </div>
 
                         {/* Timestamp Visibility Toggle */}
@@ -155,25 +156,12 @@ const AssistantSettingsSection: React.FC = () => {
                     <div className="space-y-4">
                         <div className="space-y-1">
                             <label className="text-xs font-mono text-jarvis-cyan/70 uppercase tracking-wider ml-1">Preferred Model</label>
-                            <select
-                                name="preferredModel"
+                            <GlassDropdown
                                 value={settings.preferredModel || 'llama3'}
-                                onChange={handleChange}
-                                disabled={loadingModels}
-                                className="w-full bg-jarvis-panel border-b-2 border-jarvis-border px-4 py-2 text-sm text-jarvis-text focus:outline-none focus:border-jarvis-blue focus:shadow-[0_4px_10px_-4px_rgba(0,240,255,0.3)] transition-all duration-300 rounded-t-sm disabled:opacity-50"
-                            >
-                                {loadingModels ? (
-                                    <option>Loading models...</option>
-                                ) : models.length > 0 ? (
-                                    models.map(model => (
-                                        <option key={model.id} value={model.id}>
-                                            {model.displayName} ({model.provider})
-                                        </option>
-                                    ))
-                                ) : (
-                                    <option value="llama3">Llama 3.1 8B (default)</option>
-                                )}
-                            </select>
+                                onChange={(val) => setSettings(prev => ({ ...prev, preferredModel: val }))}
+                                options={loadingModels ? [{ value: '', label: 'Loading models...' }] : (models.length > 0 ? models.map(m => ({ value: m.id, label: `${m.displayName} (${m.provider})` })) : [{ value: 'llama3', label: 'Llama 3.1 8B (default)' }])}
+                                className="w-full opacity-100 disabled:opacity-50"
+                            />
                             {settings.preferredModel && models.length > 0 && (
                                 <p className="text-xs text-jarvis-cyan/50 mt-2 ml-1">
                                     {models.find(m => m.id === settings.preferredModel)?.description || 'Selected model'}

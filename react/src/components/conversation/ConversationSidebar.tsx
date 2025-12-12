@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { eventManager } from '../../utils/eventManager';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Plus, X, History, RefreshCw, ArrowUpDown, ChevronDown, ChevronRight, Folder, Trash2 } from 'lucide-react';
+import { Search, Plus, X, History, RefreshCw, ArrowUpDown, ChevronDown, ChevronRight, Folder, Trash2, User, Settings, LogOut, BarChart3, Moon, Keyboard, MoreHorizontal, FolderPlus } from 'lucide-react';
 import { useConversationHistory } from '../../hooks/useConversationHistory';
 import ConversationListItem from './ConversationListItem';
 import { useConversationStore } from '../../store/useConversationStore';
@@ -10,8 +11,18 @@ import { useFolderStore } from '../../store/useFolderStore';
 import Button from '../ui/Button';
 import ConfirmationModal from '../ui/ConfirmationModal';
 import { ConversationSkeleton } from '../common/SkeletonLoader';
-import FolderList from '../common/FolderList';
+import CreateFolderModal from '../common/CreateFolderModal';
 import { useConversationHistoryStore, type Conversation } from '../../store/useConversationHistoryStore';
+
+import DropdownPortal from '../common/DropdownPortal';
+import AnalyticsModal from '../analytics/AnalyticsModal';
+import KeyboardShortcutsModal from '../settings/KeyboardShortcutsModal';
+import GlassDropdown from '../ui/GlassDropdown';
+import GlassInput from '../ui/GlassInput';
+import GlassTooltip from '../ui/GlassTooltip';
+import GnaniLogo from '../ui/GnaniLogo';
+import { useThemeStore } from '../../store/themeStore';
+import { PanelLeftClose, PanelLeftOpen, SquarePen, RotateCcw, CheckSquare } from 'lucide-react';
 
 interface ConversationSidebarProps {
     isOpen: boolean;
@@ -45,8 +56,10 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
     } = useConversationHistory();
 
     const { conversationId: currentConversationId, createConversation } = useConversationStore();
-    const { accessToken } = useUserStore();
+    const { accessToken, user, logout } = useUserStore();
     const { folders, moveConversation, getFolderByConversation } = useFolderStore();
+    const isOverlay = variant === 'overlay';
+    const navigate = useNavigate();
 
     const [searchQuery, setSearchQuery] = React.useState('');
     const [deleteId, setDeleteId] = React.useState<string | null>(null);
@@ -57,7 +70,18 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
     const [selectionMode, setSelectionMode] = useState(false);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const sidebarRef = useRef<HTMLDivElement>(null);
+    const profileRef = useRef<HTMLDivElement>(null);
+    const moreMenuRef = useRef<HTMLButtonElement>(null);
+    const [isProfileOpen, setIsProfileOpen] = useState(false);
+    const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
+    const [isFoldersExpanded, setIsFoldersExpanded] = useState(true);
     const { togglePinConversation } = useConversationHistoryStore();
+
+    // NEW: Modals State
+    const [isAnalyticsOpen, setIsAnalyticsOpen] = useState(false);
+    const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
+    const [isCreateFolderModalOpen, setIsCreateFolderModalOpen] = useState(false);
+    const { toggleTheme } = useThemeStore();
 
     // Group conversations by folder
     const conversationsByFolder = React.useMemo(() => {
@@ -67,7 +91,7 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
 
         // First apply pinning sort within the source list if possible, or just pin logic here?
         // Let's sort filtered lists later.
-        conversations.forEach(conv => {
+        (conversations || []).forEach(conv => {
             const folder = getFolderByConversation(conv.conversationId);
             const folderId = folder?.id || 'unorganized';
             if (!grouped[folderId]) {
@@ -88,19 +112,28 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
         return grouped;
     }, [conversations, getFolderByConversation]);
 
-    // Filter conversations if folder is selected
+    // Filter conversations if folder is selected (or show all if searching)
     const filteredConversations = React.useMemo(() => {
+        // If searching, show all matching results (global search)
+        if (searchQuery) {
+            return [...(conversations || [])].sort((a, b) => {
+                if (a.isPinned && !b.isPinned) return -1;
+                if (!a.isPinned && b.isPinned) return 1;
+                return 0;
+            });
+        }
+
         const source = selectedFolderId
             ? conversationsByFolder[selectedFolderId] || []
             : conversations;
 
         // Also apply pin sort to the flat list
-        return [...source].sort((a, b) => {
+        return [...(source || [])].sort((a, b) => {
             if (a.isPinned && !b.isPinned) return -1;
             if (!a.isPinned && b.isPinned) return 1;
             return 0;
         });
-    }, [selectedFolderId, conversationsByFolder, conversations]);
+    }, [selectedFolderId, conversationsByFolder, conversations, searchQuery]);
 
     // ... hooks useEffects ... (Keep existing hooks)
     // Initial load
@@ -132,7 +165,7 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
         return () => clearTimeout(timer);
     }, [searchQuery, isOpen, search]);
 
-    const isOverlay = variant === 'overlay';
+    // isOverlay defined at top
 
     // Infinite scroll
     const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
@@ -199,63 +232,89 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
     };
 
 
+    // State for collapse
+    const [isCollapsed, setIsCollapsed] = useState(false);
+
+    // Toggle collapse
+    const toggleCollapse = () => {
+        setIsCollapsed(!isCollapsed);
+        if (!isCollapsed) {
+            // If collapsing, clear selection mode to avoid weird states
+            setSelectionMode(false);
+        }
+    };
+
     const SidebarContent = (
-        <div
-            className={`${isOverlay ? 'fixed top-0 left-0 h-full w-80 z-50 shadow-[0_0_30px_rgba(0,240,255,0.1)]' : 'w-80 h-full border-r border-jarvis-blue/30'} bg-black/90 flex flex-col`}
+        <motion.div
+            initial={{ width: isCollapsed ? 80 : 320 }}
+            animate={{ width: isCollapsed ? 80 : 320 }}
+            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+            className={`${isOverlay ? 'fixed top-0 left-0 h-full z-50 shadow-[0_0_30px_rgba(0,240,255,0.1)]' : 'h-full border-r border-jarvis-blue/30'} bg-black/90 flex flex-col overflow-hidden`}
         >
             {/* Header */}
-            <div className="p-4 border-b border-jarvis-blue/20">
-                <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-lg font-bold text-jarvis-cyan flex items-center">
-                        <History className="mr-2" size={20} />
-                        History
-                    </h2>
-                    <div className="flex gap-2">
-                        {/* Bulk Action Trigger */}
-                        <button
-                            onClick={() => setSelectionMode(!selectionMode)}
-                            className={`p-1 rounded transition-colors ${selectionMode ? 'text-jarvis-cyan bg-jarvis-cyan/10' : 'text-gray-400 hover:text-white'}`}
-                            title="Select Multiple"
-                        >
-                            <Folder size={18} /> {/* Proxy icon for selection */}
-                        </button>
-                        {isOverlay && (
-                            <>
-                                <button
-                                    onClick={onClose}
-                                    className="p-1 hover:bg-white/10 rounded-full text-gray-400 hover:text-white transition-colors"
-                                >
-                                    <X size={20} />
-                                </button>
-                                <button
-                                    onClick={onNewConversation}
-                                    className="p-2 bg-jarvis-cyan/10 text-jarvis-cyan hover:bg-jarvis-cyan/20 rounded-lg transition-colors border border-jarvis-cyan/30 shadow-[0_0_10px_rgba(0,255,255,0.1)]"
-                                    aria-label="New conversation"
-                                >
-                                    <Plus size={20} />
-                                </button>
-                            </>
+            <div className={`p-4 border-b border-jarvis-blue/20 flex flex-col gap-4 ${isCollapsed ? 'items-center grid justify-stretch' : ''}`}>
+                <div className={`flex items-center ${isCollapsed ? 'flex-col gap-4' : 'justify-between'}`}>
+                    {/* Logo - Click to expand when collapsed */}
+                    <div
+                        className={`flex items-center gap-2 overflow-hidden ${isCollapsed ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''}`}
+                        onClick={isCollapsed ? toggleCollapse : undefined}
+                        title={isCollapsed ? "Expand Sidebar" : undefined}
+                    >
+                        {isCollapsed ? (
+                            <GnaniLogo size={32} showText={false} />
+                        ) : (
+                            <GnaniLogo size={24} />
                         )}
                     </div>
+
+                    {/* Toggle Button - Hidden when collapsed (Logo handles expansion) */}
+                    {!isOverlay && !isCollapsed && (
+                        <button
+                            onClick={toggleCollapse}
+                            className="text-gray-400 hover:text-white transition-colors"
+                        >
+                            <PanelLeftClose size={20} />
+                        </button>
+                    )}
+                    {isOverlay && (
+                        <button
+                            onClick={onClose}
+                            className="text-gray-400 hover:text-white transition-colors"
+                        >
+                            <X size={20} />
+                        </button>
+                    )}
                 </div>
 
-                <Button
-                    onClick={handleNewConversation}
-                    variant="primary"
-                    className="w-full justify-center"
-                    leftIcon={<Plus size={16} className="group-hover:rotate-90 transition-transform" />}
-                >
-                    New Conversation
-                </Button>
+                {/* Primary Action: New Chat (Icon only if collapsed) */}
+                <div className="flex gap-2">
+                    <button
+                        onClick={handleNewConversation}
+                        className={`flex-1 flex items-center justify-center gap-2 p-2 bg-jarvis-cyan/10 text-jarvis-cyan hover:bg-jarvis-cyan/20 rounded-lg transition-colors border border-jarvis-cyan/30 shadow-[0_0_10px_rgba(0,255,255,0.1)] group ${isCollapsed ? 'aspect-square p-0' : ''}`}
+                    >
+                        {isCollapsed ? (
+                            <GlassTooltip content="New Chat" placement="right">
+                                <SquarePen size={20} />
+                            </GlassTooltip>
+                        ) : (
+                            <>
+                                <Plus size={16} className="group-hover:rotate-90 transition-transform" />
+                                <span className="text-sm font-semibold">New Chat</span>
+                            </>
+                        )}
+                    </button>
 
-                <Button
-                    onClick={() => fetchConversations()}
-                    variant="secondary"
-                    className="w-full justify-center mt-2"
-                    leftIcon={<RefreshCw size={16} />}
-                >
-                    Refresh
-                </Button>
+                    {!isCollapsed && (
+                        <GlassTooltip content="Refresh Conversations">
+                            <button
+                                onClick={() => fetchConversations()}
+                                className="p-2 text-gray-400 hover:text-white hover:bg-white/5 rounded-lg border border-white/5"
+                            >
+                                <RotateCcw size={18} />
+                            </button>
+                        </GlassTooltip>
+                    )}
+                </div>
             </div>
 
             {/* Bulk Action Bar during Selection Mode */}
@@ -263,14 +322,15 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                 <div className="p-2 border-b border-jarvis-blue/20 bg-jarvis-blue/10 flex items-center justify-between animate-slide-down">
                     <span className="text-xs text-jarvis-cyan font-mono">{selectedIds.size} Selected</span>
                     <div className="flex gap-1">
-                        <button
-                            onClick={handleBulkDelete}
-                            disabled={selectedIds.size === 0}
-                            className="p-1.5 rounded bg-red-500/10 text-red-400 hover:bg-red-500/20 disabled:opacity-50"
-                            title="Delete Selected"
-                        >
-                            <Trash2 size={14} />
-                        </button>
+                        <GlassTooltip content="Delete Selected">
+                            <button
+                                onClick={handleBulkDelete}
+                                disabled={selectedIds.size === 0}
+                                className="p-1.5 rounded bg-red-500/10 text-red-400 hover:bg-red-500/20 disabled:opacity-50"
+                            >
+                                <Trash2 size={14} />
+                            </button>
+                        </GlassTooltip>
                         {/* We could add move logic here, simpler just delete for now unless folder menu added */}
                         <button
                             onClick={() => setSelectionMode(false)}
@@ -282,212 +342,301 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                 </div>
             )}
 
-            {/* Search */}
-            <div className="p-4 pb-2">
-                <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={14} />
-                    <input
-                        type="text"
-                        placeholder="Search conversations..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full bg-black/50 border border-jarvis-blue/20 rounded-full py-2 pl-9 pr-4 text-sm text-gray-300 focus:outline-none focus:border-jarvis-cyan/50 focus:ring-1 focus:ring-jarvis-cyan/30 transition-all"
-                    />
+            {/* Search + Actions */}
+            {!isCollapsed && (
+                <div className="px-4 py-3 animate-fade-in flex gap-2 items-center">
+                    <div className="flex-1 relative group">
+                        <GlassInput
+                            placeholder="Search conversations..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            icon={<Search size={14} />}
+                            containerClassName="w-full"
+                            className="h-9 text-sm bg-black/40 border-white/5 focus:border-jarvis-cyan/30 transition-all"
+                        />
+                    </div>
+
+                    {/* More Options Menu */}
+                    <div className="relative">
+                        <button
+                            ref={moreMenuRef}
+                            onClick={() => setIsMoreMenuOpen(!isMoreMenuOpen)}
+                            className={`w-9 h-9 flex items-center justify-center rounded-lg border transition-all ${isMoreMenuOpen || selectionMode ? 'bg-jarvis-cyan/10 text-jarvis-cyan border-jarvis-cyan/30 shadow-[0_0_10px_rgba(0,255,255,0.1)]' : 'bg-black/20 border-white/5 text-gray-400 hover:text-white hover:bg-white/10'}`}
+                        >
+                            <MoreHorizontal size={16} />
+                        </button>
+                        <DropdownPortal isOpen={isMoreMenuOpen} buttonRef={moreMenuRef} placement="bottom-end" onClose={() => setIsMoreMenuOpen(false)}>
+                            <div className="w-48 bg-[#0a0a0add] backdrop-blur-xl border border-white/10 rounded-lg shadow-2xl p-1 overflow-hidden z-[100]">
+                                {/* Checkbox Toggle */}
+                                <button
+                                    onClick={() => {
+                                        setSelectionMode(!selectionMode);
+                                    }}
+                                    className="w-full flex items-center justify-between px-3 py-2 text-xs text-gray-300 hover:bg-white/10 rounded transition-colors"
+                                >
+                                    <span className="flex items-center gap-2">
+                                        <CheckSquare size={14} /> Select Multiple
+                                    </span>
+                                    {selectionMode && <CheckSquare size={12} className="text-jarvis-cyan" />}
+                                </button>
+
+                                <div className="h-px bg-white/10 my-1" />
+                                <div className="px-3 py-1 text-[10px] text-gray-500 uppercase tracking-wider font-semibold">Sort By</div>
+
+                                <button
+                                    onClick={() => { setSortBy('date'); setIsMoreMenuOpen(false); fetchConversations(); }}
+                                    className={`w-full flex items-center justify-between px-3 py-2 text-xs hover:bg-white/10 rounded transition-colors ${sortBy === 'date' ? 'text-jarvis-cyan' : 'text-gray-300'}`}
+                                >
+                                    <span>Date</span>
+                                    {sortBy === 'date' && <div className="w-1.5 h-1.5 rounded-full bg-jarvis-cyan" />}
+                                </button>
+                                <button
+                                    onClick={() => { setSortBy('name'); setIsMoreMenuOpen(false); fetchConversations(); }}
+                                    className={`w-full flex items-center justify-between px-3 py-2 text-xs hover:bg-white/10 rounded transition-colors ${sortBy === 'name' ? 'text-jarvis-cyan' : 'text-gray-300'}`}
+                                >
+                                    <span>Name</span>
+                                    {sortBy === 'name' && <div className="w-1.5 h-1.5 rounded-full bg-jarvis-cyan" />}
+                                </button>
+
+                                <div className="h-px bg-white/10 my-1" />
+                                <button
+                                    onClick={() => {
+                                        setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+                                        setIsMoreMenuOpen(false);
+                                        fetchConversations();
+                                    }}
+                                    className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-300 hover:bg-white/10 rounded transition-colors"
+                                >
+                                    <ArrowUpDown size={14} />
+                                    <span>{sortOrder === 'asc' ? 'Newest First' : 'Oldest First'}</span>
+                                </button>
+                            </div>
+                        </DropdownPortal>
+                    </div>
                 </div>
-            </div>
-
-            {/* Folders */}
-            <div className="px-4 pb-2">
-                <FolderList
-                    selectedFolderId={selectedFolderId}
-                    onSelectFolder={setSelectedFolderId}
-                />
-            </div>
-
-            {/* Sort Controls */}
-            <div className="px-4 pb-2 flex gap-2">
-                <select
-                    value={sortBy}
-                    onChange={(e) => {
-                        setSortBy(e.target.value as 'date' | 'name' | 'messageCount');
-                        fetchConversations();
-                    }}
-                    className="flex-1 bg-black/50 border border-jarvis-blue/20 rounded py-1.5 px-2 text-xs text-gray-300 focus:outline-none focus:border-jarvis-cyan/50"
-                >
-                    <option value="date">Sort by Date</option>
-                    <option value="name">Sort by Name</option>
-                    <option value="messageCount">Sort by Messages</option>
-                </select>
-                <button
-                    onClick={() => {
-                        setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
-                        fetchConversations();
-                    }}
-                    className="p-1.5 bg-black/50 border border-jarvis-blue/20 rounded hover:bg-jarvis-blue/10 transition-colors"
-                    title={`Sort ${sortOrder === 'asc' ? 'Descending' : 'Ascending'}`}
-                >
-                    <ArrowUpDown size={14} className={`text-gray-400 ${sortOrder === 'desc' ? 'rotate-180' : ''} transition-transform`} />
-                </button>
-            </div>
+            )}
 
             {/* List */}
             <div
                 className="flex-1 overflow-y-auto p-4 space-y-1 custom-scrollbar"
                 onScroll={handleScroll}
             >
-                {isLoading && conversations.length === 0 ? (
-                    <ConversationSkeleton className="mt-4" />
-                ) : (
+                {!isCollapsed ? (
                     <>
-                        {selectedFolderId ? (
-                            /* Selected Folder View */
-                            <div className="space-y-1 mt-2">
-                                <div className="flex items-center justify-between text-xs text-gray-500 px-2 mb-2 uppercase tracking-wider">
-                                    <span>{folders.find(f => f.id === selectedFolderId)?.name || 'Folder'} ({filteredConversations.length})</span>
-                                    <button onClick={() => setSelectedFolderId(null)} className="hover:text-white" title="Clear selection">
-                                        <X size={12} />
-                                    </button>
+                        {/* Collapsible Folder Section */}
+                        {/* Collapsible Folder Section Header */}
+                        <div className="mt-4 mb-2 pl-2 pr-0 py-1.5 flex items-center justify-between rounded-r-md bg-gradient-to-r from-cyan-500/10 via-cyan-500/5 to-transparent border-l-2 border-cyan-500/50 hover:border-cyan-400 transition-all group">
+                            <button
+                                onClick={() => setIsFoldersExpanded(!isFoldersExpanded)}
+                                className="flex items-center gap-2 group/btn"
+                            >
+                                <div className={`text-cyan-400/70 transition-transform duration-300 ${isFoldersExpanded ? 'rotate-0' : '-rotate-90'}`}>
+                                    <ChevronDown size={16} strokeWidth={2.5} />
                                 </div>
-                                {filteredConversations.map(conv => (
-                                    <ConversationListItem
-                                        key={conv.conversationId}
-                                        conversation={conv}
-                                        isActive={conv.conversationId === currentConversationId}
-                                        onResume={(id) => {
-                                            if (onSelectConversation) {
-                                                onSelectConversation(id);
-                                            }
-                                            if (isOverlay) onClose();
-                                        }}
-                                        onDelete={(id) => setDeleteId(id)}
-                                        onEditTitle={(id: string, title: string) => updateTitle(id, title)}
-                                        searchQuery={searchQuery}
-                                        onTogglePin={togglePinConversation}
-                                        isSelectionMode={selectionMode}
-                                        isSelected={selectedIds.has(conv.conversationId)}
-                                        onToggleSelect={toggleSelection}
-                                    />
-                                ))}
-                            </div>
-                        ) : (
-                            /* Grouped View (All) */
-                            <>
-                                {/* Folders with nested conversations */}
-                                {folders.map(folder => {
-                                    const folderConvs = conversationsByFolder[folder.id] || [];
-                                    const isExpanded = expandedFolders.has(folder.id);
+                                <span className="text-[10px] font-bold text-cyan-400 uppercase tracking-[0.2em] drop-shadow-[0_0_8px_rgba(34,211,238,0.4)] transition-all group-hover/btn:text-cyan-300">
+                                    Folders
+                                </span>
+                            </button>
 
-                                    if (folderConvs.length === 0) return null;
+                            <GlassTooltip content="Create New Folder">
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setIsCreateFolderModalOpen(true);
+                                    }}
+                                    className="p-1 rounded bg-cyan-500/5 text-cyan-400/70 ring-1 ring-cyan-500/20 hover:bg-cyan-400 hover:text-black hover:ring-cyan-400 hover:shadow-[0_0_15px_rgba(34,211,238,0.6)] transition-all duration-300"
+                                >
+                                    <FolderPlus size={15} strokeWidth={2} />
+                                </button>
+                            </GlassTooltip>
+                        </div>
 
-                                    return (
-                                        <div key={folder.id} className="mb-2">
-                                            {/* Folder Header */}
-                                            <div className="flex items-center gap-1 mb-1">
-                                                <button
-                                                    onClick={() => toggleFolder(folder.id)}
-                                                    className="p-1 hover:bg-white/10 rounded transition-colors"
-                                                >
-                                                    {isExpanded ? (
-                                                        <ChevronDown size={14} className="text-gray-400" />
-                                                    ) : (
-                                                        <ChevronRight size={14} className="text-gray-400" />
-                                                    )}
-                                                </button>
-                                                <button
-                                                    onClick={() => setSelectedFolderId(folder.id)}
-                                                    className={`flex-1 flex items-center gap-2 px-2 py-1.5 rounded-lg text-sm transition-colors ${selectedFolderId === folder.id
-                                                        ? 'bg-jarvis-blue/20 text-jarvis-cyan'
-                                                        : 'hover:bg-white/5 text-gray-300'
-                                                        }`}
-                                                >
-                                                    <Folder size={14} />
-                                                    <span className="flex-1 text-left truncate">{folder.name}</span>
-                                                    <span className="text-xs text-gray-500">({folderConvs.length})</span>
-                                                </button>
-                                            </div>
+                        <AnimatePresence>
+                            {isFoldersExpanded && (
+                                <motion.div
+                                    initial={{ height: 0, opacity: 0 }}
+                                    animate={{ height: 'auto', opacity: 1 }}
+                                    exit={{ height: 0, opacity: 0 }}
+                                    className="space-y-0.5 overflow-hidden"
+                                >
+                                    {/* "All Conversations" / Clear Filter */}
+                                    <button
+                                        onClick={() => setSelectedFolderId(null)}
+                                        className={`w-full flex items-center gap-2 px-3 py-1.5 rounded-md text-sm transition-colors ${selectedFolderId === null
+                                            ? 'bg-jarvis-blue/10 text-jarvis-cyan'
+                                            : 'text-gray-400 hover:bg-white/5 hover:text-gray-200'
+                                            }`}
+                                    >
+                                        <Folder size={14} className={selectedFolderId === null ? "text-jarvis-cyan" : "text-gray-500"} />
+                                        <span className="flex-1 text-left">All Conversations</span>
+                                    </button>
 
-                                            {/* Nested Conversations */}
-                                            {isExpanded && (
-                                                <div className="ml-6 space-y-1">
-                                                    {folderConvs.map(conv => (
-                                                        <ConversationListItem
-                                                            key={conv.conversationId}
-                                                            conversation={conv}
-                                                            isActive={conv.conversationId === currentConversationId}
-                                                            onResume={(id) => {
-                                                                if (onSelectConversation) {
-                                                                    onSelectConversation(id);
-                                                                }
-                                                                if (isOverlay) onClose();
-                                                            }}
-                                                            onDelete={(id) => setDeleteId(id)}
-                                                            onEditTitle={(id: string, title: string) => updateTitle(id, title)}
-                                                            searchQuery={searchQuery}
-                                                            onTogglePin={togglePinConversation}
-                                                            isSelectionMode={selectionMode}
-                                                            isSelected={selectedIds.has(conv.conversationId)}
-                                                            onToggleSelect={toggleSelection}
-                                                        />
-                                                    ))}
-                                                </div>
-                                            )}
+                                    {/* Render Folders */}
+                                    {folders.map(folder => (
+                                        <button
+                                            key={folder.id}
+                                            onClick={() => setSelectedFolderId(folder.id)}
+                                            className={`w-full flex items-center gap-2 px-3 py-1.5 rounded-md text-sm transition-colors group ${selectedFolderId === folder.id
+                                                ? 'bg-jarvis-blue/10 text-jarvis-cyan'
+                                                : 'text-gray-400 hover:bg-white/5 hover:text-gray-200'
+                                                }`}
+                                        >
+                                            <span className="text-md opacity-80">{folder.icon}</span>
+                                            <span className="flex-1 text-left truncate">{folder.name}</span>
+                                            <span className="text-[10px] opacity-50">{folder.conversationIds.length}</span>
+                                        </button>
+                                    ))}
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+
+                        {/* Divider */}
+                        <div className="h-px bg-white/5 mx-2 my-2" />
+
+                        {/* Conversation List Tree */}
+                        <div className="space-y-0.5 min-h-[100px]">
+                            {/* Loading State */}
+                            {isLoading && (conversations?.length || 0) === 0 ? (
+                                <ConversationSkeleton className="mt-4" />
+                            ) : (
+                                <>
+                                    {(filteredConversations?.length || 0) === 0 ? (
+                                        <div className="text-center text-xs text-gray-600 mt-4">
+                                            No conversations
                                         </div>
-                                    );
-                                })}
+                                    ) : (
+                                        filteredConversations.map(conv => (
+                                            <ConversationListItem
+                                                key={conv.conversationId}
+                                                conversation={conv}
+                                                isActive={conv.conversationId === currentConversationId}
+                                                onResume={(id) => {
+                                                    if (onSelectConversation) onSelectConversation(id);
+                                                    if (isOverlay) onClose();
+                                                }}
+                                                onDelete={(id) => setDeleteId(id)}
+                                                onEditTitle={(id, title) => updateTitle(id, title)}
+                                                searchQuery={searchQuery}
+                                                onTogglePin={togglePinConversation}
+                                                isSelectionMode={selectionMode}
+                                                isSelected={selectedIds.has(conv.conversationId)}
+                                                onToggleSelect={toggleSelection}
+                                            />
+                                        ))
+                                    )}
 
-                                {/* Unorganized Conversations */}
-                                {conversationsByFolder.unorganized && conversationsByFolder.unorganized.length > 0 && (
-                                    <div className="mt-4">
-                                        <div className="text-xs text-gray-500 px-2 mb-2 uppercase tracking-wider">
-                                            Unorganized ({conversationsByFolder.unorganized.length})
+                                    {/* Loading More Spinner */}
+                                    {isLoading && (conversations?.length || 0) > 0 && (
+                                        <div className="flex justify-center py-2">
+                                            <div className="w-4 h-4 border-2 border-jarvis-cyan/30 border-t-jarvis-cyan rounded-full animate-spin" />
                                         </div>
-                                        <div className="space-y-1">
-                                            {conversationsByFolder.unorganized.map(conv => (
-                                                <ConversationListItem
-                                                    key={conv.conversationId}
-                                                    conversation={conv}
-                                                    isActive={conv.conversationId === currentConversationId}
-                                                    onResume={(id) => {
-                                                        if (onSelectConversation) {
-                                                            onSelectConversation(id);
-                                                        }
-                                                        if (isOverlay) onClose();
-                                                    }}
-                                                    onDelete={(id) => setDeleteId(id)}
-                                                    onEditTitle={(id: string, title: string) => updateTitle(id, title)}
-                                                    searchQuery={searchQuery}
-                                                    onTogglePin={togglePinConversation}
-                                                    isSelectionMode={selectionMode}
-                                                    isSelected={selectedIds.has(conv.conversationId)}
-                                                    onToggleSelect={toggleSelection}
-                                                />
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-                            </>
-                        )}
-                        {/* ... existing footer code ... */}
-
-
-                        {/* No conversations message */}
-                        {conversations.length === 0 && !isLoading && (
-                            <div className="text-center text-gray-500 mt-10 text-sm">
-                                No conversations found.
-                            </div>
-                        )}
-
-                        {/* Loading more indicator */}
-                        {isLoading && conversations.length > 0 && (
-                            <div className="text-center py-4">
-                                <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-jarvis-cyan"></div>
-                            </div>
-                        )}
+                                    )}
+                                </>
+                            )}
+                        </div>
                     </>
+                ) : (
+                    /* Collapsed State uses empty div or just icons if we wanted, but logic says just spacer */
+                    <div className="flex-1" />
                 )}
             </div>
 
+
             {/* Modals placed inside sidebar to share context/portal */}
+            {/* User Profile Area */}
+            <div className="p-3 border-t border-jarvis-border/20 z-10" ref={profileRef}>
+                <div className="relative">
+                    <button
+                        onClick={() => setIsProfileOpen(!isProfileOpen)}
+                        className={`w-full flex items-center gap-3 px-3 py-2 hover:bg-white/5 rounded-lg transition-colors text-left ${isCollapsed ? 'justify-center p-2' : ''}`}
+                    >
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-jarvis-blue to-purple-600 flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-jarvis-blue/20 flex-shrink-0">
+                            {user?.profile?.firstName?.[0]?.toUpperCase() || 'U'}
+                        </div>
+                        {!isCollapsed && (
+                            <>
+                                <div className="flex-1 overflow-hidden animate-fade-in">
+                                    <p className="text-sm font-medium text-jarvis-text truncate">{user?.profile?.firstName || 'User'} {user?.profile?.lastName}</p>
+                                    <p className="text-xs text-gray-500 truncate">{user?.email || 'user@example.com'}</p>
+                                </div>
+                                <div className="px-2 py-0.5 rounded-full bg-gradient-to-r from-amber-200 to-yellow-400 text-black text-[10px] font-bold tracking-wide shadow-[0_0_10px_rgba(251,191,36,0.2)]">
+                                    UPGRADE
+                                </div>
+                            </>
+                        )}
+                    </button>
+
+                    {/* Profile Popover - Using DropdownPortal if available or fallback to absolute */}
+                    <DropdownPortal isOpen={isProfileOpen} buttonRef={profileRef} placement="top-start" onClose={() => setIsProfileOpen(false)}>
+                        <div className="w-64 bg-gray-900 border border-jarvis-border/30 rounded-lg shadow-xl overflow-hidden backdrop-blur-xl p-2 space-y-1">
+                            <button
+                                onClick={() => {
+                                    setIsProfileOpen(false);
+                                    // Navigate to profile or settings
+                                    navigate('/settings');
+                                }}
+                                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-300 hover:text-white hover:bg-white/10 rounded-md transition-colors"
+                            >
+                                <User className="w-4 h-4" />
+                                <span>Profile</span>
+                            </button>
+
+                            <button
+                                onClick={() => {
+                                    setIsProfileOpen(false);
+                                    setIsAnalyticsOpen(true);
+                                }}
+                                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-300 hover:text-white hover:bg-white/10 rounded-md transition-colors"
+                            >
+                                <BarChart3 className="w-4 h-4" />
+                                <span>Analytics</span>
+                            </button>
+                            <button
+                                onClick={() => {
+                                    setIsProfileOpen(false);
+                                    navigate('/settings');
+                                }}
+                                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-300 hover:text-white hover:bg-white/10 rounded-md transition-colors"
+                            >
+                                <Settings className="w-4 h-4" />
+                                <span>Settings</span>
+                            </button>
+                            <button
+                                onClick={() => {
+                                    toggleTheme();
+                                    setIsProfileOpen(false);
+                                }}
+                                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-300 hover:text-white hover:bg-white/10 rounded-md transition-colors"
+                            >
+                                <Moon className="w-4 h-4" />
+                                <span>Theme</span>
+                            </button>
+                            <button
+                                onClick={() => {
+                                    setIsProfileOpen(false);
+                                    setIsShortcutsOpen(true);
+                                }}
+                                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-300 hover:text-white hover:bg-white/10 rounded-md transition-colors"
+                            >
+                                <Keyboard className="w-4 h-4" />
+                                <span>Keyboard Shortcuts</span>
+                            </button>
+                            <div className="h-px bg-white/10 my-1" />
+                            <button
+                                onClick={() => {
+                                    setIsProfileOpen(false);
+                                    logout();
+                                }}
+                                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-400 hover:bg-red-500/10 rounded-md transition-colors"
+                            >
+                                <LogOut className="w-4 h-4" />
+                                <span>Log out</span>
+                            </button>
+                        </div>
+                    </DropdownPortal>
+                </div>
+            </div>
+
             <ConfirmationModal
                 isOpen={!!deleteId}
                 onClose={() => setDeleteId(null)}
@@ -503,7 +652,22 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                 cancelLabel="Cancel"
                 isDangerous={true}
             />
-        </div>
+
+            <AnalyticsModal
+                isOpen={isAnalyticsOpen}
+                onClose={() => setIsAnalyticsOpen(false)}
+            />
+
+            <KeyboardShortcutsModal
+                isOpen={isShortcutsOpen}
+                onClose={() => setIsShortcutsOpen(false)}
+            />
+
+            <CreateFolderModal
+                isOpen={isCreateFolderModalOpen}
+                onClose={() => setIsCreateFolderModalOpen(false)}
+            />
+        </motion.div >
     );
 
     if (!isOverlay) {
@@ -527,7 +691,7 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                         animate={{ x: 0 }}
                         exit={{ x: '-100%' }}
                         transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                        className="fixed top-0 left-0 h-full w-auto z-50 p-0" // wrapper for motion
+                        className="fixed top-0 left-0 h-full w-auto z-50 p-0"
                         style={{ width: 'fit-content' }}
                     >
                         {SidebarContent}

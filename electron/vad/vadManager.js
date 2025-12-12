@@ -2,7 +2,7 @@
 // Stage 5 Task 5.1: Silero VAD with automatic fallback
 
 const { EventEmitter } = require('events');
-const { logger } = require('../utils/logger');
+const logger = require('../utils/logger');
 
 class VadManager extends EventEmitter {
   constructor() {
@@ -10,7 +10,7 @@ class VadManager extends EventEmitter {
     this.primaryVAD = null;
     this.fallbackVAD = null;
     this.currentVAD = null;
-    this.useSilero = true; // Feature flag
+    this.useSilero = false; // Feature flag - disabled due to issues in Main process
     this.failureCount = 0;
     this.maxFailures = 3;
   }
@@ -99,23 +99,94 @@ class VadManager extends EventEmitter {
   }
 
   async initLegacyVAD() {
-    // Import existing VAD implementation
-    const LegacyVAD = require('./legacyVAD');
+    // Stage 5 Task 5.1: Use VadEngine as the "legacy" / robust VAD
+    const VadEngine = require('./vadEngine');
 
-    const vad = new LegacyVAD();
-    await vad.init();
+    const vad = new VadEngine();
+    await vad.init({
+      aggressiveness: 3,
+      sampleRate: 16000,
+      frameSize: 480 // 30ms
+    });
+    logger.info('VadEngine initialized successfully within Legacy Wrapper', { context: 'VadManager' });
 
-    // Wrap legacy VAD with same interface
-    vad.on('speech:start', () => this.emit('speech:start'));
-    vad.on('speech:end', () => this.emit('speech:end'));
-    vad.on('audio:frame', (audio) => this.emit('audio:frame', audio));
+    // State machine for VAD events
+    let isSpeaking = false;
+    let speechFrameCount = 0;
+    let silenceFrameCount = 0;
+    const MIN_SPEECH_FRAMES = 5; // ~150ms
+    const MIN_SILENCE_FRAMES = 25; // ~750ms
+
+    // Create a wrapper to match the expected interface and handle events
+    const instance = {
+      processAudioFrame: async (audio) => {
+        // Log entry every 10 frames
+        if (speechFrameCount % 10 === 0 || silenceFrameCount % 10 === 0) {
+            // logger.debug('VadManager Wrapper: Processing frame', { context: 'VadManager', length: audio.length });
+        }
+        
+        // Pass to engine
+        const result = await vad.processAudioFrame(audio);
+        const isSpeech = result?.speech;
+        
+        if (isSpeech) {
+          speechFrameCount++;
+          silenceFrameCount = 0;
+          
+          if (!isSpeaking && speechFrameCount >= MIN_SPEECH_FRAMES) {
+            isSpeaking = true;
+            logger.info('VAD State CHANGE: Speech Started', { context: 'VadManager' });
+            this.emit('speech:start');
+          }
+        } else {
+          silenceFrameCount++;
+          speechFrameCount = 0;
+
+          if (isSpeaking && silenceFrameCount >= MIN_SILENCE_FRAMES) {
+            isSpeaking = false;
+            logger.info('VAD State CHANGE: Speech Ended', { context: 'VadManager' });
+            this.emit('speech:end');
+          }
+        }
+
+        // Always emit frame for recording/streaming if needed, 
+        // OR only when speaking? 
+        // Existing logic in main.js listens to 'audio:frame' and sends it to streamingClient.
+        // Usually we send ALL frames if we want VAD to happen on backend too, OR only speech frames.
+        // But main.js logic: vadManager.on('audio:frame', (frame) => streamingClient.addAudioFrame(frame));
+        // So we should emit every frame.
+        this.emit('audio:frame', audio);
+      },
+      
+      startProcessing: () => {
+         logger.info('Legacy VAD (VadEngine) started', { context: 'VadManager' });
+         isSpeaking = false;
+         speechFrameCount = 0;
+         silenceFrameCount = 0;
+      },
+      
+      stopProcessing: () => {
+         logger.info('Legacy VAD (VadEngine) stopped', { context: 'VadManager' });
+         if (isSpeaking) {
+           isSpeaking = false;
+           this.emit('speech:end');
+         }
+      },
+
+      setSystemSpeaking: (val) => {
+        // Can implement suppression logic here if needed
+        this.isSystemSpeaking = val;
+      },
+      
+      destroy: () => vad.cleanup()
+    };
 
     return {
       type: 'legacy',
-      instance: vad,
-      start: () => vad.startProcessing(),
-      pause: () => vad.stopProcessing(),
-      destroy: () => vad.destroy?.()
+      instance: instance,
+      start: () => instance.startProcessing(),
+      pause: () => instance.stopProcessing(),
+      destroy: () => instance.destroy()
     };
   }
 
@@ -129,21 +200,15 @@ class VadManager extends EventEmitter {
       currentVAD: this.currentVAD?.type
     });
 
-    // Fallback to legacy VAD after max failures
-    if (this.failureCount >= this.maxFailures && this.currentVAD?.type === 'silero') {
-      logger.warn('Switching to legacy VAD due to repeated failures', {
-        context: 'VadManager'
-      });
-
-      this.currentVAD = this.fallbackVAD;
-
-      // Restart processing with fallback
-      this.stopProcessing();
-      setTimeout(() => this.startProcessing(), 100);
+    // Fallback logic - already using reliable engine
+    if (this.currentVAD?.type === 'silero') {
+       // Switch to legacy if Silero fails
+       this.currentVAD = this.fallbackVAD;
     }
   }
 
   processAudioFrame(audioBuffer) {
+    // logger.debug('VadManager.processAudioFrame called', { context: 'VadManager', hasVAD: !!this.currentVAD });
     if (!this.currentVAD) return;
 
     // Delegate to current VAD if it supports direct frame processing
@@ -220,6 +285,43 @@ class VadManager extends EventEmitter {
 
   getCurrentVADType() {
     return this.currentVAD?.type || 'none';
+  }
+
+  // --- IPC Compatibility Interface ---
+
+  startVAD() {
+    return this.startProcessing();
+  }
+
+  stopVAD() {
+    return this.stopProcessing();
+  }
+
+  setSystemSpeaking(isSpeaking) {
+    this.isSystemSpeaking = isSpeaking;
+    // Delegate to legacy VAD if available as it handles barge-in suppression
+    if (this.currentVAD?.type === 'legacy' && this.currentVAD.instance?.setSystemSpeaking) {
+      this.currentVAD.instance.setSystemSpeaking(isSpeaking);
+    }
+  }
+
+  getStatus() {
+    return {
+      isActive: !!this.currentVAD,
+      type: this.getCurrentVADType(),
+      failureCount: this.failureCount
+    };
+  }
+
+  setAggressiveness(level) {
+    if (this.currentVAD?.type === 'legacy' && this.currentVAD.instance?.setAggressiveness) {
+      this.currentVAD.instance.setAggressiveness(level);
+    }
+  }
+
+  recalibrate() {
+    // Legacy VAD might support this, Silero usually auto-adjusts or is static
+    logger.info('VAD recalibrate requested', { context: 'VadManager' });
   }
 }
 

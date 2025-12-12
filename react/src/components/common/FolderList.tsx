@@ -27,8 +27,8 @@ const FolderList: React.FC<FolderListProps> = ({ onSelectFolder, selectedFolderI
             <button
                 onClick={() => onSelectFolder?.(null)}
                 className={`flex items-center gap-2 w-full p-2 rounded transition-colors ${selectedFolderId === null
-                        ? 'bg-cyan-500/20 text-cyan-400'
-                        : 'hover:bg-cyan-500/10 text-cyan-500/80'
+                    ? 'bg-cyan-500/20 text-cyan-400'
+                    : 'hover:bg-cyan-500/10 text-cyan-500/80'
                     }`}
             >
                 <Folder size={16} />
@@ -59,12 +59,19 @@ const FolderList: React.FC<FolderListProps> = ({ onSelectFolder, selectedFolderI
                         }
                     }}
                 >
-                    <button
+                    <div
                         onClick={() => onSelectFolder?.(folder.id)}
-                        className={`flex items-center gap-2 w-full p-2 rounded transition-colors ${selectedFolderId === folder.id
-                                ? 'bg-cyan-500/20 text-cyan-400'
-                                : 'hover:bg-cyan-500/10 text-cyan-500/80'
+                        className={`flex items-center gap-2 w-full p-2 rounded transition-colors cursor-pointer ${selectedFolderId === folder.id
+                            ? 'bg-cyan-500/20 text-cyan-400'
+                            : 'hover:bg-cyan-500/10 text-cyan-500/80'
                             }`}
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                                onSelectFolder?.(folder.id);
+                            }
+                        }}
                     >
                         <span className="text-lg">{folder.icon}</span>
                         <span className="text-sm flex-1 text-left">{folder.name}</span>
@@ -82,7 +89,7 @@ const FolderList: React.FC<FolderListProps> = ({ onSelectFolder, selectedFolderI
                         >
                             <MoreVertical size={14} />
                         </button>
-                    </button>
+                    </div>
 
                     {/* Folder Menu */}
                     {menuOpenId === folder.id && (

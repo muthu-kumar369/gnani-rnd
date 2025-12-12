@@ -417,13 +417,8 @@ class StreamingClient extends EventEmitter {
     }
 
     if (!this.call || !this.isStreamingAudio) {
-      logger.warn(
-        "Attempted to send audio frame but gRPC stream is not active.",
-        { context: "StreamingClient" }
-      );
-      this.emit("stream:error", {
-        message: "Audio stream not active.",
-      });
+      // Stream is not active (e.g. VAD is monitoring but not recording). 
+      // Ignored frames are expected behavior in this state.
       return;
     }
 

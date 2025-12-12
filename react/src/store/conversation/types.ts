@@ -24,6 +24,11 @@ export interface ConversationMessage {
         status?: 'queued' | 'sending' | 'failed' | 'sent';
         model?: string;
     };
+    feedback?: {
+        rating: 'positive' | 'negative';
+        comment?: string;
+        category?: string;
+    };
     tokenUsage?: {
         inputTokens: number;
         outputTokens: number;

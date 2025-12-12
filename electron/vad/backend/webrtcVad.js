@@ -31,11 +31,11 @@ class WebRTCVadBackend {
     
     // Threshold for speech detection
     // Adjust this value based on microphone sensitivity and background noise
-    const THRESHOLD = 500; 
+    const THRESHOLD = 100; // Restored to reasonable sensitivity
 
     this.isCurrentlySpeech = rms > THRESHOLD;
     
-    // logger.debug(`VAD Energy: ${rms.toFixed(2)}, Speech: ${this.isCurrentlySpeech}`);
+    // logger.debug(`VAD Energy: ${rms.toFixed(2)}, Speech: ${this.isCurrentlySpeech}`, { context: 'WebRTCVadBackend' });
     
     return { speech: this.isCurrentlySpeech };
   }

@@ -7,7 +7,6 @@ import { useConversationStore } from '../store/useConversationStore';
 import { useUserStore } from '../store/useUserStore';
 import AnalyticsModal from '../components/analytics/AnalyticsModal';
 import AdvancedSearch from '../components/common/AdvancedSearch';
-import UndoToastWrapper from '../components/common/UndoToastWrapper';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import errorLogger from '../utils/errorLogger';
 
@@ -15,8 +14,7 @@ const ChatLayout: React.FC = () => {
     const {
         createConversation,
         fetchConversations,
-        setConversationId,
-        refreshConversation,
+        loadConversation, // ADD THIS
         conversationId
     } = useConversationStore();
     const { accessToken } = useUserStore();
@@ -52,9 +50,12 @@ const ChatLayout: React.FC = () => {
     const handleSelectConversation = async (id: string) => {
         if (!accessToken) return;
         try {
-            setConversationId(id);
-            navigate('/');
-            await refreshConversation(accessToken);
+            // Only navigate if strictly needed (e.g. if we are on settings page)
+            if (location.pathname !== '/' && location.pathname !== '/chat') {
+                navigate('/');
+            }
+
+            await loadConversation(id, accessToken);
             if (isMobile) setIsSidebarOpen(false);
         } catch (error) {
             errorLogger.error('Failed to load conversation', error, { context: 'ChatLayout' });
@@ -91,7 +92,6 @@ const ChatLayout: React.FC = () => {
             {/* Global Modals */}
             <AnalyticsModal isOpen={showAnalytics} onClose={() => setShowAnalytics(false)} />
             <AdvancedSearch isOpen={showAdvancedSearch} onClose={() => setShowAdvancedSearch(false)} />
-            <UndoToastWrapper />
         </div>
     );
 };

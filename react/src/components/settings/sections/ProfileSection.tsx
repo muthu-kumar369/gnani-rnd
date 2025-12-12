@@ -6,6 +6,7 @@ import SectionHeader from '../SectionHeader';
 import { Camera, Save } from 'lucide-react';
 import Input from '../../ui/Input';
 import Button from '../../ui/Button';
+import GlassDropdown from '../../ui/GlassDropdown';
 
 const ProfileSection: React.FC = () => {
     const { user, updateProfile } = useUserStore();
@@ -119,19 +120,19 @@ const ProfileSection: React.FC = () => {
                     </div>
                     <div className="space-y-1">
                         <label className="text-xs font-mono text-jarvis-cyan/70 uppercase tracking-wider ml-1">Language</label>
-                        <select
-                            name="language"
+                        <GlassDropdown
                             value={formData.language || 'en-US'}
-                            onChange={handleChange}
-                            className="w-full bg-jarvis-panel border-b-2 border-jarvis-border px-4 py-2 text-sm text-jarvis-text focus:outline-none focus:border-jarvis-blue focus:shadow-[0_4px_10px_-4px_rgba(0,240,255,0.3)] transition-all duration-300 rounded-t-sm"
-                        >
-                            <option value="en-US">English (US)</option>
-                            <option value="en-GB">English (UK)</option>
-                            <option value="es-ES">Spanish</option>
-                            <option value="fr-FR">French</option>
-                            <option value="de-DE">German</option>
-                            <option value="hi-IN">Hindi</option>
-                        </select>
+                            onChange={(val) => setFormData(prev => ({ ...prev, language: val }))}
+                            options={[
+                                { value: 'en-US', label: 'English (US)' },
+                                { value: 'en-GB', label: 'English (UK)' },
+                                { value: 'es-ES', label: 'Spanish' },
+                                { value: 'fr-FR', label: 'French' },
+                                { value: 'de-DE', label: 'German' },
+                                { value: 'hi-IN', label: 'Hindi' }
+                            ]}
+                            className="w-full"
+                        />
                     </div>
                 </div>
             </div>

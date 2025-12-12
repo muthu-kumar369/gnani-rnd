@@ -45,7 +45,9 @@ export default defineConfig({
         "spin-slow": "spin 8s linear infinite",
         "pulse-fast": "pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite",
         "float": "float 6s ease-in-out infinite",
+        "float": "float 6s ease-in-out infinite",
         "scan": "scan 4s linear infinite",
+        "shimmer": "shimmer 2s infinite linear",
       },
       keyframes: {
         fadeIn: {
@@ -71,6 +73,10 @@ export default defineConfig({
         scan: {
           "0%": { backgroundPosition: "0% 0%" },
           "100%": { backgroundPosition: "0% 100%" },
+        },
+        shimmer: {
+          "0%": { transform: "translateX(-100%)" },
+          "100%": { transform: "translateX(100%)" }
         },
       },
       backgroundImage: {

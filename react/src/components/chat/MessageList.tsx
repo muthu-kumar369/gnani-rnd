@@ -4,7 +4,7 @@ import ReactMarkdown from 'react-markdown';
 import MessageItem from './MessageItem';
 import DateSeparator from './DateSeparator';
 import TypingIndicator from './TypingIndicator';
-import StreamingProgress from '../common/StreamingProgress';
+// import StreamingProgress from '../common/StreamingProgress';
 import TimeoutIndicator from '../common/TimeoutIndicator';
 import { useConversationStore } from '../../store/useConversationStore';
 import type { ConversationMessage } from '../../store/useConversationStore';
@@ -130,10 +130,10 @@ const MessageList: React.FC<MessageListProps> = ({
                 </div>
             )}
 
-            {/* Streaming Progress Indicator (Task 2.8) */}
+            {/* Streaming Progress Indicator Removed (Task 2.8) */}
             {isStreaming && (
                 <div className="px-4 md:px-0 max-w-4xl mx-auto w-full space-y-4">
-                    <StreamingProgress isStreaming={isStreaming} progress={streamProgress} />
+                    {/* Progress bar removed as per user request */}
 
                     {/* Timeout Indicator (Task 2.9) */}
                     {streamDuration > 30 && (

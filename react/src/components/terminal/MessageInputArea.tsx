@@ -1,6 +1,7 @@
 // src/components/terminal/MessageInputArea.tsx
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, Square } from 'lucide-react';
+import GlassTooltip from '../ui/GlassTooltip';
 import './MessageInputArea.css';
 
 type InputState = 'idle' | 'streaming' | 'disabled';
@@ -89,25 +90,27 @@ export const MessageInputArea: React.FC<MessageInputAreaProps> = ({
                     {/* Send/Stop button - changes based on state */}
                     {inputState === 'streaming' ? (
                         // Stop button during streaming
-                        <button
-                            onClick={handleStop}
-                            className="stop-button"
-                            aria-label="Stop generating"
-                            title="Stop generating"
-                        >
-                            <Square size={20} className="stop-icon" />
-                        </button>
+                        <GlassTooltip content="Stop generating">
+                            <button
+                                onClick={handleStop}
+                                className="stop-button"
+                                aria-label="Stop generating"
+                            >
+                                <Square size={20} className="stop-icon" />
+                            </button>
+                        </GlassTooltip>
                     ) : (
                         // Send button when idle
-                        <button
-                            onClick={handleSend}
-                            disabled={!canSend}
-                            className={`send-button ${canSend ? 'active' : 'disabled'}`}
-                            aria-label="Send message"
-                            title="Send message"
-                        >
-                            <Send size={20} className="send-icon" />
-                        </button>
+                        <GlassTooltip content="Send message">
+                            <button
+                                onClick={handleSend}
+                                disabled={!canSend}
+                                className={`send-button ${canSend ? 'active' : 'disabled'}`}
+                                aria-label="Send message"
+                            >
+                                <Send size={20} className="send-icon" />
+                            </button>
+                        </GlassTooltip>
                     )}
                 </div>
             </div>

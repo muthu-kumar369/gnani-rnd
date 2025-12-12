@@ -41,9 +41,14 @@ class ConversationService {
                 updatedAt: c.updatedAt || new Date().toISOString(),
                 timestamp: new Date(c.updatedAt || Date.now()),
                 preview: c.lastMessage || c.preview || 'No preview available',
+                isPinned: c.isPinned || false,
             }));
 
-            mapped.sort((a: any, b: any) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+            mapped.sort((a: any, b: any) => {
+                if (a.isPinned && !b.isPinned) return -1;
+                if (!a.isPinned && b.isPinned) return 1;
+                return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+            });
 
             logger.info('Conversations fetched successfully', {
                 context: 'ConversationService',
@@ -132,7 +137,12 @@ class ConversationService {
                 parentId: msg.parentId,
                 children: msg.children,
                 branchIndex: msg.branchIndex,
-                metadata: msg.metadata
+                tokenUsage: msg.tokenUsage,
+                feedback: msg.feedback ? {
+                    rating: msg.feedback.rating,
+                    comment: msg.feedback.comment,
+                    category: msg.feedback.category
+                } : undefined
             }));
 
             // Validate and repair message tree
@@ -283,6 +293,20 @@ class ConversationService {
             );
         } catch (error) {
             errorLogger.error('Error updating conversation template', error as Error);
+            throw error;
+        }
+    }
+
+    /**
+     * Toggle pin
+     */
+    async togglePin(conversationId: string, accessToken: string): Promise<void> {
+        try {
+            await apiCircuitBreaker.execute(() =>
+                apiClient.patch(`/conversations/${conversationId}/pin`, {}, { headers: { 'x-auth-token': accessToken } })
+            );
+        } catch (error) {
+            errorLogger.error('Error toggling pin status', error as Error);
             throw error;
         }
     }

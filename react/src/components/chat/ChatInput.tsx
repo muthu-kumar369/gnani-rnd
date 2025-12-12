@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Mic, Paperclip, X, File as FileIcon, Loader2 } from 'lucide-react';
+import { Send, Mic, Paperclip, X, File as FileIcon, Loader2, ArrowUp } from 'lucide-react';
 import { useConversationStore } from '../../store/useConversationStore';
 import FileUploadZone from './FileUploadZone';
 import AttachedFilesList from './AttachedFilesList';
@@ -17,6 +17,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSend, onMicClick, disabled = fa
     const [input, setInput] = useState('');
     const [attachments, setAttachments] = useState<any[]>([]);
     const [isUploading, setIsUploading] = useState(false);
+    const [isMultiLine, setIsMultiLine] = useState(false);
 
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -86,19 +87,35 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSend, onMicClick, disabled = fa
     useEffect(() => {
         if (textareaRef.current) {
             textareaRef.current.style.height = 'auto';
-            textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 120)}px`;
+            const scrollHeight = textareaRef.current.scrollHeight;
+            textareaRef.current.style.height = `${Math.min(scrollHeight, 200)}px`;
+
+            // Check if height implies multiline (approx > 40px) or explicit newline
+            setIsMultiLine(scrollHeight > 45 || input.includes('\n'));
         }
     }, [input]);
 
     return (
-        <div className="p-2 md:p-4 border-t border-jarvis-border/30 bg-jarvis-bg/80 backdrop-blur-md">
-            {/* Attachments Preview */}
-            <AttachedFilesList files={attachments} onRemove={removeAttachment} />
+        <div className="w-full px-4 md:px-6 pb-6 pt-2 bg-gradient-to-t from-black/80 via-black/40 to-transparent z-10 relative">
+            {/* Subtle Animated Progress Strip */}
+            {isStreaming && (
+                <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-cyan-500 to-transparent animate-shimmer" />
+            )}
+
+            {/* Attachments Preview - Floating above */}
+            {attachments.length > 0 && (
+                <div className="max-w-4xl mx-auto mb-2 animate-slide-up">
+                    <AttachedFilesList files={attachments} onRemove={removeAttachment} />
+                </div>
+            )}
 
             <FileUploadZone
                 onFileSelect={processFileUpload}
                 disabled={disabled || isUploading}
-                className="max-w-4xl mx-auto relative flex items-end gap-2 p-2 bg-white/5 border border-white/10 rounded-xl transition-all"
+                className={`max-w-4xl mx-auto relative bg-[#050A14]/95 backdrop-blur-xl shadow-2xl transition-all duration-300 ease-out !border-none !ring-0 !outline-none group ${isMultiLine
+                        ? 'grid grid-cols-2 gap-2 p-4 rounded-[28px]'
+                        : 'flex items-end gap-3 p-3 rounded-[26px]'
+                    }`}
             >
 
                 <input
@@ -109,14 +126,20 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSend, onMicClick, disabled = fa
                 />
 
                 {/* Attachment Button */}
-                <button
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={disabled || isUploading}
-                    className="p-2 text-gray-400 hover:text-white transition-colors rounded-lg hover:bg-white/10 disabled:opacity-50"
-                    aria-label="Attach file"
-                >
-                    {isUploading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Paperclip className="w-5 h-5" />}
-                </button>
+                <div className={`pb-0.5 pl-1 ${isMultiLine ? 'order-2 col-start-1' : ''}`}>
+                    <button
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={disabled || isUploading}
+                        className="p-2 text-gray-400 hover:text-cyan-400 hover:bg-cyan-400/10 rounded-full transition-all duration-200 disabled:opacity-50 group/attach"
+                        aria-label="Attach file"
+                    >
+                        {isUploading ? (
+                            <Loader2 className="w-6 h-6 animate-spin text-cyan-500" />
+                        ) : (
+                            <Paperclip className="w-6 h-6 transition-transform group-hover/attach:rotate-45" />
+                        )}
+                    </button>
+                </div>
 
                 {/* Text Area */}
                 <textarea
@@ -126,44 +149,51 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSend, onMicClick, disabled = fa
                     onKeyDown={handleKeyDown}
                     onPaste={handlePaste}
                     disabled={disabled}
-                    placeholder="Type a message..."
-                    className="flex-1 bg-transparent border-none focus:ring-0 text-white placeholder-gray-500 resize-none max-h-[120px] py-2 custom-scrollbar"
+                    placeholder="Message Gnani..."
+                    className={`bg-transparent !border-none !outline-none focus:!outline-none focus:!ring-0 focus:!border-none shadow-none ring-0 text-white placeholder-gray-500/80 resize-none max-h-[200px] py-3 text-[16px] leading-[1.6] custom-scrollbar selection:bg-cyan-500/30 transition-all duration-200 ease-in-out ${isMultiLine ? 'order-1 col-span-2 w-full mb-1 px-1' : 'flex-1'
+                        }`}
                     rows={1}
                 />
 
                 {/* Right Actions */}
-                <div className="flex items-center gap-1">
-                    {input.trim() || attachments.length > 0 ? (
-                        <button
-                            onClick={handleSend}
-                            disabled={disabled || isUploading}
-                            className="p-2 bg-jarvis-blue text-white rounded-lg hover:bg-jarvis-blue/90 transition-colors shadow-lg shadow-jarvis-blue/20 disabled:opacity-50"
-                            aria-label="Send message"
-                        >
-                            <Send className="w-4 h-4" />
-                        </button>
-                    ) : (
+                <div className={`flex items-center pb-0.5 pr-1 gap-2 ${isMultiLine ? 'order-3 col-start-2 justify-self-end' : ''}`}>
+                    {/* Mic Button */}
+                    {!input.trim() && attachments.length === 0 && (
                         <button
                             onClick={onMicClick}
-                            className={`p-2 hover:text-white rounded-lg transition-colors ${isStreaming
-                                ? 'bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/30'
-                                : 'text-jarvis-text bg-jarvis-bg border border-jarvis-border hover:bg-white/10'
+                            className={`h-10 w-10 flex items-center justify-center rounded-full transition-all duration-200 ${isStreaming
+                                ? 'bg-red-500/20 text-red-500 shadow-[0_0_15px_rgba(239,68,68,0.4)] animate-pulse'
+                                : 'bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white'
                                 }`}
                             aria-label={isStreaming ? "Stop voice mode" : "Start voice mode"}
                         >
                             {isStreaming ? (
-                                <div onClick={(e) => { e.stopPropagation(); onStop?.(); }} className="w-5 h-5 flex items-center justify-center">
-                                    <div className="w-3 h-3 bg-current rounded-sm animate-pulse" />
+                                <div onClick={(e) => { e.stopPropagation(); onStop?.(); }} className="h-full w-full flex items-center justify-center">
+                                    <div className="w-4 h-4 bg-current rounded-sm" />
                                 </div>
                             ) : (
-                                <Mic className="w-5 h-5" />
+                                <Mic className="w-6 h-6" />
                             )}
                         </button>
                     )}
+
+                    {/* Send Button */}
+                    <button
+                        onClick={handleSend}
+                        disabled={disabled || isUploading || (!input.trim() && attachments.length === 0)}
+                        className={`h-10 w-10 flex items-center justify-center rounded-full transition-all duration-200 ${input.trim() || attachments.length > 0
+                                ? 'bg-white text-black hover:bg-gray-200 shadow-lg transform hover:scale-105'
+                                : 'bg-transparent text-gray-400 cursor-not-allowed hidden'
+                            }`}
+                        aria-label="Send message"
+                    >
+                        <ArrowUp className="w-6 h-6" />
+                    </button>
                 </div>
             </FileUploadZone>
-            <div className="text-center mt-2">
-                <p className="text-[10px] text-gray-500">Gnani can make mistakes. Consider checking important info.</p>
+
+            <div className="text-center mt-3">
+                <p className="text-[10px] text-gray-500 font-medium tracking-wide opacity-60">Gnani can make mistakes. Consider checking important info.</p>
             </div>
         </div>
     );

@@ -304,6 +304,7 @@ export const createMessageSlice: StateCreator<ConversationStore, [], [], Message
                 controller.signal
             );
             set({ currentLeafId: newAssistantMessage._id || newAssistantMessage.id });
+            messageCache.invalidate(conversationId);
             await get().refreshConversation(accessToken);
             get().showUndoToast('Response regenerated', () => get().undoRegenerate(messageId, accessToken));
         } catch (error: any) {
