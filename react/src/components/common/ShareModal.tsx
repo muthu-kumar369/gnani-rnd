@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import ReactDOM from 'react-dom';
-import { Share2, Copy, Check, X, Clock } from 'lucide-react';
+import { Share2, Copy, Check, X, Clock, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../../api/client';
 
@@ -9,11 +9,20 @@ interface ShareModalProps {
     onClose: () => void;
 }
 
+const expiryOptions = [
+    { label: 'Never', value: undefined },
+    { label: '1 hour', value: 3600 },
+    { label: '24 hours', value: 86400 },
+    { label: '7 days', value: 604800 },
+    { label: '30 days', value: 2592000 },
+];
+
 const ShareModal: React.FC<ShareModalProps> = ({ conversationId, onClose }) => {
     const [shareUrl, setShareUrl] = useState('');
     const [loading, setLoading] = useState(false);
     const [copied, setCopied] = useState(false);
     const [expiresIn, setExpiresIn] = useState<number | undefined>(undefined);
+    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
     const handleCreateShare = async () => {
         setLoading(true);
@@ -83,17 +92,45 @@ const ShareModal: React.FC<ShareModalProps> = ({ conversationId, onClose }) => {
                                 <Clock size={14} className="inline mr-1" />
                                 Link expires in
                             </label>
-                            <select
-                                value={expiresIn || ''}
-                                onChange={(e) => setExpiresIn(e.target.value ? parseInt(e.target.value) : undefined)}
-                                className="w-full px-3 py-2 bg-black/40 border border-cyan-500/30 rounded text-cyan-400 focus:outline-none focus:border-cyan-500"
-                            >
-                                <option value="">Never</option>
-                                <option value="3600">1 hour</option>
-                                <option value="86400">24 hours</option>
-                                <option value="604800">7 days</option>
-                                <option value="2592000">30 days</option>
-                            </select>
+                            <div className="relative">
+                                <button
+                                    onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                                    className="w-full px-3 py-2 bg-black/40 border border-cyan-500/30 rounded text-cyan-400 flex items-center justify-between hover:border-cyan-500/50 transition-colors"
+                                >
+                                    <span>
+                                        {expiryOptions.find(opt => opt.value === expiresIn)?.label || 'Never'}
+                                    </span>
+                                    <ChevronDown
+                                        size={16}
+                                        className={`transform transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`}
+                                    />
+                                </button>
+
+                                <AnimatePresence>
+                                    {isDropdownOpen && (
+                                        <motion.div
+                                            initial={{ opacity: 0, y: -10 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            exit={{ opacity: 0, y: -10 }}
+                                            className="absolute top-full left-0 right-0 mt-1 bg-gray-900 border border-cyan-500/30 rounded-lg shadow-xl z-50 overflow-hidden"
+                                        >
+                                            {expiryOptions.map((option) => (
+                                                <button
+                                                    key={option.label}
+                                                    onClick={() => {
+                                                        setExpiresIn(option.value);
+                                                        setIsDropdownOpen(false);
+                                                    }}
+                                                    className="w-full px-3 py-2 text-left text-cyan-400 hover:bg-cyan-500/10 transition-colors flex items-center justify-between"
+                                                >
+                                                    <span>{option.label}</span>
+                                                    {expiresIn === option.value && <Check size={14} />}
+                                                </button>
+                                            ))}
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+                            </div>
                         </div>
 
                         <button

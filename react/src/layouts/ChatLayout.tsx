@@ -65,6 +65,13 @@ const ChatLayout: React.FC = () => {
     // ... (rest of useEffects) ...
     // Sync conversation ID, Open Analytics, Keyboard events - keeping those
 
+    // Listen for global open-search events
+    useEffect(() => {
+        const handleOpenSearch = () => setShowAdvancedSearch(true);
+        const cleanup = eventManager.addEventListener('open-advanced-search', handleOpenSearch, undefined, 'ChatLayout');
+        return cleanup;
+    }, []);
+
     return (
         <div className="flex h-screen w-full bg-jarvis-bg overflow-hidden text-jarvis-text font-sans">
             {/* Sidebar */}

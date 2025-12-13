@@ -1,96 +1,136 @@
 import React, { useState, useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom';
-import { Search, X, Clock } from 'lucide-react';
+import { X, SquarePen, MessageSquare, Search as SearchIcon } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSearchStore } from '../../store/useSearchStore';
-import api from '../../api/client';
-import { SearchFilters, type SearchFiltersState } from './SearchFilters';
+import { useConversationHistoryStore, type Conversation } from '../../store/useConversationHistoryStore'; // Import conversation store
 import { SearchHighlight } from './SearchHighlight';
-import { useSearchSuggestions } from '../../hooks/useSearchSuggestions';
+import { useConversationStore } from '../../store/useConversationStore';
+import { useUserStore } from '../../store/useUserStore';
 
 interface AdvancedSearchProps {
     isOpen: boolean;
     onClose: () => void;
 }
 
+// Helper for date grouping
+const groupConversationsByDate = (conversations: Conversation[]) => {
+    const groups: Record<string, Conversation[]> = {
+        'Today': [],
+        'Yesterday': [],
+        'Previous 7 Days': [],
+        'Older': []
+    };
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const lastWeek = new Date(today);
+    lastWeek.setDate(lastWeek.getDate() - 7);
+
+    conversations.forEach(conv => {
+        const date = new Date(conv.updatedAt || conv.timestamp); // Use updatedAt if available
+        date.setHours(0, 0, 0, 0);
+
+        if (date.getTime() === today.getTime()) {
+            groups['Today'].push(conv);
+        } else if (date.getTime() === yesterday.getTime()) {
+            groups['Yesterday'].push(conv);
+        } else if (date > lastWeek) {
+            groups['Previous 7 Days'].push(conv);
+        } else {
+            groups['Older'].push(conv);
+        }
+    });
+
+    return groups;
+};
+
 const AdvancedSearch: React.FC<AdvancedSearchProps> = ({ isOpen, onClose }) => {
     const {
         query,
-        filters,
         results,
         isSearching,
-        searchHistory,
-        searchMode,
         setQuery,
-        setFilters,
-        setSearchMode,
         search,
         addToHistory,
         clearResults,
     } = useSearchStore();
 
-    // Map store filters to component filters state
-    const currentCompFilters: SearchFiltersState = {
-        dateFrom: filters.dateFrom,
-        dateTo: filters.dateTo,
-        models: filters.models,
-        folders: filters.folders,
-        tags: filters.tags,
-    };
+    // Use Conversation History for initial view
+    const { conversations: recentConversations } = useConversationHistoryStore();
+    const { createConversation, loadConversation } = useConversationStore(); // Added loadConversation
+    const { accessToken } = useUserStore();
 
-    const suggestions = useSearchSuggestions(query);
-    const [showSuggestions, setShowSuggestions] = useState(false);
     const searchInputRef = useRef<HTMLInputElement>(null);
 
-    // Use store's search method instead of direct API call
+    const [isDebouncing, setIsDebouncing] = useState(false);
+
+    // Initial View Groups
+    const groupedConversations = React.useMemo(() => {
+        if (query) return {}; // Don't group if searching
+        return groupConversationsByDate(recentConversations);
+    }, [recentConversations, query]);
+
+    // Handlers
+    const handleSelectConversation = async (conversationId: string) => {
+        if (accessToken) {
+            await loadConversation(conversationId, accessToken);
+            onClose();
+        }
+    };
+
     const handleSearch = () => {
         if (!query.trim()) return;
         addToHistory(query);
-        setShowSuggestions(false);
-        search(); // Use store method
+        setIsDebouncing(false); // Immediate search cancels debounce
+        search();
     };
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
         if (e.key === 'Enter') {
             handleSearch();
+        } else if (e.key === 'Escape') {
+            onClose();
         }
     };
 
-    const handleFilterChange = (newFilters: SearchFiltersState) => {
-        setFilters({
-            ...newFilters,
-            // Ensure compatibility
-            models: newFilters.models,
-            folders: newFilters.folders,
-        });
-        // Optional: Auto-search on filter change if query exists
-        if (query) {
-            // Debounce or just wait for user to hit enter? 
-            // Better wait for Enter to avoid spamming
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setQuery(e.target.value);
+        setIsDebouncing(true);
+    };
+
+    const handleNewChat = async () => {
+        if (accessToken) {
+            await createConversation(accessToken);
+            onClose();
         }
     };
 
-    // Debounced auto-search when query or filters change
+    // Debounce Search
     useEffect(() => {
         const timer = setTimeout(() => {
+            setIsDebouncing(false);
             if (query.trim()) {
                 search();
             }
         }, 300);
         return () => clearTimeout(timer);
-    }, [query, filters, searchMode]);
+    }, [query, search]);
 
+    // Focus & Cleanup
     useEffect(() => {
         if (!isOpen) {
             clearResults();
+            setQuery('');
+            setIsDebouncing(false);
         } else {
-            // Focus input when opened
             setTimeout(() => searchInputRef.current?.focus(), 100);
         }
-    }, [isOpen, clearResults]);
+    }, [isOpen, clearResults, setQuery]);
 
     if (!isOpen) return null;
-
     if (typeof document === 'undefined') return null;
 
     return ReactDOM.createPortal(
@@ -99,164 +139,150 @@ const AdvancedSearch: React.FC<AdvancedSearchProps> = ({ isOpen, onClose }) => {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="fixed inset-0 z-[100] flex items-start justify-center bg-black/80 backdrop-blur-md pt-20"
+                transition={{ duration: 0.15 }}
+                className="fixed inset-0 z-[100] grid place-items-center bg-black/60 backdrop-blur-sm p-4"
                 onClick={onClose}
             >
-                <div className="w-full max-w-3xl mx-4 relative" onClick={(e) => e.stopPropagation()}>
-                    <motion.div
-                        initial={{ scale: 0.9, opacity: 0, y: -20 }}
-                        animate={{ scale: 1, opacity: 1, y: 0 }}
-                        exit={{ scale: 0.9, opacity: 0, y: -20 }}
-                        className="bg-gray-900 border border-cyan-500/30 rounded-lg shadow-2xl overflow-hidden flex flex-col max-h-[80vh]"
-                    >
-                        {/* Search Header */}
-                        <div className="p-4 border-b border-cyan-500/30 bg-gray-900/95 backdrop-blur z-20">
-                            <div className="flex items-center gap-3">
-                                <Search size={20} className="text-cyan-400" />
-                                <div className="flex-1 relative">
-                                    <input
-                                        ref={searchInputRef}
-                                        type="text"
-                                        value={query}
-                                        onChange={(e) => {
-                                            setQuery(e.target.value);
-                                            setShowSuggestions(true);
-                                        }}
-                                        onFocus={() => setShowSuggestions(true)}
-                                        onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-                                        onKeyDown={handleKeyDown}
-                                        placeholder="Search conversations..."
-                                        className="w-full bg-transparent text-cyan-400 placeholder-cyan-500/40 focus:outline-none text-lg"
-                                        autoFocus
-                                    />
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                    // Theme: Dark Gray/Black, Rounded
+                    className="w-full max-w-2xl bg-[#18181b] border border-[#27272a] rounded-xl shadow-2xl overflow-hidden flex flex-col"
+                    style={{ height: '600px', maxHeight: '90vh' }}
+                    onClick={(e) => e.stopPropagation()}
+                >
+                    {/* Header: Input ONLY (No Search Icon, No Border) + Close */}
+                    <div className="flex items-center px-4 py-4 gap-3">
+                        <input
+                            ref={searchInputRef}
+                            type="text"
+                            value={query}
+                            onChange={handleInputChange}
+                            onKeyDown={handleKeyDown}
+                            placeholder="Search messages..."
+                            // STRICT: No border, no outline, transparent bg, remove shadow, remove ring
+                            className="flex-1 bg-transparent text-gray-200 placeholder-gray-500 appearance-none outline-none border-none focus:outline-none focus:ring-0 focus:border-none shadow-none focus:shadow-none text-base font-normal p-0"
+                            style={{ outline: 'none', boxShadow: 'none', border: 'none' }}
+                            autoFocus
+                        />
+                        <button
+                            onClick={onClose}
+                            className="p-1 hover:bg-white/10 rounded text-gray-400 hover:text-white transition-colors"
+                        >
+                            <X size={20} />
+                        </button>
+                    </div>
 
-                                    {/* Suggestions Dropdown */}
-                                    {showSuggestions && (query || searchHistory.length > 0) && (results.length === 0 || query !== results[0]?.title) && (
-                                        <div className="absolute top-full left-0 right-0 mt-2 bg-gray-800 border border-cyan-500/20 rounded-lg shadow-xl overflow-hidden z-30">
-                                            {/* Live Suggestions */}
-                                            {suggestions.length > 0 && (
-                                                <div className="py-2">
-                                                    {suggestions.map((s, i) => (
-                                                        <button
-                                                            key={`s-${i}`}
-                                                            className="w-full text-left px-4 py-2 hover:bg-cyan-500/10 text-cyan-100 text-sm flex items-center gap-2"
-                                                            onClick={() => {
-                                                                setQuery(s);
-                                                                handleSearch();
-                                                            }}
-                                                        >
-                                                            <Search size={12} className="text-cyan-500/60" />
-                                                            <SearchHighlight text={s} searchTerm={query} />
-                                                        </button>
-                                                    ))}
-                                                </div>
-                                            )}
+                    {/* Divider - Subtle */}
+                    <div className="h-px bg-[#27272a] w-full" />
 
-                                            {/* History Suggestions */}
-                                            {searchHistory.length > 0 && (!query || suggestions.length === 0) && (
-                                                <div className="py-2 border-t border-cyan-500/10">
-                                                    <div className="px-4 py-1 text-xs text-cyan-500/40 font-medium">Recent</div>
-                                                    {searchHistory.map((h, i) => (
-                                                        <button
-                                                            key={`h-${i}`}
-                                                            className="w-full text-left px-4 py-2 hover:bg-cyan-500/10 text-cyan-200/70 text-sm flex items-center gap-2"
-                                                            onClick={() => {
-                                                                setQuery(h);
-                                                                handleSearch();
-                                                            }}
-                                                        >
-                                                            <Clock size={12} className="text-cyan-500/40" />
-                                                            {h}
-                                                        </button>
-                                                    ))}
-                                                </div>
-                                            )}
-                                        </div>
-                                    )}
-                                </div>
+                    {/* Content Area */}
+                    <div className={`p-2 flex-1 flex flex-col relative pb-20 ${(isSearching || isDebouncing)
+                            ? 'overflow-hidden'
+                            : 'overflow-y-auto custom-scrollbar'
+                        }`}>
 
-                                {/* Search Mode Selector */}
-                                <div className="flex gap-2 mt-3">
-                                    {(['basic', 'semantic', 'hybrid'] as const).map(mode => (
-                                        <button
-                                            key={mode}
-                                            onClick={() => setSearchMode(mode)}
-                                            className={`px-4 py-2 rounded-lg capitalize transition-colors text-sm ${searchMode === mode
-                                                ? 'bg-cyan-600 text-white'
-                                                : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
-                                                }`}
-                                        >
-                                            {mode}
-                                        </button>
-                                    ))}
-                                </div>
-
-                                <SearchFilters
-                                    initialFilters={currentCompFilters}
-                                    onFilterChange={handleFilterChange}
-                                />
-
-                                <button
-                                    onClick={onClose}
-                                    className="text-cyan-500/60 hover:text-cyan-400 ml-2"
-                                >
-                                    <X size={20} />
-                                </button>
+                        {/* 1. Loading State (Skeleton) - Increased Count & Better Fill */}
+                        {(isSearching || isDebouncing) && (
+                            <div className="space-y-4 p-2 w-full">
+                                {Array.from({ length: 8 }).map((_, i) => (
+                                    <div key={i} className="flex flex-col gap-2 animate-pulse">
+                                        <div className="h-4 bg-white/5 rounded w-3/4"></div>
+                                        <div className="h-3 bg-white/5 rounded w-full"></div>
+                                        <div className="h-3 bg-white/5 rounded w-1/2"></div>
+                                    </div>
+                                ))}
                             </div>
-                        </div>
+                        )}
 
-                        {/* Results */}
-                        <div className="flex-1 overflow-y-auto p-4 bg-gray-900/50">
-                            {isSearching ? (
-                                <div className="flex justify-center items-center py-12">
-                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-500"></div>
-                                </div>
-                            ) : results.length > 0 ? (
-                                <div className="space-y-3">
-                                    <h3 className="text-xs text-cyan-500/40 uppercase tracking-wider font-semibold mb-2">Results</h3>
-                                    {results.map((result) => (
-                                        <div
-                                            key={result.conversationId}
-                                            className="p-4 bg-black/40 border border-cyan-500/10 rounded-lg hover:border-cyan-500/40 transition-colors cursor-pointer group"
-                                        >
-                                            <div className="flex justify-between items-start mb-1">
-                                                <h3 className="text-cyan-400 font-medium group-hover:text-cyan-300 transition-colors">
+                        {/* 2. Initial View (New Chat + Recent History) */}
+                        {!query && !isSearching && !isDebouncing && (
+                            <div className="space-y-4">
+                                {/* Static New Chat Row */}
+                                <button
+                                    onClick={handleNewChat}
+                                    className="w-full flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-white/5 group transition-colors text-left"
+                                >
+                                    <div className="p-2 bg-white/10 rounded-lg text-white group-hover:bg-white/20 transition-colors">
+                                        <SquarePen size={18} />
+                                    </div>
+                                    <span className="text-sm font-medium text-gray-200">New chat</span>
+                                </button>
+
+                                {/* Date Grouped Conversations */}
+                                {(['Today', 'Yesterday', 'Previous 7 Days', 'Older'] as const).map(group => {
+                                    const groupItems = groupedConversations[group];
+                                    if (!groupItems || groupItems.length === 0) return null;
+
+                                    return (
+                                        <div key={group} className="space-y-1">
+                                            <div className="px-3 py-1 text-[10px] font-bold text-gray-500 uppercase tracking-wider">
+                                                {group}
+                                            </div>
+                                            {groupItems.map(conv => (
+                                                <button
+                                                    key={conv.conversationId}
+                                                    onClick={() => handleSelectConversation(conv.conversationId)}
+                                                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/5 group transition-colors text-left"
+                                                >
+                                                    <MessageSquare size={16} className="text-gray-500 group-hover:text-gray-300 transition-colors shrink-0" />
+                                                    <div className="flex-1 overflow-hidden">
+                                                        <div className="text-sm text-gray-300 truncate group-hover:text-white transition-colors">
+                                                            {conv.title || 'New Conversation'}
+                                                        </div>
+                                                    </div>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+
+                        {/* 3. Search Results */}
+                        {query && !isSearching && !isDebouncing && results.length > 0 && (
+                            <div className="space-y-0.5">
+                                {results.map((result) => (
+                                    <div
+                                        key={result.conversationId}
+                                        onClick={() => handleSelectConversation(result.conversationId)}
+                                        className="group flex flex-col gap-1 px-3 py-3 rounded-lg hover:bg-white/5 cursor-pointer transition-colors"
+                                    >
+                                        <div className="flex items-center justify-between gap-2">
+                                            <div className="flex items-center gap-2 overflow-hidden">
+                                                <MessageSquare size={14} className="text-gray-500 shrink-0" />
+                                                <span className="text-sm font-medium text-gray-200 group-hover:text-cyan-400 transition-colors truncate">
                                                     <SearchHighlight text={result.title} searchTerm={query} />
-                                                </h3>
-                                                <span className="text-xs text-cyan-500/30">
-                                                    {new Date(result.createdAt).toLocaleDateString()}
                                                 </span>
                                             </div>
-
-                                            <p className="text-cyan-500/60 text-sm mb-3 line-clamp-2">
-                                                <SearchHighlight text={result.snippet} searchTerm={query} />
-                                            </p>
-
-                                            <div className="flex items-center gap-3 text-xs text-cyan-500/40">
-                                                {result.model && (
-                                                    <span className="px-2 py-0.5 bg-cyan-500/5 rounded-full border border-cyan-500/10">
-                                                        {result.model}
-                                                    </span>
-                                                )}
-                                                <span>Score: {(result.score).toFixed(2)}</span>
-                                            </div>
+                                            <span className="text-[10px] text-gray-600 shrink-0">
+                                                {new Date(result.createdAt).toLocaleDateString()}
+                                            </span>
                                         </div>
-                                    ))}
+                                        <p className="text-xs text-gray-500 line-clamp-1 pl-6">
+                                            <SearchHighlight text={result.snippet} searchTerm={query} />
+                                        </p>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
+                        {/* 4. Rich Empty State - Centered */}
+                        {query && !isSearching && !isDebouncing && results.length === 0 && (
+                            <div className="flex-1 flex flex-col items-center justify-center py-8 text-center select-none h-full">
+                                <div className="p-4 rounded-full bg-white/5 mb-4 shadow-[0_0_20px_-5px_rgba(0,0,0,0.3)]">
+                                    <SearchIcon size={32} className="text-gray-600" />
                                 </div>
-                            ) : query && !showSuggestions ? (
-                                <div className="text-center text-cyan-500/60 py-12">
-                                    <p>No results found for "{query}"</p>
-                                    <p className="text-sm mt-2 opacity-50">Try adjusting your filters or search terms</p>
-                                </div>
-                            ) : (
-                                <div className="flex flex-col items-center justify-center py-16 text-cyan-500/20">
-                                    <Search size={48} className="mb-4 opacity-20" />
-                                    <p>Search your conversation history</p>
-                                </div>
-                            )}
-                        </div>
-                    </motion.div>
-                </div>
+                                <h3 className="text-base font-medium text-gray-300 mb-1">No results found</h3>
+                                <p className="text-sm text-gray-600 max-w-[200px]">
+                                    We couldn't find any messages that match "{query}"
+                                </p>
+                            </div>
+                        )}
+                    </div>
+                </motion.div>
             </motion.div>
         </AnimatePresence>,
         document.body

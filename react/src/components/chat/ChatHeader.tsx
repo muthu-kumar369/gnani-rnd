@@ -1,14 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Wifi, WifiOff, Battery, BatteryCharging, ChevronDown, Cpu, Activity, Check, Search, Share, Menu } from 'lucide-react';
+import { Wifi, WifiOff, Battery, BatteryCharging, ChevronDown, Check, Search, Share, Menu, Moon, Sun, Monitor, X, Activity, Cpu } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useDeviceAwareness } from '../../hooks/useDeviceAwareness';
 import { useConversationStore } from '../../store/useConversationStore';
 import { useUserStore } from '../../store/useUserStore';
-import ShareModal from '../common/ShareModal';
+import { useThemeStore } from '../../store/themeStore'; // Import Theme Store
 import ShareButton from '../common/ShareButton';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface ChatHeaderProps {
-    modelName?: string; // Fallback if not in store
+    modelName?: string;
     className?: string;
     onOpenSearch?: () => void;
     onToggleSidebar?: () => void;
@@ -18,10 +19,13 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ modelName = 'Gnani v2.0 (GPT-4o
     const { batteryStatus, connectivityStatus, systemStatus } = useDeviceAwareness();
     const { models, fetchModels, selectedModel, setSelectedModel, conversationId, updateConversationModel } = useConversationStore();
     const { accessToken } = useUserStore();
+    const { theme, toggleTheme } = useThemeStore(); // Use Theme Store
     const navigate = useNavigate();
 
-    const [isOpen, setIsOpen] = useState(false);
+    const [isModelOpen, setIsModelOpen] = useState(false);
+    const [isStatsOpen, setIsStatsOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
+    const statsRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         if (accessToken && models.length === 0) {
@@ -32,7 +36,10 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ modelName = 'Gnani v2.0 (GPT-4o
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-                setIsOpen(false);
+                setIsModelOpen(false);
+            }
+            if (statsRef.current && !statsRef.current.contains(event.target as Node)) {
+                setIsStatsOpen(false);
             }
         };
         document.addEventListener('mousedown', handleClickOutside);
@@ -41,7 +48,7 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ modelName = 'Gnani v2.0 (GPT-4o
 
     const handleModelSelect = async (modelId: string) => {
         setSelectedModel(modelId);
-        setIsOpen(false);
+        setIsModelOpen(false);
         if (conversationId && accessToken) {
             await updateConversationModel(conversationId, modelId, accessToken);
         }
@@ -51,103 +58,169 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ modelName = 'Gnani v2.0 (GPT-4o
     const displayModel = selectedIdx !== -1 ? models[selectedIdx].displayName : (selectedModel || modelName);
 
     return (
-        <div className={`h-14 border-b border-jarvis-border/30 bg-jarvis-bg/50 backdrop-blur-md flex items-center justify-between px-4 md:px-6 ${className} z-20 relative`}>
+        <div className={`h-16 border-b border-white/5 bg-black/40 backdrop-blur-md flex items-center justify-between px-4 md:px-6 ${className} z-20 relative transition-all duration-300`}>
             {/* Left: Menu & Model Selector */}
-            <div className="flex items-center gap-2">
-                {/* Mobile Menu Toggle */}
+            <div className="flex items-center gap-3 w-1/3">
                 <button
                     onClick={onToggleSidebar}
-                    className="md:hidden p-1.5 text-gray-400 hover:text-white rounded-lg hover:bg-white/5 transition-colors"
+                    className="md:hidden p-2 text-gray-400 hover:text-white rounded-lg hover:bg-white/5 transition-colors"
                 >
                     <Menu className="w-5 h-5" />
                 </button>
 
-                {/* Model Selector */}
                 <div className="relative" ref={dropdownRef}>
                     <button
-                        onClick={() => setIsOpen(!isOpen)}
-                        className="flex items-center gap-2 text-jarvis-text hover:bg-white/5 px-2 md:px-3 py-1.5 rounded-lg transition-colors group"
+                        onClick={() => setIsModelOpen(!isModelOpen)}
+                        className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 hover:bg-white/10 transition-all border border-white/5 hover:border-white/10 group"
                     >
-                        <span className="text-sm md:text-lg font-semibold text-jarvis-blue/90 group-hover:text-jarvis-blue truncate max-w-[150px] md:max-w-none">
+                        <span className="text-sm font-medium text-gray-200 group-hover:text-white transition-colors truncate max-w-[120px] md:max-w-[200px]">
                             {displayModel}
                         </span>
-                        <ChevronDown className={`w-4 h-4 text-gray-500 group-hover:text-jarvis-text transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                        <ChevronDown className={`w-3.5 h-3.5 text-gray-500 group-hover:text-gray-300 transition-transform duration-200 ${isModelOpen ? 'rotate-180' : ''}`} />
                     </button>
 
-                    {/* Dropdown */}
-                    {isOpen && (
-                        <div className="absolute top-full left-0 mt-2 w-64 bg-jarvis-bg border border-jarvis-border rounded-xl shadow-xl overflow-hidden py-1 z-50 animate-in fade-in zoom-in-95 duration-200">
-                            {models.length > 0 ? (
-                                models.map((model) => (
-                                    <button
-                                        key={model.id}
-                                        onClick={() => handleModelSelect(model.id)}
-                                        className="w-full text-left px-4 py-2.5 text-sm text-gray-300 hover:bg-white/5 hover:text-white flex items-center justify-between"
-                                    >
-                                        <div className="flex flex-col">
-                                            <span className="font-medium">{model.displayName}</span>
-                                            {model.description && <span className="text-xs text-gray-500">{model.description}</span>}
-                                        </div>
-                                        {selectedModel === model.id && <Check className="w-4 h-4 text-jarvis-blue" />}
-                                    </button>
-                                ))
-                            ) : (
-                                <div className="px-4 py-3 text-sm text-gray-500 text-center">Loading models...</div>
-                            )}
-                        </div>
-                    )}
+                    <AnimatePresence>
+                        {isModelOpen && (
+                            <motion.div
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: 10 }}
+                                className="absolute top-full left-0 mt-2 w-64 bg-[#0a0a0a] border border-white/10 rounded-xl shadow-2xl overflow-hidden py-1 z-50"
+                            >
+                                {models.length > 0 ? (
+                                    models.map((model) => (
+                                        <button
+                                            key={model.id}
+                                            onClick={() => handleModelSelect(model.id)}
+                                            className={`w-full text-left px-4 py-3 text-sm flex items-center justify-between hover:bg-white/5 transition-colors ${selectedModel === model.id ? 'bg-cyan-500/10 text-cyan-400' : 'text-gray-300'}`}
+                                        >
+                                            <div className="flex flex-col gap-0.5">
+                                                <span className="font-medium">{model.displayName}</span>
+                                                {model.description && <span className="text-[10px] text-gray-500">{model.description}</span>}
+                                            </div>
+                                            {selectedModel === model.id && <Check className="w-4 h-4 text-cyan-400" />}
+                                        </button>
+                                    ))
+                                ) : (
+                                    <div className="px-4 py-3 text-sm text-gray-500 text-center">Loading models...</div>
+                                )}
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
                 </div>
+            </div>
 
-                {/* Share Button (Task 2.7) */}
-                {conversationId && (
-                    <ShareButton
-                        conversationId={conversationId}
-                    />
-                )}
+            {/* Center: Search Trigger */}
 
-                {/* STAGE 2: Advanced Search Button */}
+
+            {/* Right: Actions */}
+            <div className="flex items-center justify-end gap-2 w-1/3">
+                {/* Theme Toggle */}
                 <button
-                    onClick={() => onOpenSearch ? onOpenSearch() : navigate('/search')}
-                    className="flex items-center gap-2 px-3 py-1.5 text-gray-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
-                    title="Advanced Search"
+                    onClick={toggleTheme}
+                    className="p-2 text-gray-400 hover:text-white rounded-lg hover:bg-white/5 transition-colors"
+                    title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
                 >
-                    <Search size={18} />
-                    <span className="text-sm hidden md:inline">Search</span>
+                    {theme === 'dark' ? <Moon size={18} /> : <Sun size={18} />}
                 </button>
 
-                {/* System Stats (CPU/RAM) if available */}
-                {systemStatus && (
-                    <div className="hidden md:flex items-center gap-3 mr-2">
-                        <div className="flex items-center gap-1.5 text-xs font-mono bg-white/5 px-2 py-1 rounded border border-white/5">
-                            <Cpu className="w-3 h-3 text-cyan-400" />
-                            <span>{Math.round(systemStatus.cpu.usage)}%</span>
-                        </div>
-                        <div className="flex items-center gap-1.5 text-xs font-mono bg-white/5 px-2 py-1 rounded border border-white/5">
-                            <Activity className="w-3 h-3 text-purple-400" />
-                            <span>{Math.round(systemStatus.memory.usagePercent)}%</span>
-                        </div>
-                    </div>
+                {/* Share Button */}
+                {conversationId && (
+                    <ShareButton conversationId={conversationId} />
                 )}
 
-                {/* Network */}
-                {connectivityStatus && (
-                    <div className={`flex items-center gap-1.5 text-xs font-mono bg-black/20 px-2 py-1 rounded border ${connectivityStatus.online ? 'border-green-500/20 text-green-400' : 'border-red-500/20 text-red-400'}`}>
-                        {connectivityStatus.online ? <Wifi className="w-3.5 h-3.5" /> : <WifiOff className="w-3.5 h-3.5" />}
-                        <span>{connectivityStatus.online ? 'ONLINE' : 'OFFLINE'}</span>
-                    </div>
-                )}
+                {/* System Stats Toggle */}
+                <div className="relative" ref={statsRef}>
+                    <button
+                        onClick={() => setIsStatsOpen(!isStatsOpen)}
+                        className={`p-2 rounded-lg transition-colors ${isStatsOpen ? 'text-cyan-400 bg-cyan-500/10' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+                        title="System Status"
+                    >
+                        <Activity size={18} />
+                    </button>
 
-                {/* Battery */}
-                {batteryStatus && batteryStatus.hasBattery && (
-                    <div className={`flex items-center gap-1.5 text-xs font-mono bg-black/20 px-2 py-1 rounded border ${batteryStatus.isCharging ? 'border-jarvis-blue/30 text-jarvis-blue' : 'border-white/10'}`}>
-                        {batteryStatus.isCharging ?
-                            <BatteryCharging className="w-3.5 h-3.5" /> :
-                            <Battery className="w-3.5 h-3.5" />
-                        }
-                        <span>{Math.round(batteryStatus.level)}%</span>
-                    </div>
-                )}
-                {/* Share Modal removed in favor of ShareButton internal modal */}
+                    {/* Stats Slide-out Panel */}
+                    <AnimatePresence>
+                        {isStatsOpen && (
+                            <motion.div
+                                initial={{ opacity: 0, x: 20, scale: 0.95 }}
+                                animate={{ opacity: 1, x: 0, scale: 1 }}
+                                exit={{ opacity: 0, x: 20, scale: 0.95 }}
+                                className="absolute top-full right-0 mt-3 w-72 bg-[#0a0a0a]/90 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden z-50"
+                            >
+                                <div className="p-4 space-y-4">
+                                    <div className="flex items-center justify-between pb-2 border-b border-white/5">
+                                        <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">System Status</span>
+                                        <button onClick={() => setIsStatsOpen(false)} className="text-gray-500 hover:text-white">
+                                            <X size={14} />
+                                        </button>
+                                    </div>
+
+                                    {/* CPU & Memory */}
+                                    {systemStatus && (
+                                        <div className="space-y-3">
+                                            <div className="bg-white/5 rounded-lg p-3">
+                                                <div className="flex items-center justify-between mb-2">
+                                                    <div className="flex items-center gap-2 text-sm text-gray-300">
+                                                        <Cpu size={14} className="text-cyan-400" />
+                                                        <span>CPU Usage</span>
+                                                    </div>
+                                                    <span className="text-sm font-mono">{Math.round(systemStatus.cpu.usage)}%</span>
+                                                </div>
+                                                <div className="h-1 bg-gray-700 rounded-full overflow-hidden">
+                                                    <div
+                                                        className="h-full bg-cyan-400 transition-all duration-500"
+                                                        style={{ width: `${Math.min(systemStatus.cpu.usage, 100)}%` }}
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            <div className="bg-white/5 rounded-lg p-3">
+                                                <div className="flex items-center justify-between mb-2">
+                                                    <div className="flex items-center gap-2 text-sm text-gray-300">
+                                                        <Activity size={14} className="text-purple-400" />
+                                                        <span>Memory</span>
+                                                    </div>
+                                                    <span className="text-sm font-mono">{Math.round(systemStatus.memory.usagePercent)}%</span>
+                                                </div>
+                                                <div className="h-1 bg-gray-700 rounded-full overflow-hidden">
+                                                    <div
+                                                        className="h-full bg-purple-400 transition-all duration-500"
+                                                        style={{ width: `${Math.min(systemStatus.memory.usagePercent, 100)}%` }}
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Connectivity */}
+                                    {connectivityStatus && (
+                                        <div className={`flex items-center justify-between p-3 rounded-lg border ${connectivityStatus.online ? 'bg-green-500/10 border-green-500/20' : 'bg-red-500/10 border-red-500/20'}`}>
+                                            <div className="flex items-center gap-2">
+                                                {connectivityStatus.online ? <Wifi size={16} className="text-green-400" /> : <WifiOff size={16} className="text-red-400" />}
+                                                <span className={`text-sm ${connectivityStatus.online ? 'text-green-400' : 'text-red-400'}`}>
+                                                    {connectivityStatus.online ? 'Online' : 'Offline'}
+                                                </span>
+                                            </div>
+                                            <span className="text-xs text-gray-500 font-mono">{connectivityStatus.latency || 0}ms</span>
+                                        </div>
+                                    )}
+
+                                    {/* Battery */}
+                                    {batteryStatus && batteryStatus.hasBattery && (
+                                        <div className="flex items-center justify-between p-3 rounded-lg bg-white/5 border border-white/5">
+                                            <div className="flex items-center gap-2">
+                                                {batteryStatus.isCharging ? <BatteryCharging size={16} className="text-yellow-400" /> : <Battery size={16} className="text-gray-400" />}
+                                                <span className="text-sm text-gray-300">{Math.round(batteryStatus.level)}%</span>
+                                            </div>
+                                            <span className="text-xs text-gray-500">{batteryStatus.isCharging ? 'Charging' : 'Battery'}</span>
+                                        </div>
+                                    )}
+                                </div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                </div>
             </div>
         </div>
     );

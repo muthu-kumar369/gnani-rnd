@@ -219,6 +219,13 @@ class EventManager {
 
         return leaks;
     }
+    /**
+     * Dispatch a custom event to the window
+     */
+    dispatchEvent(eventName: string, detail?: any): void {
+        const event = new CustomEvent(eventName, { detail });
+        window.dispatchEvent(event);
+    }
 }
 
 // Export singleton instance

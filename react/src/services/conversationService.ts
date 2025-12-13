@@ -71,7 +71,7 @@ class ConversationService {
             const response = await import('../utils/circuitBreaker').then(m => m.searchCircuitBreaker.execute(() =>
                 apiClient.post('/conversations/search', { query })
             ));
-            const conversationList = response.data || [];
+            const conversationList = response.data.results || response.data || [];
 
             return conversationList.map((c: any) => ({
                 id: c.conversationId || c.id || c._id,
@@ -79,7 +79,7 @@ class ConversationService {
                 title: c.title || 'Untitled Conversation',
                 updatedAt: c.updatedAt || new Date().toISOString(),
                 timestamp: new Date(c.updatedAt || Date.now()),
-                preview: c.lastMessage || c.preview || 'No preview available',
+                preview: c.snippet || c.lastMessage || c.preview || 'No preview available',
             }));
         } catch (error) {
             const { isCircuitOpenError } = await import('../utils/fallbacks');

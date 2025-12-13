@@ -1,9 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, Mic, Paperclip, X, File as FileIcon, Loader2, ArrowUp } from 'lucide-react';
+import voiceModeIcon from '../../assets/voice-mode.png';
 import { useConversationStore } from '../../store/useConversationStore';
 import FileUploadZone from './FileUploadZone';
 import AttachedFilesList from './AttachedFilesList';
 import { useUserStore } from '../../store/useUserStore';
+import GlassTooltip from '../ui/GlassTooltip';
 
 interface ChatInputProps {
     onSend: (text: string, attachments?: any[]) => void;
@@ -113,8 +115,8 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSend, onMicClick, disabled = fa
                 onFileSelect={processFileUpload}
                 disabled={disabled || isUploading}
                 className={`max-w-4xl mx-auto relative bg-[#050A14]/95 backdrop-blur-xl shadow-2xl transition-all duration-300 ease-out !border-none !ring-0 !outline-none group ${isMultiLine
-                        ? 'grid grid-cols-2 gap-2 p-4 rounded-[28px]'
-                        : 'flex items-end gap-3 p-3 rounded-[26px]'
+                    ? 'grid grid-cols-2 gap-2 p-4 rounded-[28px]'
+                    : 'flex items-end gap-3 p-3 rounded-[26px]'
                     }`}
             >
 
@@ -134,9 +136,9 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSend, onMicClick, disabled = fa
                         aria-label="Attach file"
                     >
                         {isUploading ? (
-                            <Loader2 className="w-6 h-6 animate-spin text-cyan-500" />
+                            <Loader2 className="w-5 h-5 animate-spin text-cyan-500" />
                         ) : (
-                            <Paperclip className="w-6 h-6 transition-transform group-hover/attach:rotate-45" />
+                            <Paperclip className="w-5 h-5 transition-transform group-hover/attach:rotate-45" />
                         )}
                     </button>
                 </div>
@@ -159,36 +161,48 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSend, onMicClick, disabled = fa
                 <div className={`flex items-center pb-0.5 pr-1 gap-2 ${isMultiLine ? 'order-3 col-start-2 justify-self-end' : ''}`}>
                     {/* Mic Button */}
                     {!input.trim() && attachments.length === 0 && (
-                        <button
-                            onClick={onMicClick}
-                            className={`h-10 w-10 flex items-center justify-center rounded-full transition-all duration-200 ${isStreaming
-                                ? 'bg-red-500/20 text-red-500 shadow-[0_0_15px_rgba(239,68,68,0.4)] animate-pulse'
-                                : 'bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white'
-                                }`}
-                            aria-label={isStreaming ? "Stop voice mode" : "Start voice mode"}
-                        >
-                            {isStreaming ? (
-                                <div onClick={(e) => { e.stopPropagation(); onStop?.(); }} className="h-full w-full flex items-center justify-center">
-                                    <div className="w-4 h-4 bg-current rounded-sm" />
-                                </div>
-                            ) : (
-                                <Mic className="w-6 h-6" />
-                            )}
-                        </button>
+                        <GlassTooltip content="Voice Mode" placement="top">
+                            <button
+                                onClick={onMicClick}
+                                className={`h-10 w-10 flex items-center justify-center rounded-full transition-all duration-200 ${isStreaming
+                                    ? 'bg-red-500/20 text-red-500 shadow-[0_0_15px_rgba(239,68,68,0.4)] animate-pulse'
+                                    : 'bg-transparent text-gray-400'
+                                    }`}
+                                aria-label={isStreaming ? "Stop voice mode" : "Start voice mode"}
+                            >
+                                {isStreaming ? (
+                                    <div onClick={(e) => { e.stopPropagation(); onStop?.(); }} className="h-full w-full flex items-center justify-center relative">
+                                        <div className="absolute inset-0 bg-red-500/20 rounded-full animate-ping" />
+                                        <div className="w-3 h-3 bg-red-500 rounded-sm relative z-10" />
+                                    </div>
+                                ) : (
+                                    <div className="relative w-full h-full rounded-full overflow-hidden flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                                        <div className="absolute inset-0 bg-cyan-500/30 rounded-full blur-md opacity-0 group-hover:opacity-100 transition-opacity" />
+                                        <img
+                                            src={voiceModeIcon}
+                                            alt="Voice Mode"
+                                            className="w-full h-full object-contain scale-180"
+                                        />
+                                    </div>
+                                )}
+                            </button>
+                        </GlassTooltip>
                     )}
 
                     {/* Send Button */}
-                    <button
-                        onClick={handleSend}
-                        disabled={disabled || isUploading || (!input.trim() && attachments.length === 0)}
-                        className={`h-10 w-10 flex items-center justify-center rounded-full transition-all duration-200 ${input.trim() || attachments.length > 0
+                    <GlassTooltip content="Send Message" placement="top">
+                        <button
+                            onClick={handleSend}
+                            disabled={disabled || isUploading || (!input.trim() && attachments.length === 0)}
+                            className={`h-10 w-10 flex items-center justify-center rounded-full transition-all duration-200 ${input.trim() || attachments.length > 0
                                 ? 'bg-white text-black hover:bg-gray-200 shadow-lg transform hover:scale-105'
                                 : 'bg-transparent text-gray-400 cursor-not-allowed hidden'
-                            }`}
-                        aria-label="Send message"
-                    >
-                        <ArrowUp className="w-6 h-6" />
-                    </button>
+                                }`}
+                            aria-label="Send message"
+                        >
+                            <ArrowUp className="w-5 h-5" />
+                        </button>
+                    </GlassTooltip>
                 </div>
             </FileUploadZone>
 

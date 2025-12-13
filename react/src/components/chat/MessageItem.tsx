@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { User, Sparkles, Copy, RefreshCw, Edit2, Check, X, ThumbsUp, GitBranch } from 'lucide-react';
+import gnaniLogo from '../../assets/logo.svg';
 import ReactMarkdown from 'react-markdown';
 import { motion } from 'framer-motion';
 import BranchTree from './BranchTree';
@@ -86,12 +87,19 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, isLast }) => {
     return (
         <div className={`flex gap-4 max-w-4xl mx-auto group animate-slide-up ${isUser ? 'flex-row-reverse' : ''}`}>
             {/* Avatar */}
-            {/* Avatar */}
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-1 shadow-lg ${isUser
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-1 shadow-lg overflow-hidden ${isUser
                 ? 'bg-gray-800 border border-gray-700 text-gray-400'
-                : 'bg-black border border-jarvis-cyan/50 text-jarvis-cyan shadow-[0_0_10px_rgba(0,255,255,0.2)]'
+                : 'bg-black border border-cyan-500/50 shadow-[0_0_10px_rgba(6,182,212,0.2)]'
                 }`}>
-                {isUser ? <User className="w-4 h-4" /> : <Sparkles className="w-4 h-4" />}
+                {isUser ? (
+                    <User className="w-4 h-4" />
+                ) : (
+                    <img
+                        src={gnaniLogo}
+                        alt="Gnani"
+                        className="w-full h-full object-contain"
+                    />
+                )}
             </div>
 
             {/* Content Area */}

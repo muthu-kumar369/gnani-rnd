@@ -34,8 +34,9 @@
     "electron-reloader": "^1.2.3"
   },
   "build": {
-    "appId": "com.hey.app",
-    "productName": "Hey",
+    "appId": "com.gnani.app",
+    "productName": "Gnani",
+    "icon": "electron/assets/icon.png",
     "directories": {
       "output": "dist"
     },
