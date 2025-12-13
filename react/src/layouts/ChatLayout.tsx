@@ -1,36 +1,49 @@
 import React, { useState, useEffect } from 'react';
-import { Outlet, useNavigate } from 'react-router-dom';
+import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { eventManager } from '../utils/eventManager';
 import ConversationSidebar from '../components/conversation/ConversationSidebar';
 import ChatHeader from '../components/chat/ChatHeader';
 import { useConversationStore } from '../store/useConversationStore';
 import { useUserStore } from '../store/useUserStore';
+import { useModalStore } from '../store/useModalStore';
 import AnalyticsModal from '../components/analytics/AnalyticsModal';
 import AdvancedSearch from '../components/common/AdvancedSearch';
+import SettingsModal from '../components/settings/SettingsModal';
+import WorkspaceModal from '../components/workspace/WorkspaceModal';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import errorLogger from '../utils/errorLogger';
 
 const ChatLayout: React.FC = () => {
     const {
+        showSettings,
+        settingsTab,
+        closeSettings,
+        showWorkspace,
+        workspaceTab,
+        closeWorkspace
+    } = useModalStore();
+    const {
         createConversation,
         fetchConversations,
-        loadConversation, // ADD THIS
+        loadConversation,
         conversationId
     } = useConversationStore();
     const { accessToken } = useUserStore();
     const navigate = useNavigate();
+    const location = useLocation();
     const [showAnalytics, setShowAnalytics] = React.useState(false);
     const [showAdvancedSearch, setShowAdvancedSearch] = React.useState(false);
 
     const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
-    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+    // Initialize open on desktop, closed on mobile
+    const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth >= 768);
 
     useEffect(() => {
         const handleResize = () => {
-            setIsMobile(window.innerWidth < 768);
-            if (window.innerWidth >= 768) {
-                setIsSidebarOpen(false); // Reset on desktop
-            }
+            const mobile = window.innerWidth < 768;
+            setIsMobile(mobile);
+            // Optional: Auto-close on resize to mobile, auto-open on resize to desktop could be added here
+            // For now, we just update isMobile which changes the variant
         };
         window.addEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
@@ -39,7 +52,6 @@ const ChatLayout: React.FC = () => {
     const handleNewChat = async () => {
         if (!accessToken) return;
         try {
-            await createConversation(accessToken);
             await fetchConversations(accessToken);
             if (isMobile) setIsSidebarOpen(false);
         } catch (error) {
@@ -50,9 +62,12 @@ const ChatLayout: React.FC = () => {
     const handleSelectConversation = async (id: string) => {
         if (!accessToken) return;
         try {
-            // Only navigate if strictly needed (e.g. if we are on settings page)
-            if (location.pathname !== '/' && location.pathname !== '/chat') {
-                navigate('/');
+            // Only navigate if we are NOT on the chat page
+            // Use startsWith to handle potential sub-paths or trailing slashes
+            const isChatPath = location.pathname.startsWith('/chat') || location.pathname === '/';
+
+            if (!isChatPath) {
+                navigate('/chat');
             }
 
             await loadConversation(id, accessToken);
@@ -62,21 +77,34 @@ const ChatLayout: React.FC = () => {
         }
     };
 
-    // ... (rest of useEffects) ...
-    // Sync conversation ID, Open Analytics, Keyboard events - keeping those
-
-    // Listen for global open-search events
+    // Listen for global events
     useEffect(() => {
         const handleOpenSearch = () => setShowAdvancedSearch(true);
-        const cleanup = eventManager.addEventListener('open-advanced-search', handleOpenSearch, undefined, 'ChatLayout');
-        return cleanup;
-    }, []);
+        const handleToggleSidebar = () => {
+            console.log('[ChatLayout] Toggling sidebar');
+            setIsSidebarOpen(prev => !prev);
+        };
+        const handleOpenSettings = (e: Event) => {
+            const detail = (e as CustomEvent).detail;
+            useModalStore.getState().openSettings(detail?.tab);
+        };
+
+        const cleanupSearch = eventManager.addEventListener('open-advanced-search', handleOpenSearch, undefined, 'ChatLayout');
+        const cleanupSidebar = eventManager.addEventListener('keyboard:toggle-sidebar', handleToggleSidebar, undefined, 'ChatLayout');
+        const cleanupSettings = eventManager.addEventListener('keyboard:open-settings', handleOpenSettings, undefined, 'ChatLayout');
+
+        return () => {
+            cleanupSearch();
+            cleanupSidebar();
+            cleanupSettings();
+        };
+    }, [navigate]);
 
     return (
         <div className="flex h-screen w-full bg-jarvis-bg overflow-hidden text-jarvis-text font-sans">
             {/* Sidebar */}
             <ConversationSidebar
-                isOpen={isMobile ? isSidebarOpen : true}
+                isOpen={isSidebarOpen}
                 onClose={() => setIsSidebarOpen(false)}
                 onNewConversation={handleNewChat}
                 variant={isMobile ? 'overlay' : 'static'}
@@ -99,6 +127,8 @@ const ChatLayout: React.FC = () => {
             {/* Global Modals */}
             <AnalyticsModal isOpen={showAnalytics} onClose={() => setShowAnalytics(false)} />
             <AdvancedSearch isOpen={showAdvancedSearch} onClose={() => setShowAdvancedSearch(false)} />
+            <SettingsModal isOpen={showSettings} onClose={closeSettings} initialTab={settingsTab} />
+            <WorkspaceModal isOpen={showWorkspace} onClose={closeWorkspace} initialTab={workspaceTab} />
         </div>
     );
 };

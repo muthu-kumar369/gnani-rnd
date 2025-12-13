@@ -14,6 +14,7 @@ interface DropdownPortalProps {
 const DropdownPortal: React.FC<DropdownPortalProps> = ({ children, isOpen, buttonRef, placement = 'bottom-start', onClose }) => {
     const [position, setPosition] = useState({ top: 0, left: 0 });
     const [portalRoot, setPortalRoot] = useState<HTMLDivElement | null>(null);
+    const [isPositioned, setIsPositioned] = useState(false);
     const contentRef = useRef<HTMLDivElement | null>(null);
 
     useEffect(() => {
@@ -37,6 +38,7 @@ const DropdownPortal: React.FC<DropdownPortalProps> = ({ children, isOpen, butto
         if (!buttonRef.current || !isOpen) return;
 
         const buttonRect = buttonRef.current.getBoundingClientRect();
+        // Use offsetWidth/Height if ref exists, otherwise default
         const contentRect = contentRef.current?.getBoundingClientRect() || { width: 240, height: 200 };
         const gap = 8;
 
@@ -102,13 +104,20 @@ const DropdownPortal: React.FC<DropdownPortalProps> = ({ children, isOpen, butto
         if (left < 10) left = 10;
 
         setPosition({ top, left });
+        setIsPositioned(true);
     }, [buttonRef, isOpen, placement]);
 
     useEffect(() => {
         if (isOpen && buttonRef.current) {
+            // Reset positioned state when re-opening
+            setIsPositioned(false);
+
+            // Immediate update attempt
             updatePosition();
-            const timer1 = setTimeout(updatePosition, 50);
-            const timer2 = setTimeout(updatePosition, 150);
+
+            // Retries to ensure layout is stable
+            const timer1 = setTimeout(updatePosition, 10);
+            const timer2 = setTimeout(updatePosition, 50);
 
             const handleScroll = (e: Event) => {
                 // If the scroll happened inside the dropdown itself, don't close
@@ -124,24 +133,49 @@ const DropdownPortal: React.FC<DropdownPortalProps> = ({ children, isOpen, butto
             };
 
             // Use capture phase to detect scroll in any parent
+            // Use capture phase to detect scroll in any parent
             window.addEventListener('scroll', handleScroll, { capture: true });
-            const cleanup2 = eventManager.addEventListener('resize', updatePosition as EventListener, undefined, 'DropdownPortal');
+
+            // Native listener for resize to avoid EventManager strict checks during unmount
+            window.addEventListener('resize', updatePosition);
 
             // Also close on outside click
             const handleClickOutside = (e: MouseEvent) => {
-                if (onClose && contentRef.current && !contentRef.current.contains(e.target as Node) && !buttonRef.current?.contains(e.target as Node)) {
+                // Check if click is outside both content and button
+                if (onClose &&
+                    contentRef.current &&
+                    !contentRef.current.contains(e.target as Node) &&
+                    buttonRef.current &&
+                    !buttonRef.current.contains(e.target as Node)) {
                     onClose();
                 }
             };
             window.addEventListener('mousedown', handleClickOutside);
 
+            // Listen for escape key (using native listener for consistency)
+            const handleEscape = (e: Event) => {
+                const customEvent = e as CustomEvent;
+                // Check if it's our custom event or native
+                if (e.type === 'keyboard:escape' || (e instanceof KeyboardEvent && e.key === 'Escape')) {
+                    if (onClose) onClose();
+                }
+            };
+
+            // Support both native Escape and our custom event
+            window.addEventListener('keydown', handleEscape);
+            window.addEventListener('keyboard:escape', handleEscape);
+
             return () => {
                 clearTimeout(timer1);
                 clearTimeout(timer2);
                 window.removeEventListener('scroll', handleScroll, { capture: true });
-                cleanup2();
+                window.removeEventListener('resize', updatePosition);
                 window.removeEventListener('mousedown', handleClickOutside);
+                window.removeEventListener('keydown', handleEscape);
+                window.removeEventListener('keyboard:escape', handleEscape);
             };
+        } else {
+            setIsPositioned(false);
         }
     }, [isOpen, buttonRef, updatePosition, onClose]);
 
@@ -158,7 +192,9 @@ const DropdownPortal: React.FC<DropdownPortalProps> = ({ children, isOpen, butto
                         left: `${position.left}px`,
                         pointerEvents: 'auto',
                         zIndex: 99999,
-                        maxHeight: '400px'
+                        maxHeight: '400px',
+                        opacity: isPositioned ? 1 : 0, // Hide until positioned
+                        transition: 'opacity 0.1s ease-out'
                     }}
                 >
                     {children}

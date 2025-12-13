@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom';
 import { Share2, Copy, Check, X, Clock, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../../api/client';
+import { eventManager } from '../../utils/eventManager';
 
 interface ShareModalProps {
     conversationId: string;
@@ -18,6 +19,11 @@ const expiryOptions = [
 ];
 
 const ShareModal: React.FC<ShareModalProps> = ({ conversationId, onClose }) => {
+    useEffect(() => {
+        const cleanup = eventManager.addEventListener('keyboard:escape', onClose, undefined, 'ShareModal');
+        return cleanup;
+    }, [onClose]);
+
     const [shareUrl, setShareUrl] = useState('');
     const [loading, setLoading] = useState(false);
     const [copied, setCopied] = useState(false);

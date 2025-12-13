@@ -5,8 +5,6 @@ export interface ISettings {
     theme: 'dark' | 'light' | 'system' | 'jarvis';
     shortcuts: Record<string, string>; // Using Record instead of Map for easier JSON serialization
     speechSpeed: number; // Frontend only requirement
-    avatarEnabled: boolean;
-    avatarGender: 'male' | 'female';
     preferredModel?: string; // User's preferred LLM model
     showTimestamps?: boolean; // Show/hide message timestamps
 }

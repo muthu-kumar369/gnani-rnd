@@ -6,29 +6,15 @@ import {
     Settings,
     Smartphone,
     Shield,
-    Link as LinkIcon,
-    Clock,
-    Sliders,
-    Info,
-    LogOut,
-    Keyboard,
     Box,
-    FileText
+    LogOut
 } from 'lucide-react';
 
 export type SettingsTab =
-    | 'profile'
-    | 'assistant'
-    | 'devices'
-    | 'security'
-    | 'accounts'
-    | 'history'
-    | 'preferences'
-    | 'hotkey'
-    | 'about'
-    | 'avatar'
-    | 'tools'
-    | 'templates';
+    | 'general'
+    | 'personalization'
+    | 'data'
+    | 'security';
 
 interface SettingsSidebarProps {
     activeTab: SettingsTab;
@@ -36,57 +22,56 @@ interface SettingsSidebarProps {
 }
 
 const MENU_ITEMS: { id: SettingsTab; label: string; icon: React.ElementType }[] = [
-    { id: 'profile', label: 'Profile', icon: User },
-    { id: 'assistant', label: 'Assistant', icon: Settings },
-    { id: 'templates', label: 'Templates', icon: FileText },
-    { id: 'tools', label: 'Tools', icon: Box },
-    { id: 'devices', label: 'Devices', icon: Smartphone },
+    { id: 'general', label: 'General', icon: Settings },
+    { id: 'personalization', label: 'Personalization', icon: User },
+    { id: 'data', label: 'Data & Connectors', icon: Smartphone },
     { id: 'security', label: 'Security', icon: Shield },
-    { id: 'accounts', label: 'Linked Accounts', icon: LinkIcon },
-    { id: 'history', label: 'Activity History', icon: Clock },
-    { id: 'preferences', label: 'Preferences', icon: Sliders },
-    { id: 'hotkey', label: 'Hotkey', icon: Keyboard },
-    { id: 'about', label: 'About', icon: Info },
-    { id: 'avatar', label: 'Avatar', icon: User },
 ];
 
 const SettingsSidebar: React.FC<SettingsSidebarProps> = ({ activeTab, onTabChange }) => {
     const { logout } = useUserStore();
 
     return (
-        <div className="w-64 bg-jarvis-panel border-r border-jarvis-border flex flex-col h-full">
-            <div className="p-6 border-b border-jarvis-border">
-                <h2 className="text-xl font-bold text-jarvis-blue tracking-wider text-glow">SETTINGS</h2>
+        <div className="w-64 bg-[#05050a]/50 border-r border-white/5 flex flex-col h-full backdrop-blur-xl">
+            <div className="p-4 border-b border-white/5">
+                <h2 className="text-xs font-bold text-slate-500 tracking-[0.2em] uppercase flex items-center gap-2 pl-2">
+                    Settings
+                </h2>
             </div>
-            <nav className="flex-1 overflow-y-auto py-4 custom-scrollbar">
-                <ul className="space-y-1 px-2">
+
+            <nav className="flex-1 overflow-y-auto py-3 px-3 custom-scrollbar">
+                <div className="space-y-2">
                     {MENU_ITEMS.map((item) => {
                         const Icon = item.icon;
                         const isActive = activeTab === item.id;
                         return (
-                            <li key={item.id}>
-                                <Button
-                                    variant={isActive ? 'primary' : 'ghost'}
-                                    onClick={() => onTabChange(item.id)}
-                                    className={`w-full justify-start ${isActive ? 'bg-gradient-to-r from-jarvis-blue/20 to-transparent border-l-2 border-y-0 border-r-0 border-l-jarvis-blue' : ''}`}
-                                    leftIcon={<Icon size={18} />}
-                                >
-                                    {item.label}
-                                </Button>
-                            </li>
+                            <button
+                                key={item.id}
+                                onClick={() => onTabChange(item.id)}
+                                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg transition-all duration-200 group ${isActive
+                                    ? 'bg-cyan-500/10 text-cyan-400'
+                                    : 'text-slate-400 hover:text-white hover:bg-white/5'
+                                    }`}
+                            >
+                                <Icon size={16} strokeWidth={1.5} className={`${isActive ? 'text-cyan-400' : 'text-slate-500 group-hover:text-white'}`} />
+                                <span className="text-sm font-medium">{item.label}</span>
+                                {isActive && (
+                                    <div className="ml-auto w-1 h-1 rounded-full bg-cyan-400" />
+                                )}
+                            </button>
                         );
                     })}
-                </ul>
+                </div>
             </nav>
 
-            <div className="p-4 border-t border-jarvis-border mt-auto">
+            <div className="p-4 mt-auto border-t border-white/5">
                 <Button
-                    variant="danger"
+                    variant="ghost"
                     onClick={() => logout()}
-                    className="w-full justify-start"
-                    leftIcon={<LogOut size={18} className="group-hover:rotate-90 transition-transform duration-300" />}
+                    className="w-full justify-start text-red-400 hover:text-red-300 hover:bg-red-500/10 border-transparent"
+                    leftIcon={<LogOut size={18} className="group-hover:translate-x-1 transition-transform duration-300" />}
                 >
-                    LOGOUT
+                    Log Out
                 </Button>
             </div>
         </div>

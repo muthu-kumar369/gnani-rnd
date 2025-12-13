@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import GnaniCore from '../gnani/GnaniCore';
 import { motion, AnimatePresence } from 'framer-motion';
+import { eventManager } from '../../utils/eventManager';
 
 interface VoiceModeOverlayProps {
     isVisible: boolean;
@@ -8,6 +9,12 @@ interface VoiceModeOverlayProps {
 }
 
 const VoiceModeOverlay: React.FC<VoiceModeOverlayProps> = ({ isVisible, onClose }) => {
+    useEffect(() => {
+        if (!isVisible) return;
+        const cleanup = eventManager.addEventListener('keyboard:escape', onClose, undefined, 'VoiceModeOverlay');
+        return cleanup;
+    }, [isVisible, onClose]);
+
     return (
         <AnimatePresence>
             {isVisible && (

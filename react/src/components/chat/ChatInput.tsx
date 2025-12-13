@@ -6,6 +6,7 @@ import FileUploadZone from './FileUploadZone';
 import AttachedFilesList from './AttachedFilesList';
 import { useUserStore } from '../../store/useUserStore';
 import GlassTooltip from '../ui/GlassTooltip';
+import { eventManager } from '../../utils/eventManager';
 
 interface ChatInputProps {
     onSend: (text: string, attachments?: any[]) => void;
@@ -96,6 +97,15 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSend, onMicClick, disabled = fa
             setIsMultiLine(scrollHeight > 45 || input.includes('\n'));
         }
     }, [input]);
+
+    // Keyboard focus listener
+    useEffect(() => {
+        const handleFocus = () => {
+            textareaRef.current?.focus();
+        };
+        const cleanup = eventManager.addEventListener('keyboard:focus-input', handleFocus, undefined, 'ChatInput');
+        return cleanup;
+    }, []);
 
     return (
         <div className="w-full px-4 md:px-6 pb-6 pt-2 bg-gradient-to-t from-black/80 via-black/40 to-transparent z-10 relative">

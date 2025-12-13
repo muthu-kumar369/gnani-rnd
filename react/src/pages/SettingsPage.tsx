@@ -12,7 +12,7 @@ const SettingsPage: React.FC = () => {
             <SettingsModal
                 isOpen={true}
                 onClose={() => navigate(-1)}
-                initialTab="profile"
+                initialTab="personalization"
             />
         </div>
     );

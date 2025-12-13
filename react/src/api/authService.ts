@@ -38,7 +38,8 @@ export const login = async (
 };
 
 export const register = async (
-  username: string,
+  firstName: string,
+  lastName: string,
   email: string,
   password: string
 ): Promise<RegisterResponse> => {
@@ -46,7 +47,8 @@ export const register = async (
     // STAGE 1: Use API client with retry logic
     const response = await import('../utils/circuitBreaker').then(m => m.apiCircuitBreaker.execute(() =>
       apiClient.post('/auth/register', {
-        username,
+        firstName,
+        lastName,
         email,
         password
       })

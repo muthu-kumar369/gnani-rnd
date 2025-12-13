@@ -21,7 +21,7 @@ import HUDBackground from "./HUDBackground";
 import MicButton from "./MicButton";
 import IntelligencePanel from "./IntelligencePanel";
 import SpokenTextDisplay from "./SpokenTextDisplay";
-import SettingsModal from "../settings/SettingsModal";
+// Modals moved to ChatLayout
 import AnimationWrapper from "./animations/AnimationWrapper";
 import StatusDisplay from "./StatusDisplay";
 import TerminalPanel from "../terminal/TerminalPanel";
@@ -38,6 +38,7 @@ import { StateManager } from "./StateManager";
 import { useGnaniStore } from "../../store/useGnaniStore";
 import { useConversationStore } from "../../store/useConversationStore";
 import { useUserStore } from "../../store/useUserStore";
+import { useModalStore } from "../../store/useModalStore";
 
 import { X } from "lucide-react";
 
@@ -64,10 +65,15 @@ const GnaniCore: React.FC<GnaniCoreProps> = ({ isOverlayMode = false, onOverlayC
   useGlobalHotkey();
   const streamingTTSRef = useRef<StreamingTTS | null>(null);
 
+  // Modal Store Selectors
+  const openSettings = useModalStore(s => s.openSettings);
+
+  // Note: Modals are now rendered in ChatLayout.tsx to ensure global availability
+  // GnaniCore only triggers the opening via store.
+
   const [showIntelligencePanel, setShowIntelligencePanel] = useState(false);
   const [showTerminal, setShowTerminal] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
-  const [settingsInitialTab, setSettingsInitialTab] = useState<'profile' | 'assistant' | 'devices' | 'security' | 'accounts' | 'history' | 'preferences' | 'hotkey' | 'about' | 'avatar' | 'tools' | 'templates'>('profile');
+
   const [showHistory, setShowHistory] = useState(false);
   const lastProcessedFinalSTT = useRef<string | null>(null);
   const [timeoutSeconds, setTimeoutSeconds] = useState(30);
@@ -79,18 +85,15 @@ const GnaniCore: React.FC<GnaniCoreProps> = ({ isOverlayMode = false, onOverlayC
     initGnaniStore();
   }, [initGnaniStore]);
 
-  // Debug: Log state changes
+  // Debug: Log state changes (Reduced to essential)
   useEffect(() => {
-    console.log('[GnaniCore] State changed:', state, {
-      isIdle,
-      isListening,
-      isThinking,
-      isSpeaking
-    });
+    /* console.log('[GnaniCore] State changed:', state, {
+      isIdle, isListening, isThinking, isSpeaking
+    }); */
   }, [state, isIdle, isListening, isThinking, isSpeaking]);
 
   // Debug: Log IPC state
-  useEffect(() => {
+  /* useEffect(() => {
     console.log('[GnaniCore] IPC State:', {
       isWakeWordTriggered,
       isTtsStarted,
@@ -99,21 +102,26 @@ const GnaniCore: React.FC<GnaniCoreProps> = ({ isOverlayMode = false, onOverlayC
       grpcSessionId,
       ipcConversationId
     });
-  }, [isWakeWordTriggered, isTtsStarted, isTtsEnded, latestFinalSTT]);
+  }, [isWakeWordTriggered, isTtsStarted, isTtsEnded, latestFinalSTT]); */
 
-  // Listen for custom event to open settings
+  // Listen for legacy custom events (keyboard shortcuts etc) - Keeping for Voice Mode context
   useEffect(() => {
     const handleOpenSettings = (event: Event) => {
       const customEvent = event as CustomEvent;
-      console.log('[GnaniCore] Received open-settings event:', customEvent.detail);
-      const tab = customEvent.detail?.tab || 'profile';
-      setSettingsInitialTab(tab);
-      setShowSettings(true);
+      openSettings(customEvent.detail?.tab);
     };
 
+    // We don't listen to open-workspace here anymore, assuming ChatLayout handles it or Sidebar calls store directly.
+
     const cleanup = eventManager.addEventListener('open-settings', handleOpenSettings as EventListener, undefined, 'GnaniCore');
-    return cleanup;
-  }, []);
+    // Keyboard listeners duplicated in ChatLayout, but harmless here if consistent
+    const cleanupKeyboard = eventManager.addEventListener('keyboard:open-settings', handleOpenSettings as EventListener, undefined, 'GnaniCore');
+
+    return () => {
+      cleanup();
+      cleanupKeyboard();
+    };
+  }, [openSettings]);
 
   // VERIFICATION: Simulation Event Listeners
   useEffect(() => {
@@ -178,24 +186,7 @@ const GnaniCore: React.FC<GnaniCoreProps> = ({ isOverlayMode = false, onOverlayC
     };
   }, []);
 
-  // Sync User Settings to UI State
-  useEffect(() => {
-    if (user?.settings) {
-      if (user.settings.avatarEnabled !== undefined) {
-        uiState.setAvatarEnabled(user.settings.avatarEnabled);
-      }
-      if (user.settings.avatarGender) {
-        uiState.setAvatarGender(user.settings.avatarGender);
-      }
-    }
-  }, [user?.settings, uiState.setAvatarEnabled, uiState.setAvatarGender]);
 
-  // Sync Avatar Gender to StreamingTTS
-  useEffect(() => {
-    if (streamingTTSRef.current && uiState.avatarGender) {
-      streamingTTSRef.current.setVoiceGender(uiState.avatarGender);
-    }
-  }, [uiState.avatarGender]);
 
   // Sync conversation ID from Store to Electron
   useEffect(() => {
@@ -541,7 +532,7 @@ const GnaniCore: React.FC<GnaniCoreProps> = ({ isOverlayMode = false, onOverlayC
                 {showIntelligencePanel ? "HIDE DEBUG" : "DEBUG"}
               </button>}
               <button
-                onClick={() => setShowSettings(true)}
+                onClick={() => openSettings('general')}
                 className="px-4 py-2 text-xs font-mono tracking-wider bg-jarvis-panel hover:bg-jarvis-blue/20 border border-jarvis-border hover:border-jarvis-blue rounded-sm transition-all duration-300 text-jarvis-cyan/70 hover:text-jarvis-blue hover:shadow-jarvis-border-glow relative overflow-hidden group"
               >
                 <div className="absolute inset-0 bg-jarvis-blue/10 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
@@ -636,7 +627,6 @@ const GnaniCore: React.FC<GnaniCoreProps> = ({ isOverlayMode = false, onOverlayC
 
         <IntelligencePanel isVisible={showIntelligencePanel} />
 
-        <SettingsModal isOpen={showSettings} onClose={() => setShowSettings(false)} initialTab={settingsInitialTab} />
       </div>
     </FileDropZone>
   );

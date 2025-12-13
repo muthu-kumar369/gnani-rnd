@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Plus, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTemplateStore } from '../../store/useTemplateStore';
+import { eventManager } from '../../utils/eventManager';
 
 interface CreateTemplateModalProps {
     isOpen: boolean;
@@ -9,6 +10,12 @@ interface CreateTemplateModalProps {
 }
 
 const CreateTemplateModal: React.FC<CreateTemplateModalProps> = ({ isOpen, onClose }) => {
+    useEffect(() => {
+        if (!isOpen) return;
+        const cleanup = eventManager.addEventListener('keyboard:escape', onClose, undefined, 'CreateTemplateModal');
+        return cleanup;
+    }, [isOpen, onClose]);
+
     const { addCustomTemplate } = useTemplateStore();
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');

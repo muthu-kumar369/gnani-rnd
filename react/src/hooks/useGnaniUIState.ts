@@ -37,8 +37,6 @@ export interface GnaniUIState {
   latestLLMChunk: string | null;
   latestSTTSegmentId: string | null;
   conversationMessages: Message[];
-  avatarEnabled: boolean;
-  avatarGender: 'male' | 'female';
 }
 
 // Map XState state values to GnaniAppStatus
@@ -223,21 +221,6 @@ export const useGnaniUIState = () => {
     }
   }, [send]);
 
-  // Avatar control callbacks
-  const setAvatarEnabled = useCallback(
-    (enabled: boolean) => {
-      send({ type: 'SET_AVATAR_ENABLED', enabled });
-    },
-    [send]
-  );
-
-  const setAvatarGender = useCallback(
-    (gender: 'male' | 'female') => {
-      send({ type: 'SET_AVATAR_GENDER', gender });
-    },
-    [send]
-  );
-
   // Build the public UI state object
   const uiState: GnaniUIState = useMemo(
     () => ({
@@ -257,8 +240,6 @@ export const useGnaniUIState = () => {
       latestLLMChunk: latestLLMChunk, // Use IPC value directly for reactivity
       latestSTTSegmentId: state.context.segmentId,
       conversationMessages: state.context.conversationMessages,
-      avatarEnabled: state.context.avatarEnabled,
-      avatarGender: state.context.avatarGender,
     }),
     [state, latestLLMChunk]
   );
@@ -266,9 +247,7 @@ export const useGnaniUIState = () => {
   return useMemo(
     () => ({
       ...uiState,
-      setAvatarEnabled,
-      setAvatarGender,
     }),
-    [uiState, setAvatarEnabled, setAvatarGender]
+    [uiState]
   );
 };

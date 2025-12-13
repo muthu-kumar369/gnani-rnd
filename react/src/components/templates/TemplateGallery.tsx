@@ -4,6 +4,7 @@ import { Plus, MessageSquare, Code, PenTool, Search, Terminal, Cpu, Zap, Trash2,
 import { templateService, type Template } from '../../api/templateService';
 import TemplateEditor from './TemplateEditor';
 import { useUserStore } from '../../store/useUserStore';
+import { eventManager } from '../../utils/eventManager';
 
 interface TemplateGalleryProps {
     onSelect: (template: Template) => void;
@@ -23,7 +24,21 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({ onSelect, onClose }) 
 
     useEffect(() => {
         loadTemplates();
-    }, []);
+
+        // Listen for Esc
+        const cleanup = eventManager.addEventListener('keyboard:escape', () => {
+            // If editor is open, close editor first? 
+            // Logic: if editor open, close editor. Else close gallery.
+            // But simpler to let user close editor explicitly or chain it.
+            // Here we can assume close Gallery is safe. But if editor is open, it might close both.
+            // Let's check isEditorOpen state.
+            // setState in event listener needs refs or functional update logic.
+            // But we can just use a specific listener on the Editor too.
+            // For now, simpler: Close entire gallery.
+            onClose();
+        }, undefined, 'TemplateGallery');
+        return cleanup;
+    }, [onClose]);
 
     const loadTemplates = async () => {
         try {

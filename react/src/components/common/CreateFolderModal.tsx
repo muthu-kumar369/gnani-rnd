@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Plus, FolderPlus } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useFolderStore } from '../../store/useFolderStore';
+import { eventManager } from '../../utils/eventManager';
 
 interface CreateFolderModalProps {
     isOpen: boolean;
@@ -21,6 +23,12 @@ const FOLDER_COLORS = [
 const FOLDER_ICONS = ['📁', '📂', '🗂️', '📋', '📊', '💼', '🎯', '⭐', '🔥', '💡'];
 
 const CreateFolderModal: React.FC<CreateFolderModalProps> = ({ isOpen, onClose }) => {
+    useEffect(() => {
+        if (!isOpen) return;
+        const cleanup = eventManager.addEventListener('keyboard:escape', onClose, undefined, 'CreateFolderModal');
+        return cleanup;
+    }, [isOpen, onClose]);
+
     const { createFolder } = useFolderStore();
     const [name, setName] = useState('');
     const [color, setColor] = useState(FOLDER_COLORS[0].value);
@@ -38,7 +46,7 @@ const CreateFolderModal: React.FC<CreateFolderModalProps> = ({ isOpen, onClose }
 
     if (!isOpen) return null;
 
-    return (
+    return createPortal(
         <AnimatePresence>
             <motion.div
                 initial={{ opacity: 0 }}
@@ -94,8 +102,8 @@ const CreateFolderModal: React.FC<CreateFolderModalProps> = ({ isOpen, onClose }
                                         key={iconOption}
                                         onClick={() => setIcon(iconOption)}
                                         className={`text-2xl p-2 rounded border transition-colors ${icon === iconOption
-                                                ? 'border-cyan-500 bg-cyan-500/20'
-                                                : 'border-cyan-500/30 hover:border-cyan-500/50'
+                                            ? 'border-cyan-500 bg-cyan-500/20'
+                                            : 'border-cyan-500/30 hover:border-cyan-500/50'
                                             }`}
                                     >
                                         {iconOption}
@@ -115,8 +123,8 @@ const CreateFolderModal: React.FC<CreateFolderModalProps> = ({ isOpen, onClose }
                                         key={colorOption.value}
                                         onClick={() => setColor(colorOption.value)}
                                         className={`w-8 h-8 rounded-full border-2 transition-transform ${color === colorOption.value
-                                                ? 'border-white scale-110'
-                                                : 'border-transparent hover:scale-105'
+                                            ? 'border-white scale-110'
+                                            : 'border-transparent hover:scale-105'
                                             }`}
                                         style={{ backgroundColor: colorOption.value }}
                                         title={colorOption.name}
@@ -145,7 +153,8 @@ const CreateFolderModal: React.FC<CreateFolderModalProps> = ({ isOpen, onClose }
                     </div>
                 </motion.div>
             </motion.div>
-        </AnimatePresence>
+        </AnimatePresence>,
+        document.body
     );
 };
 

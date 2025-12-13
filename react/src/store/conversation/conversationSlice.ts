@@ -139,6 +139,21 @@ export const createConversationSlice: StateCreator<ConversationStore, [], [], Co
         try {
             const models = await conversationService.getModels(accessToken);
             set({ models });
+
+            // SMART DEFAULT LOGIC:
+            // Check if there is a saved preferred model in user preferences
+            const user = useUserStore.getState().user;
+            // The backend stores this in preferences.lastUsedModel
+            const lastUsedModelId = user?.preferences?.lastUsedModel;
+
+            // If we have a last used model and it exists in the fetched list, select it
+            if (lastUsedModelId && models.some(m => m.id === lastUsedModelId)) {
+                set({ selectedModel: lastUsedModelId });
+            }
+            // Otherwise, if no model is selected yet, default to the first one available
+            else if (!get().selectedModel && models.length > 0) {
+                set({ selectedModel: models[0].id });
+            }
         } catch (error) {
             errorLogger.error('Error fetching models', error as Error, { context: 'useConversationStore' });
         } finally {

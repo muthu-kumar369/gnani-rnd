@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AlertTriangle } from 'lucide-react';
+import { eventManager } from '../../utils/eventManager';
 
 interface DeleteConfirmDialogProps {
     isOpen: boolean;
@@ -15,6 +16,12 @@ const DeleteConfirmDialog: React.FC<DeleteConfirmDialogProps> = ({
     onConfirm,
     messagePreview
 }) => {
+    useEffect(() => {
+        if (!isOpen) return;
+        const cleanup = eventManager.addEventListener('keyboard:escape', onClose, undefined, 'DeleteConfirmDialog');
+        return cleanup;
+    }, [isOpen, onClose]);
+
     return (
         <AnimatePresence>
             {isOpen && (

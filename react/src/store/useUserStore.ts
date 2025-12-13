@@ -24,7 +24,7 @@ interface UserStore {
   refreshUser: () => Promise<void>;
   initialize: () => void;
   updateProfile: (data: Partial<IProfile>) => Promise<void>;
-  updateSettings: (data: Partial<ISettings>) => Promise<void>;
+  updateSettings: (data: { settings?: Partial<ISettings>; preferences?: Record<string, any> } | Partial<ISettings>) => Promise<void>;
   removeDevice: (deviceId: string) => Promise<void>;
   updateSecurity: (data: Partial<ISecurity>) => Promise<void>;
   linkOAuthProvider: (provider: string) => Promise<void>;
@@ -200,20 +200,34 @@ export const useUserStore = create<UserStore>((set, get) => ({
     }
   },
 
-  updateSettings: async (newSettings) => {
+  updateSettings: async (data: { settings?: Partial<ISettings>; preferences?: Record<string, any> } | Partial<ISettings>) => {
     const { user } = get();
     if (!user) return;
 
-    const previousSettings = user.settings;
-    set({
-      user: { ...user, settings: { ...user.settings, ...newSettings } }
-    });
+    // Normalize input: if specifically wrapped or just settings object
+    const payload = 'settings' in data || 'preferences' in data
+      ? (data as { settings?: Partial<ISettings>; preferences?: Record<string, any> })
+      : { settings: data as Partial<ISettings> };
+
+    const previousUser = { ...user };
+
+    // Optimistic update
+    const updatedUser = { ...user };
+    if (payload.settings) {
+      updatedUser.settings = { ...user.settings, ...payload.settings };
+    }
+    if (payload.preferences) {
+      updatedUser.preferences = { ...user.preferences, ...payload.preferences };
+    }
+
+    set({ user: updatedUser });
 
     try {
-      await userService.updateSettings({ settings: newSettings });
-      errorLogger.info('Settings updated', { context: 'useUserStore', settings: newSettings });
+      await userService.updateSettings(payload);
+      errorLogger.info('Settings/Preferences updated', { context: 'useUserStore', payload });
+      await get().refreshUser();
     } catch (err) {
-      set({ user: { ...user, settings: previousSettings } });
+      set({ user: previousUser });
       errorLogger.error('Failed to update settings', err as Error, { context: 'useUserStore' });
       throw err;
     }

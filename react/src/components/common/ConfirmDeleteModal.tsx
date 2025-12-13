@@ -1,7 +1,8 @@
 // src/components/common/ConfirmDeleteModal.tsx
-import React from 'react';
+import React, { useEffect } from 'react';
 import { AlertTriangle, X } from 'lucide-react';
 import './ConfirmDeleteModal.css';
+import { eventManager } from '../../utils/eventManager';
 
 interface ConfirmDeleteModalProps {
     isOpen: boolean;
@@ -18,6 +19,12 @@ export const ConfirmDeleteModal: React.FC<ConfirmDeleteModalProps> = ({
     cascadeCount = 0,
     isDeleting = false
 }) => {
+    useEffect(() => {
+        if (!isOpen) return;
+        const cleanup = eventManager.addEventListener('keyboard:escape', onCancel, undefined, 'ConfirmDeleteModal');
+        return cleanup;
+    }, [isOpen, onCancel]);
+
     if (!isOpen) return null;
 
     const handleBackdropClick = (e: React.MouseEvent) => {

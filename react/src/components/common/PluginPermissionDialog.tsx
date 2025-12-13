@@ -30,9 +30,29 @@ export const PluginPermissionDialog: React.FC = () => {
             });
         };
 
-        const cleanup = eventManager.addEventListener('plugin-permission-request', handleRequest as EventListener, undefined, 'PluginPermissionDialog');
-        return cleanup;
-    }, []);
+        const handleEscape = () => {
+            // Treat escape as denial
+            if (resolver) {
+                resolver({
+                    api: false,
+                    storage: false,
+                    notifications: false,
+                    clipboard: false
+                });
+                setRequest(null);
+                setResolver(null);
+            }
+        };
+
+        const cleanupRequest = eventManager.addEventListener('plugin-permission-request', handleRequest as EventListener, undefined, 'PluginPermissionDialog');
+        // Only listen for escape if there is an active request
+        const cleanupEscape = eventManager.addEventListener('keyboard:escape', handleEscape, undefined, 'PluginPermissionDialog');
+
+        return () => {
+            cleanupRequest();
+            cleanupEscape();
+        };
+    }, [resolver]);
 
     const handleApprove = () => {
         if (resolver) {

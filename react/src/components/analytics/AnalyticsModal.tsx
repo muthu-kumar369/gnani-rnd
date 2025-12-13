@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, BarChart3 } from 'lucide-react';
 import { useFocusTrap } from '../../hooks/useFocusTrap';
@@ -9,10 +10,18 @@ interface AnalyticsModalProps {
     onClose: () => void;
 }
 
+import { eventManager } from '../../utils/eventManager';
+
 const AnalyticsModal: React.FC<AnalyticsModalProps> = ({ isOpen, onClose }) => {
     const modalRef = useFocusTrap(isOpen);
 
-    return (
+    useEffect(() => {
+        if (!isOpen) return;
+        const cleanup = eventManager.addEventListener('keyboard:escape', onClose, undefined, 'AnalyticsModal');
+        return cleanup;
+    }, [isOpen, onClose]);
+
+    return createPortal(
         <AnimatePresence>
             {isOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-8">
@@ -67,7 +76,8 @@ const AnalyticsModal: React.FC<AnalyticsModalProps> = ({ isOpen, onClose }) => {
                     </motion.div>
                 </div>
             )}
-        </AnimatePresence>
+        </AnimatePresence>,
+        document.body
     );
 };
 

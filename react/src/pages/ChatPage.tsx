@@ -5,6 +5,7 @@ import { useChatSession } from '../hooks/useChatSession';
 import { useConversationStore } from '../store/useConversationStore';
 import { useUserStore } from '../store/useUserStore';
 import VoiceModeOverlay from '../components/chat/VoiceModeOverlay';
+import { eventManager } from '../utils/eventManager';
 
 const ChatPage: React.FC = () => {
     const { sendMessage, isThinking } = useChatSession();
@@ -21,6 +22,12 @@ const ChatPage: React.FC = () => {
             cancelStream('current', accessToken);
         }
     };
+
+    // Keyboard listeners
+    React.useEffect(() => {
+        const cleanup = eventManager.addEventListener('keyboard:toggle-voice-mode', handleMicClick, undefined, 'ChatPage');
+        return cleanup;
+    }, []);
 
     const handleLoadMore = () => {
         if (conversationId && allMessages.length > 0) {

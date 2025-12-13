@@ -40,6 +40,7 @@ class ApiClient {
 
         const response = await fetch(`${API_BASE_URL}${endpoint}`, {
             method: 'GET',
+            cache: 'no-store',
             headers: {
                 'Content-Type': 'application/json',
                 ...(token && { 'x-auth-token': token })

@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { eventManager } from '../../utils/eventManager';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Plus, X, History, RefreshCw, ArrowUpDown, ChevronDown, ChevronRight, Folder, Trash2, User, Settings, LogOut, BarChart3, Moon, Keyboard, MoreHorizontal, FolderPlus, PanelLeftClose, Sparkles } from 'lucide-react';
+import { Search, Plus, X, History, RefreshCw, ArrowUpDown, ChevronDown, ChevronRight, Folder, Trash2, User, Settings, LogOut, BarChart3, Moon, Keyboard, MoreHorizontal, FolderPlus, PanelLeftClose, Sparkles, HelpCircle, FileText, Flag, Download, MessageSquareQuote, Briefcase } from 'lucide-react';
 import gnaniLogo from '../../assets/logo.svg';
 import { useConversationHistory } from '../../hooks/useConversationHistory';
 import ConversationListItem from './ConversationListItem';
@@ -13,6 +13,7 @@ import Button from '../ui/Button';
 import ConfirmationModal from '../ui/ConfirmationModal';
 import { ConversationSkeleton } from '../common/SkeletonLoader';
 import CreateFolderModal from '../common/CreateFolderModal';
+import { useModalStore, type SettingsTab, type WorkspaceTab } from '../../store/useModalStore';
 import { useConversationHistoryStore, type Conversation } from '../../store/useConversationHistoryStore';
 
 import DropdownPortal from '../common/DropdownPortal';
@@ -73,6 +74,25 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
     const profileRef = useRef<HTMLDivElement>(null);
     const moreMenuRef = useRef<HTMLButtonElement>(null);
     const [isProfileOpen, setIsProfileOpen] = useState(false);
+    const [isHelpOpen, setIsHelpOpen] = useState(false);
+    const helpRef = useRef<HTMLButtonElement>(null);
+    const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const isCreatingRef = useRef(false);
+
+    const handleHelpMouseEnter = () => {
+        if (hoverTimeoutRef.current) {
+            clearTimeout(hoverTimeoutRef.current);
+            hoverTimeoutRef.current = null;
+        }
+        setIsHelpOpen(true);
+    };
+
+    const handleHelpMouseLeave = () => {
+        hoverTimeoutRef.current = setTimeout(() => {
+            setIsHelpOpen(false);
+        }, 300); // 300ms delay to allow moving to submenu
+    };
+
     const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
     const [isFoldersExpanded, setIsFoldersExpanded] = useState(true);
     const { togglePinConversation } = useConversationHistoryStore();
@@ -149,6 +169,8 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
 
 
 
+
+
     // isOverlay defined at top
 
     // Infinite scroll
@@ -160,6 +182,11 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
     };
 
     const handleNewConversation = async () => {
+        if (isCreatingRef.current) {
+            return;
+        }
+        isCreatingRef.current = true;
+
         if (accessToken) {
             try {
                 await createConversation(accessToken);
@@ -167,9 +194,56 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                 if (isOverlay) onClose();
             } catch (error) {
                 console.error('Failed to create conversation:', error);
+            } finally {
+                // reset after a small delay to prevent double-clicks
+                setTimeout(() => {
+                    isCreatingRef.current = false;
+                }, 500);
             }
+        } else {
+            isCreatingRef.current = false;
         }
     };
+
+    // Keyboard Shortcuts Listeners
+    // Keyboard Shortcuts Listeners
+    useEffect(() => {
+        const handleNewConversationShortcut = () => {
+            handleNewConversation();
+        };
+
+        const handleSearchShortcut = () => {
+            eventManager.dispatchEvent('open-advanced-search');
+        };
+
+        const handleShortcutsShortcut = () => {
+            setIsProfileOpen(false);
+            setIsHelpOpen(false);
+            setIsShortcutsOpen(true);
+        };
+
+        const handleEscape = () => {
+            if (selectionMode) {
+                setSelectionMode(false);
+                setSelectedIds(new Set());
+            }
+            if (isProfileOpen) setIsProfileOpen(false);
+            if (isHelpOpen) setIsHelpOpen(false);
+            // Dropdowns (more menu) are handled by DropdownPortal/GlassDropdown listeners
+        };
+
+        const cleanupNew = eventManager.addEventListener('keyboard:new-conversation', handleNewConversationShortcut);
+        const cleanupSearch = eventManager.addEventListener('keyboard:focus-search', handleSearchShortcut);
+        const cleanupShortcuts = eventManager.addEventListener('keyboard:show-shortcuts', handleShortcutsShortcut);
+        const cleanupEscape = eventManager.addEventListener('keyboard:escape', handleEscape, undefined, 'ConversationSidebar');
+
+        return () => {
+            cleanupNew();
+            cleanupSearch();
+            cleanupShortcuts();
+            cleanupEscape();
+        };
+    }, [handleNewConversation, selectionMode, isProfileOpen, isHelpOpen]);
 
     // Toggle folder expand/collapse
     const toggleFolder = (folderId: string) => {
@@ -216,6 +290,8 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
     };
 
 
+    const { openWorkspace, openSettings } = useModalStore();
+
     // State for collapse
     const [isCollapsed, setIsCollapsed] = useState(false);
 
@@ -228,6 +304,13 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
         }
     };
 
+    // Sync isOpen prop with isCollapsed state for static variant
+    useEffect(() => {
+        if (variant === 'static') {
+            setIsCollapsed(!isOpen);
+        }
+    }, [isOpen, variant]);
+
     const SidebarContent = (
         <motion.div
             initial={{ width: isCollapsed ? 80 : 320 }}
@@ -238,6 +321,15 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
             {/* Header */}
             <div className={`p-4 border-b border-jarvis-blue/20 flex flex-col gap-4 ${isCollapsed ? 'items-center grid justify-stretch' : ''}`}>
                 <div className={`flex items-center ${isCollapsed ? 'flex-col gap-4' : 'justify-between'}`}>
+                    {/* Expand/Collapse Button for Overlay Mode or Manual Toggle */}
+                    {!isOverlay && isCollapsed && (
+                        <button
+                            onClick={toggleCollapse}
+                            className="p-2 hover:bg-white/10 rounded-lg text-gray-400 hover:text-white transition-colors"
+                        >
+                            <PanelLeftOpen size={20} />
+                        </button>
+                    )}
                     {/* Logo - Click to expand when collapsed */}
                     <div
                         className={`flex items-center gap-3 overflow-hidden ${isCollapsed ? 'cursor-pointer hover:opacity-80 transition-opacity justify-center w-full' : ''}`}
@@ -560,8 +652,7 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                             <button
                                 onClick={() => {
                                     setIsProfileOpen(false);
-                                    // Navigate to profile or settings
-                                    navigate('/settings');
+                                    openSettings('personalization');
                                 }}
                                 className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-300 hover:text-white hover:bg-white/10 rounded-md transition-colors"
                             >
@@ -580,9 +671,21 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                                 <span>Analytics</span>
                             </button>
                             <button
+                                onMouseDown={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    setIsProfileOpen(false);
+                                    openWorkspace('templates');
+                                }}
+                                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-300 hover:text-white hover:bg-white/10 rounded-md transition-colors"
+                            >
+                                <Briefcase className="w-4 h-4" />
+                                <span>Workspace</span>
+                            </button>
+                            <button
                                 onClick={() => {
                                     setIsProfileOpen(false);
-                                    navigate('/settings');
+                                    openSettings('general');
                                 }}
                                 className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-300 hover:text-white hover:bg-white/10 rounded-md transition-colors"
                             >
@@ -601,17 +704,62 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                                     PRO
                                 </span>
                             </button>
-                            <button
-                                onClick={() => {
-                                    setIsProfileOpen(false);
-                                    setIsShortcutsOpen(true);
-                                }}
-                                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-300 hover:text-white hover:bg-white/10 rounded-md transition-colors"
-                            >
-                                <Keyboard className="w-4 h-4" />
-                                <span>Keyboard Shortcuts</span>
-                            </button>
                             <div className="h-px bg-white/10 my-1" />
+                            <button
+                                ref={helpRef}
+                                onMouseEnter={handleHelpMouseEnter}
+                                onMouseLeave={handleHelpMouseLeave}
+                                className="w-full flex items-center justify-between px-3 py-2 text-sm text-gray-300 hover:text-white hover:bg-white/10 rounded-md transition-colors group relative"
+                            >
+                                <div className="flex items-center gap-2">
+                                    <HelpCircle className="w-4 h-4" />
+                                    <span>Help</span>
+                                </div>
+                                <ChevronRight className="w-4 h-4 text-gray-500 group-hover:text-white" />
+
+                                {/* Submenu */}
+                                <DropdownPortal isOpen={isHelpOpen} buttonRef={helpRef} placement="right-start">
+                                    <div
+                                        className="w-56 bg-gray-900 border border-jarvis-border/30 rounded-lg shadow-xl overflow-hidden backdrop-blur-xl p-2 space-y-1 z-[110]"
+                                        onMouseEnter={handleHelpMouseEnter}
+                                        onMouseLeave={handleHelpMouseLeave}
+                                        onMouseDown={(e) => e.nativeEvent.stopImmediatePropagation()}
+                                    >
+                                        <button className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-300 hover:text-white hover:bg-white/10 rounded-md transition-colors">
+                                            <HelpCircle className="w-4 h-4" />
+                                            <span>Help center</span>
+                                        </button>
+                                        <button className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-300 hover:text-white hover:bg-white/10 rounded-md transition-colors">
+                                            <MessageSquareQuote className="w-4 h-4" />
+                                            <span>Release notes</span>
+                                        </button>
+                                        <button className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-300 hover:text-white hover:bg-white/10 rounded-md transition-colors">
+                                            <FileText className="w-4 h-4" />
+                                            <span>Terms & policies</span>
+                                        </button>
+                                        <button className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-300 hover:text-white hover:bg-white/10 rounded-md transition-colors">
+                                            <Flag className="w-4 h-4" />
+                                            <span>Report Bug</span>
+                                        </button>
+                                        <button className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-300 hover:text-white hover:bg-white/10 rounded-md transition-colors">
+                                            <Download className="w-4 h-4" />
+                                            <span>Download apps</span>
+                                        </button>
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setIsHelpOpen(false);
+                                                setIsProfileOpen(false);
+                                                setIsShortcutsOpen(true);
+                                            }}
+                                            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-300 hover:text-white hover:bg-white/10 rounded-md transition-colors"
+                                        >
+                                            <Keyboard className="w-4 h-4" />
+                                            <span>Keyboard shortcuts</span>
+                                        </button>
+                                    </div>
+                                </DropdownPortal>
+                            </button>
                             <button
                                 onClick={() => {
                                     setIsProfileOpen(false);

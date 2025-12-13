@@ -18,17 +18,15 @@ function AppWrapper() {
 import { ErrorBoundary } from "./components/common/ErrorBoundary";
 
 createRoot(document.getElementById("root")!).render(
-  <StrictMode>
-    <ErrorBoundary
-      componentName="App Root"
-      onError={(error, errorInfo) => {
-        // Send to analytics/monitoring
-        console.error('Global error:', error, errorInfo);
-      }}
-    >
-      <HashRouter>
-        <AppWrapper />
-      </HashRouter>
-    </ErrorBoundary>
-  </StrictMode>
+  <ErrorBoundary
+    componentName="App Root"
+    onError={(error, errorInfo) => {
+      // Send to analytics/monitoring
+      console.error('Global error:', error, errorInfo);
+    }}
+  >
+    <HashRouter>
+      <AppWrapper />
+    </HashRouter>
+  </ErrorBoundary>
 );

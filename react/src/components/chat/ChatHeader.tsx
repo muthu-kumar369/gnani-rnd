@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { eventManager } from '../../utils/eventManager';
 import { Wifi, WifiOff, Battery, BatteryCharging, ChevronDown, Check, Search, Share, Menu, Moon, Sun, Monitor, X, Activity, Cpu } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useDeviceAwareness } from '../../hooks/useDeviceAwareness';
@@ -15,7 +16,7 @@ interface ChatHeaderProps {
     onToggleSidebar?: () => void;
 }
 
-const ChatHeader: React.FC<ChatHeaderProps> = ({ modelName = 'Gnani v2.0 (GPT-4o)', className = '', onOpenSearch, onToggleSidebar }) => {
+const ChatHeader: React.FC<ChatHeaderProps> = ({ modelName, className = '', onOpenSearch, onToggleSidebar }) => {
     const { batteryStatus, connectivityStatus, systemStatus } = useDeviceAwareness();
     const { models, fetchModels, selectedModel, setSelectedModel, conversationId, updateConversationModel } = useConversationStore();
     const { accessToken } = useUserStore();
@@ -42,20 +43,46 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ modelName = 'Gnani v2.0 (GPT-4o
                 setIsStatsOpen(false);
             }
         };
+
+        const handleEscape = () => {
+            setIsModelOpen(false);
+            setIsStatsOpen(false);
+        };
+
         document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
+        // Use eventManager for Esc key
+        const cleanupEsc = eventManager.addEventListener('keyboard:escape', handleEscape, undefined, 'ChatHeader');
+
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+            cleanupEsc();
+        };
     }, []);
 
     const handleModelSelect = async (modelId: string) => {
         setSelectedModel(modelId);
         setIsModelOpen(false);
+
+        // Persist selection to user preferences
+        try {
+            // Update preferences directly as per backend requirement
+            await useUserStore.getState().updateSettings({
+                preferences: { lastUsedModel: modelId }
+            });
+        } catch (err) {
+            console.error('Failed to persist model selection:', err);
+        }
+
         if (conversationId && accessToken) {
             await updateConversationModel(conversationId, modelId, accessToken);
         }
     };
 
     const selectedIdx = models.findIndex(m => m.id === selectedModel);
-    const displayModel = selectedIdx !== -1 ? models[selectedIdx].displayName : (selectedModel || modelName);
+    // Display logic: Selected Model Name -> First Model Name -> Fallback/Loading
+    const displayModel = selectedIdx !== -1
+        ? models[selectedIdx].displayName
+        : (models.length > 0 ? models[0].displayName : (modelName || 'Loading...'));
 
     return (
         <div className={`h-16 border-b border-white/5 bg-black/40 backdrop-blur-md flex items-center justify-between px-4 md:px-6 ${className} z-20 relative transition-all duration-300`}>

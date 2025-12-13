@@ -8,8 +8,6 @@ export interface GnaniMachineContext {
     response: string;
     error: string | null;
     conversationMessages: Message[];
-    avatarEnabled: boolean;
-    avatarGender: 'male' | 'female';
     segmentId: string | null;
     // IPC state flags
     isMicActive: boolean;
@@ -51,8 +49,6 @@ export type GnaniMachineEvent =
     | { type: 'RETRY' }
     | { type: 'DISMISS' }
     | { type: 'RESET' }
-    | { type: 'SET_AVATAR_ENABLED'; enabled: boolean }
-    | { type: 'SET_AVATAR_GENDER'; gender: 'male' | 'female' }
     | { type: 'UPDATE_IPC_STATE'; payload: Partial<GnaniMachineContext> };
 
 export const gnaniMachine = setup({
@@ -196,22 +192,6 @@ export const gnaniMachine = setup({
             }
             return {};
         }),
-        setAvatarEnabled: assign({
-            avatarEnabled: ({ event }) => {
-                if (event.type === 'SET_AVATAR_ENABLED') {
-                    return event.enabled;
-                }
-                return true;
-            },
-        }),
-        setAvatarGender: assign({
-            avatarGender: ({ event }) => {
-                if (event.type === 'SET_AVATAR_GENDER') {
-                    return event.gender;
-                }
-                return 'female';
-            },
-        }),
     },
     guards: {
         isAuthenticated: ({ context }) => {
@@ -228,8 +208,6 @@ export const gnaniMachine = setup({
         response: '',
         error: null,
         conversationMessages: [],
-        avatarEnabled: true,
-        avatarGender: 'female',
         segmentId: null,
         isMicActive: false,
         isWakeWordReady: false,
@@ -244,12 +222,6 @@ export const gnaniMachine = setup({
     on: {
         UPDATE_IPC_STATE: {
             actions: 'updateIPCState',
-        },
-        SET_AVATAR_ENABLED: {
-            actions: 'setAvatarEnabled',
-        },
-        SET_AVATAR_GENDER: {
-            actions: 'setAvatarGender',
         },
         STREAM_ERROR: {
             target: '.error',
