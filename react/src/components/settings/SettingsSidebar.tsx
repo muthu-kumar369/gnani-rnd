@@ -32,9 +32,9 @@ const SettingsSidebar: React.FC<SettingsSidebarProps> = ({ activeTab, onTabChang
     const { logout } = useUserStore();
 
     return (
-        <div className="w-64 bg-[#05050a]/50 border-r border-white/5 flex flex-col h-full backdrop-blur-xl">
-            <div className="p-4 border-b border-white/5">
-                <h2 className="text-xs font-bold text-slate-500 tracking-[0.2em] uppercase flex items-center gap-2 pl-2">
+        <div className="w-64 bg-canvas-panel/50 border-r border-glass-border flex flex-col h-full backdrop-blur-xl">
+            <div className="p-4 border-b border-glass-border">
+                <h2 className="text-xs font-bold text-type-muted tracking-[0.2em] uppercase flex items-center gap-2 pl-2">
                     Settings
                 </h2>
             </div>
@@ -49,14 +49,14 @@ const SettingsSidebar: React.FC<SettingsSidebarProps> = ({ activeTab, onTabChang
                                 key={item.id}
                                 onClick={() => onTabChange(item.id)}
                                 className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg transition-all duration-200 group ${isActive
-                                    ? 'bg-cyan-500/10 text-cyan-400'
-                                    : 'text-slate-400 hover:text-white hover:bg-white/5'
+                                    ? 'bg-gnani-primary/10 text-gnani-primary'
+                                    : 'text-type-secondary hover:text-type-primary hover:bg-glass-shimmer'
                                     }`}
                             >
-                                <Icon size={16} strokeWidth={1.5} className={`${isActive ? 'text-cyan-400' : 'text-slate-500 group-hover:text-white'}`} />
+                                <Icon size={16} strokeWidth={1.5} className={`${isActive ? 'text-gnani-primary' : 'text-type-muted group-hover:text-type-primary'}`} />
                                 <span className="text-sm font-medium">{item.label}</span>
                                 {isActive && (
-                                    <div className="ml-auto w-1 h-1 rounded-full bg-cyan-400" />
+                                    <div className="ml-auto w-1 h-1 rounded-full bg-gnani-primary" />
                                 )}
                             </button>
                         );
@@ -64,11 +64,11 @@ const SettingsSidebar: React.FC<SettingsSidebarProps> = ({ activeTab, onTabChang
                 </div>
             </nav>
 
-            <div className="p-4 mt-auto border-t border-white/5">
+            <div className="p-4 mt-auto border-t border-glass-border">
                 <Button
                     variant="ghost"
                     onClick={() => logout()}
-                    className="w-full justify-start text-red-400 hover:text-red-300 hover:bg-red-500/10 border-transparent"
+                    className="w-full justify-start text-status-error hover:text-status-error hover:bg-status-error/10 border-transparent"
                     leftIcon={<LogOut size={18} className="group-hover:translate-x-1 transition-transform duration-300" />}
                 >
                     Log Out

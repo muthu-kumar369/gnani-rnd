@@ -81,15 +81,15 @@ const TemplatesSection: React.FC = () => {
         <div>
             <div className="p-6 space-y-6">
                 {/* Actions row */}
-                <div className="flex justify-between items-center bg-[#0a0a15]/50 p-3 rounded-xl border border-white/5 backdrop-blur-sm">
-                    <div className="text-xs text-cyan-400/50 font-medium tracking-wide uppercase px-1">
+                <div className="flex justify-between items-center bg-canvas-panel p-3 rounded-xl border border-glass-border backdrop-blur-sm">
+                    <div className="text-xs text-gnani-primary/60 font-medium tracking-wide uppercase px-1">
                         {templates.length} Templates
                     </div>
                     <Button
                         onClick={handleCreate}
                         variant="primary"
                         size="sm"
-                        className="bg-cyan-500 hover:bg-cyan-400 text-black font-semibold shadow-[0_0_20px_rgba(6,182,212,0.3)] hover:shadow-[0_0_30px_rgba(6,182,212,0.5)] transition-all duration-300 px-4"
+                        className="bg-gnani-primary hover:bg-gnani-primary/90 text-type-inverse font-semibold shadow-[0_0_20px_rgba(6,182,212,0.3)] hover:shadow-[0_0_30px_rgba(6,182,212,0.5)] transition-all duration-300 px-4"
                         leftIcon={<Plus size={16} />}
                     >
                         New Template
@@ -98,21 +98,21 @@ const TemplatesSection: React.FC = () => {
 
                 {/* Templates List */}
                 {templates.length === 0 ? (
-                    <div className="relative group overflow-hidden bg-[#0a0a15] rounded-xl border border-dashed border-white/10 p-12 text-center hover:border-cyan-500/30 transition-all duration-500">
-                        <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/0 via-transparent to-cyan-500/0 group-hover:from-cyan-500/5 group-hover:to-purple-500/5 transition-all duration-500" />
+                    <div className="relative group overflow-hidden bg-canvas-panel rounded-xl border border-dashed border-line-base p-12 text-center hover:border-gnani-primary/30 transition-all duration-500">
+                        <div className="absolute inset-0 bg-gradient-to-br from-gnani-primary/0 via-transparent to-gnani-primary/0 group-hover:from-gnani-primary/5 group-hover:to-gnani-secondary/5 transition-all duration-500" />
                         <div className="relative z-10">
-                            <div className="w-16 h-16 mx-auto rounded-xl bg-gradient-to-br from-cyan-500/10 to-blue-600/10 flex items-center justify-center mb-4 ring-1 ring-white/10 group-hover:ring-cyan-500/30 transition-all duration-500">
-                                <FileText size={32} className="text-cyan-500/50 group-hover:text-cyan-400 group-hover:scale-110 transition-all duration-500" />
+                            <div className="w-16 h-16 mx-auto rounded-xl bg-gradient-to-br from-gnani-primary/10 to-gnani-secondary/10 flex items-center justify-center mb-4 ring-1 ring-glass-border group-hover:ring-gnani-primary/30 transition-all duration-500">
+                                <FileText size={32} className="text-gnani-primary/50 group-hover:text-gnani-primary group-hover:scale-110 transition-all duration-500" />
                             </div>
-                            <h3 className="text-base font-bold text-white mb-2">No Templates Yet</h3>
-                            <p className="text-xs text-cyan-400/50 max-w-sm mx-auto mb-6">
+                            <h3 className="text-base font-bold text-type-primary mb-2">No Templates Yet</h3>
+                            <p className="text-xs text-type-muted max-w-sm mx-auto mb-6">
                                 Create your first template to define custom System Prompts and streamline your conversations.
                             </p>
                             <Button
                                 onClick={handleCreate}
                                 variant="outline"
                                 size="sm"
-                                className="border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/10 hover:border-cyan-500/50"
+                                className="border-gnani-primary/30 text-gnani-primary hover:bg-gnani-primary/10 hover:border-gnani-primary/50"
                                 leftIcon={<Plus size={14} />}
                             >
                                 Create Template
@@ -128,16 +128,16 @@ const TemplatesSection: React.FC = () => {
                             return (
                                 <div
                                     key={template._id}
-                                    className="group relative bg-[#0a0a15] hover:bg-[#0f0f1a] border border-white/5 hover:border-cyan-500/30 rounded-xl p-4 transition-all duration-300 hover:shadow-[0_0_30px_-5px_rgba(6,182,212,0.15)] flex flex-col h-full"
+                                    className="group relative bg-canvas-panel hover:bg-canvas-surface border border-line-base hover:border-gnani-primary/30 rounded-xl p-4 transition-all duration-300 hover:shadow-[0_0_30px_-5px_rgba(6,182,212,0.15)] flex flex-col h-full"
                                 >
                                     {/* Hover Glow Effect */}
-                                    <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/0 via-transparent to-blue-500/0 group-hover:from-cyan-500/5 group-hover:to-blue-500/5 rounded-xl transition-all duration-500" />
+                                    <div className="absolute inset-0 bg-gradient-to-br from-gnani-primary/0 via-transparent to-gnani-secondary/0 group-hover:from-gnani-primary/5 group-hover:to-gnani-secondary/5 rounded-xl transition-all duration-500" />
 
                                     <div className="relative z-10 flex flex-col h-full">
                                         <div className="flex items-start justify-between mb-3">
                                             <div className="flex-1 min-w-0 pr-4">
                                                 <div className="flex items-center gap-2 mb-1">
-                                                    <h3 className="text-sm font-bold text-white group-hover:text-cyan-300 transition-colors truncate">
+                                                    <h3 className="text-sm font-bold text-type-primary group-hover:text-gnani-primary transition-colors truncate">
                                                         {template.name}
                                                     </h3>
                                                     {isSystemTemplate && (
@@ -147,7 +147,7 @@ const TemplatesSection: React.FC = () => {
                                                     )}
                                                 </div>
                                                 {template.description && (
-                                                    <p className="text-xs text-slate-400 line-clamp-2">
+                                                    <p className="text-xs text-type-secondary line-clamp-2">
                                                         {template.description}
                                                     </p>
                                                 )}
@@ -158,14 +158,14 @@ const TemplatesSection: React.FC = () => {
                                                 <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 translate-x-1 group-hover:translate-x-0">
                                                     <button
                                                         onClick={(e) => { e.stopPropagation(); handleEdit(template); }}
-                                                        className="p-1.5 text-cyan-400/40 hover:text-cyan-400 hover:bg-cyan-500/10 rounded-lg transition-colors border border-transparent hover:border-cyan-500/20"
+                                                        className="p-1.5 text-gnani-primary/40 hover:text-gnani-primary hover:bg-gnani-primary/10 rounded-lg transition-colors border border-transparent hover:border-gnani-primary/20"
                                                         title="Edit"
                                                     >
                                                         <Edit2 size={14} />
                                                     </button>
                                                     <button
                                                         onClick={(e) => { e.stopPropagation(); handleDeleteClick(template._id); }}
-                                                        className="p-1.5 text-red-400/40 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors border border-transparent hover:border-red-500/20"
+                                                        className="p-1.5 text-status-error/40 hover:text-status-error hover:bg-status-error/10 rounded-lg transition-colors border border-transparent hover:border-status-error/20"
                                                         title="Delete"
                                                     >
                                                         <Trash2 size={14} />
@@ -180,9 +180,9 @@ const TemplatesSection: React.FC = () => {
                                                 {template.tags.map((tag, idx) => (
                                                     <span
                                                         key={idx}
-                                                        className="inline-flex items-center gap-1 px-2 py-0.5 bg-white/5 border border-white/5 rounded text-cyan-200/80 text-[10px] font-medium tracking-wide group-hover:border-cyan-500/20 group-hover:bg-cyan-500/5 transition-colors"
+                                                        className="inline-flex items-center gap-1 px-2 py-0.5 bg-canvas-surface border border-line-base rounded text-type-secondary text-[10px] font-medium tracking-wide group-hover:border-gnani-primary/20 group-hover:bg-gnani-primary/5 transition-colors"
                                                     >
-                                                        <Tag size={9} className="text-cyan-500/50" />
+                                                        <Tag size={9} className="text-gnani-primary/50" />
                                                         {tag}
                                                     </span>
                                                 ))}
@@ -190,17 +190,17 @@ const TemplatesSection: React.FC = () => {
                                         )}
 
                                         {/* System Prompt Preview */}
-                                        <div className="mt-auto pt-3 border-t border-white/5 group-hover:border-cyan-500/20 transition-colors">
-                                            <p className="text-[9px] font-bold uppercase tracking-wider text-cyan-500/40 mb-1.5 flex items-center gap-1.5">
-                                                <span className="w-1 h-1 rounded-full bg-cyan-500/40"></span>
+                                        <div className="mt-auto pt-3 border-t border-line-base group-hover:border-gnani-primary/20 transition-colors">
+                                            <p className="text-[9px] font-bold uppercase tracking-wider text-gnani-primary/60 mb-1.5 flex items-center gap-1.5">
+                                                <span className="w-1 h-1 rounded-full bg-gnani-primary/40"></span>
                                                 System Prompt
                                             </p>
-                                            <p className="text-[10px] text-slate-400/80 line-clamp-2 font-mono bg-black/20 p-2 rounded border border-white/5 max-w-full break-all leading-relaxed">
+                                            <p className="text-[10px] text-type-secondary line-clamp-2 font-mono bg-canvas-surface p-2 rounded border border-line-base max-w-full break-all leading-relaxed">
                                                 {template.systemPrompt}
                                             </p>
                                             {/* Date */}
                                             {template.createdAt && (
-                                                <div className="mt-2 text-[9px] text-white/20 text-right font-mono">
+                                                <div className="mt-2 text-[9px] text-type-muted text-right font-mono">
                                                     {isSystemTemplate ? 'System' : isOwner ? 'You' : 'Shared'} &nbsp;|&nbsp; {new Date(template.createdAt).toLocaleDateString()}
                                                 </div>
                                             )}

@@ -60,10 +60,10 @@ const TokenPreview: React.FC = () => {
                     transition={{ duration: 0.5 }}
                     className="absolute bottom-32 left-1/2 -translate-x-1/2 w-full max-w-2xl text-center pointer-events-none z-40"
                 >
-                    <div className="bg-black/40 backdrop-blur-md border border-jarvis-cyan/20 rounded-lg p-4 shadow-[0_0_20px_rgba(0,240,255,0.1)]">
-                        <p className="text-jarvis-cyan/80 font-mono text-sm md:text-base tracking-wide leading-relaxed">
+                    <div className="bg-canvas-panel/90 backdrop-blur-md border border-gnani-primary/20 rounded-lg p-4 shadow-[0_0_20px_rgba(var(--primary-rgb),0.1)]">
+                        <p className="text-gnani-primary/80 font-mono text-sm md:text-base tracking-wide leading-relaxed">
                             {previewText}
-                            <span className="inline-block w-2 h-4 ml-1 bg-jarvis-cyan animate-pulse align-middle" />
+                            <span className="inline-block w-2 h-4 ml-1 bg-gnani-primary animate-pulse align-middle" />
                         </p>
                     </div>
                 </motion.div>

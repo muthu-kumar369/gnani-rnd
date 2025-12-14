@@ -23,37 +23,174 @@
 }
 
 :root {
-    /* Default Dark Theme (Jarvis) */
+    /* ==========================================================================
+       SEMANTIC DESIGN TOKENS (NEW SYSTEM)
+       ========================================================================== */
+
+    /* Backgrounds */
+    --bg-app: #050A14;          /* Main App Background */
+    --bg-panel: rgba(10, 25, 47, 0.7); /* Sidebars, Panels */
+    --bg-surface: #0f172a;      /* Cards, Inputs */
+    --bg-popover: rgba(10, 25, 47, 0.98); /* Dropdowns, Modals - Higher opacity for readability */
+    --bg-overlay: rgba(0, 0, 0, 0.7); /* Modal Backdrops */
+
+    /* Glass Effect (The magic sauce) */
+    --glass-bg: rgba(5, 10, 20, 0.6); /* Darker glass for better contrast */
+    --glass-border: rgba(148, 163, 184, 0.1); /* Slate-400 at 10% - Neutral Structure */
+    --glass-shimmer: rgba(255, 255, 255, 0.03);
+
+    /* Text */
+    --text-primary: #E0F7FA;    /* Main Content */
+    --text-secondary: #94A3B8;  /* Subtitles, hints */
+    --text-muted: #64748B;      /* Disabled, placeholders */
+    --text-inverse: #000000;    /* Text on bright buttons */
+
+    /* Borders */
+    /* Borders */
+    --border-base: rgba(148, 163, 184, 0.1); /* Neutral Slate */
+    --border-highlight: rgba(148, 163, 184, 0.2); /* Slightly brighter neutral */
+
+    /* High Definition Inputs (Dark Default) */
+    --bg-input: #1e293b;        /* Slate-800: Solid, distinctly dark */
+    --border-input: #334155;    /* Slate-700: Clearly defined border */
+    --text-input-placeholder: #64748b; /* Slate-500: Readable placeholder */
+
+    /* Actions / Accents */
+    --primary: #00E5FF;
+    --primary-hover: #66FFFF;
+    --secondary: #0ea5e9;
+    
+    /* Semantic Status */
+    --status-success: #00FF99;
+    --status-error: #FF3333;
+    --status-warning: #FFB74D;
+    --status-info: #29B6F6;
+
+    /* Syntax Highlighting - Semantic (Dark Mode Defaults) */
+    --syntax-comment: #64748B;  /* Muted Slate */
+    --syntax-string: #ce9178;   /* Warm Terracotta */
+    --syntax-keyword: #00E5FF;  /* Primary Cyan */
+    --syntax-function: #dcdcaa; /* Soft Yellow */
+    --syntax-number: #b5cea8;   /* Sage Green */
+    --syntax-operator: #ffffff; /* White */
+    --syntax-class: #4EC9B0;    /* Teal */
+    --syntax-variable: #9CDCFE; /* Light Blue */
+
+    /* Voice Mode Colors */
+    --voice-bg-idle-start: #020617;
+    --voice-bg-idle-end: #172554;
+    --voice-bg-listening-start: #022c22;
+    --voice-bg-listening-end: #0d9488;
+    --voice-bg-thinking-start: #2e1065;
+    --voice-bg-thinking-end: #7e22ce;
+    --voice-bg-speaking-start: #172554;
+    --voice-bg-speaking-end: #3b82f6;
+
+    --voice-blob-listening: #2dd4bf;
+    --voice-blob-thinking: #d8b4fe;
+    --voice-blob-speaking: #60a5fa;
+
+    /* Semantic Shadows */
+    --shadow-glass: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+
+    /* ==========================================================================
+       LEGACY JARVIS TOKENS (Preserved for compatibility)
+       ========================================================================== */
     --jarvis-blue: #00F0FF;
     --jarvis-cyan: #00E5FF;
     --jarvis-bg: #0A1628;
-    --jarvis-panel: rgba(10, 25, 47, 0.7);
-    --jarvis-border: rgba(0, 240, 255, 0.3);
+    --jarvis-panel: rgba(10, 25, 47, 0.8);
+    --jarvis-border: rgba(148, 163, 184, 0.15); /* Mapped to neutral */
     --jarvis-text: #E0F7FA;
     --jarvis-alert: #FF3333;
     --jarvis-success: #00FF99;
     --jarvis-listening: #4CAF50;
     --jarvis-speaking: #9C27B0;
 
-    --jarvis-glow: rgba(0, 240, 255, 0.3);
+    --jarvis-glow: rgba(0, 240, 255, 0.1); /* Reduced intensity */
     --jarvis-glow-strong: rgba(0, 240, 255, 0.5);
     --jarvis-glow-inset: rgba(0, 240, 255, 0.1);
 }
 
 [data-theme="light"] {
-    /* Light Theme */
+    /* ==========================================================================
+       LIGHT THEME OVERRIDES
+       ========================================================================== */
+
+    /* Backgrounds */
+    --bg-app: #F0F4F8;          /* Light Gray/Blueish Tint */
+    --bg-panel: rgba(255, 255, 255, 0.85);
+    --bg-surface: #FFFFFF;
+    --bg-popover: rgba(255, 255, 255, 0.95);
+    --bg-overlay: rgba(0, 0, 0, 0.2);
+
+    /* Glass Effect */
+    --glass-bg: rgba(255, 255, 255, 0.6);
+    --glass-border: rgba(0, 0, 0, 0.1);
+    --glass-shimmer: rgba(0, 0, 0, 0.03);
+
+    /* Text */
+    --text-primary: #1e293b;    /* Slate 800 */
+    --text-secondary: #475569;  /* Slate 600 */
+    --text-muted: #94a3b8;      /* Slate 400 */
+    --text-inverse: #FFFFFF;
+
+    /* Borders */
+    --border-base: rgba(0, 119, 204, 0.2);
+    --border-highlight: rgba(0, 119, 204, 0.5);
+
+    /* Actions / Accents */
+    --primary: #0077CC;         /* Deep Blue instead of Neon Cyan */
+    --primary-hover: #0099FF;
+    --secondary: #0284c7;
+
+    /* Semantic Status */
+    --status-success: #16a34a;  /* Darker Green for white bg */
+    --status-error: #dc2626;    /* Darker Red */
+    --status-warning: #d97706;
+    --status-info: #0284c7;
+
+    /* High Definition Inputs (Light Mode) */
+    --bg-input: #ffffff;        /* White: Clean, solid */
+    --border-input: #cbd5e1;    /* Slate-300: Clearly defined border */
+    --text-input-placeholder: #94a3b8; /* Slate-400 */
+
+    /* Light Mode Voice Overrides */
+    --voice-bg-idle-start: #F0F9FF;     /* Sky 50 */
+    --voice-bg-idle-end: #BAE6FD;       /* Sky 200 */
+    --voice-bg-listening-start: #ECFDF5; /* Emerald 50 */
+    --voice-bg-listening-end: #6EE7B7;   /* Emerald 300 */
+    --voice-bg-thinking-start: #FAF5FF;  /* Purple 50 */
+    --voice-bg-thinking-end: #D8B4FE;    /* Purple 300 */
+    --voice-bg-speaking-start: #EFF6FF;  /* Blue 50 */
+    --voice-bg-speaking-end: #93C5FD;    /* Blue 300 */
+
+    --voice-blob-listening: #059669;    /* Emerald 600 */
+    --voice-blob-thinking: #9333ea;     /* Purple 600 */
+    --voice-blob-speaking: #2563eb;     /* Blue 600 */
+
+    /* Legacy Jarvis Overrides for Light Mode */
+    --syntax-comment: #008000;  /* Green */
+    --syntax-string: #a31515;   /* Dark Red */
+    --syntax-keyword: #0000ff;  /* Blue */
+    --syntax-function: #795e26; /* Brownish */
+    --syntax-number: #098658;   /* Dark Green */
+    --syntax-operator: #000000; /* Black */
+    --syntax-class: #267f99;    /* Teal */
+    --syntax-variable: #001080; /* Dark Blue */
+
+    /* Shadows */
+    --shadow-glass: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+
+    /* ==========================================================================
+       LEGACY JARVIS OVERRIDES (Mapped to new system where possible)
+       ========================================================================== */
     --jarvis-blue: #0077CC;
-    /* Darker blue for contrast */
     --jarvis-cyan: #0088AA;
-    /* Darker cyan */
     --jarvis-bg: #F0F4F8;
-    /* Light gray/white background */
     --jarvis-panel: rgba(255, 255, 255, 0.8);
-    /* White panel */
     --jarvis-border: rgba(0, 119, 204, 0.3);
-    /* Blueish border */
     --jarvis-text: #1A2634;
-    /* Dark text */
     --jarvis-alert: #D32F2F;
     --jarvis-success: #388E3C;
     --jarvis-listening: #2E7D32;
@@ -226,6 +363,29 @@ body {
     
     input:focus, textarea:focus, select:focus {
         outline: none !important;
-        border-color: transparent !important;
+        /* Removed !important transparency to allow custom borders to show */
     }
+}
+
+/* ROBUST AUTH BUTTON - Guarantees visibility in Light Mode */
+.auth-button {
+    background: linear-gradient(to right, var(--primary), var(--secondary));
+    color: #000000; /* Dark text on Neon buttons (Dark Mode) */
+    font-weight: 700;
+    transition: all 0.2s ease;
+}
+
+.auth-button:hover {
+    filter: brightness(1.1);
+    transform: scale(1.005);
+}
+
+[data-theme="light"] .auth-button {
+    background: #0077CC; /* Solid Deep Blue for Light Mode */
+    color: #FFFFFF !important; /* Force White Text */
+    box-shadow: 0 4px 6px -1px rgba(0, 119, 204, 0.3);
+}
+
+[data-theme="light"] .auth-button:hover {
+    background: #0066AA;
 }

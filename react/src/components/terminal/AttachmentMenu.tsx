@@ -82,10 +82,10 @@ const AttachmentMenu: React.FC<AttachmentMenuProps> = ({ onFileSelect, onImageSe
                             onClick={handleImageClick}
                             className="dropdown-item w-full text-left flex items-center gap-2"
                         >
-                            <Image size={14} className="text-cyan-400" />
+                            <Image size={14} className="text-gnani-primary" />
                             <div>
-                                <div className="text-xs font-medium text-cyan-100">Image</div>
-                                <div className="text-[9px] text-cyan-500/60">PNG, JPG, GIF, WebP</div>
+                                <div className="text-xs font-medium text-type-primary">Image</div>
+                                <div className="text-[9px] text-gnani-primary/60">PNG, JPG, GIF, WebP</div>
                             </div>
                         </button>
 
@@ -93,10 +93,10 @@ const AttachmentMenu: React.FC<AttachmentMenuProps> = ({ onFileSelect, onImageSe
                             onClick={handleFileClick}
                             className="dropdown-item w-full text-left flex items-center gap-2"
                         >
-                            <FileText size={14} className="text-cyan-400" />
+                            <FileText size={14} className="text-gnani-primary" />
                             <div>
-                                <div className="text-xs font-medium text-cyan-100">Document</div>
-                                <div className="text-[9px] text-cyan-500/60">PDF, DOC, TXT, MD</div>
+                                <div className="text-xs font-medium text-type-primary">Document</div>
+                                <div className="text-[9px] text-gnani-primary/60">PDF, DOC, TXT, MD</div>
                             </div>
                         </button>
                     </motion.div>

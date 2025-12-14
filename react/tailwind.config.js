@@ -2,10 +2,11 @@ import { defineConfig } from "tailwindcss";
 
 export default defineConfig({
   content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
+  darkMode: ['selector', '[data-theme="dark"]'],
   theme: {
     extend: {
       colors: {
-        // Jarvis theme colors
+        // Jarvis theme colors (Legacy)
         jarvis: {
           bg: '#000000',
           'bg-secondary': '#0a0a0a',
@@ -26,6 +27,44 @@ export default defineConfig({
           'text-legacy': "#E0F7FA",
           'alert-legacy': "#FF3333",
           'success-legacy': "#00FF99",
+        },
+
+        // Semantic Design Tokens (New System)
+        gnani: {
+            primary: 'var(--primary)',
+            'primary-hover': 'var(--primary-hover)',
+            secondary: 'var(--secondary)',
+        },
+        canvas: {
+            DEFAULT: 'var(--bg-app)',
+            panel: 'var(--bg-panel)',
+            surface: 'var(--bg-surface)',
+            popover: 'var(--bg-popover)',
+            overlay: 'var(--bg-overlay)',
+        },
+        type: {
+            primary: 'var(--text-primary)',
+            secondary: 'var(--text-secondary)',
+            muted: 'var(--text-muted)',
+            inverse: 'var(--text-inverse)',
+        },
+        glass: {
+            DEFAULT: 'var(--glass-bg)',
+            border: 'var(--glass-border)',
+            shimmer: 'var(--glass-shimmer)',
+        },
+        line: {
+            base: 'var(--border-base)',
+            highlight: 'var(--border-highlight)',
+        },
+        status: {
+            success: 'var(--status-success)',
+            error: 'var(--status-error)',
+            warning: 'var(--status-warning)',
+            info: 'var(--status-info)',
+        },
+        boxShadow: {
+            glass: 'var(--shadow-glass)',
         },
       },
       fontFamily: {

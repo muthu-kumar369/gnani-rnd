@@ -7,9 +7,9 @@ interface LoginLoaderProps {
 
 const LoginLoader: React.FC<LoginLoaderProps> = ({ message = 'Authenticating...' }) => {
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-jarvis-bg/90 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-canvas-app/90 backdrop-blur-md transition-colors duration-300">
             {/* Animated background grid - Subtle */}
-            <div className="absolute inset-0 opacity-10 pointer-events-none">
+            <div className="absolute inset-0 opacity-[0.05] dark:opacity-10 pointer-events-none">
                 <div className="absolute inset-0 bg-grid-pattern animate-pulse" />
             </div>
 
@@ -21,35 +21,35 @@ const LoginLoader: React.FC<LoginLoaderProps> = ({ message = 'Authenticating...'
 
                     {/* Core Glow */}
                     <motion.div
-                        className="absolute inset-0 rounded-full bg-cyan-500/10 blur-xl"
+                        className="absolute inset-0 rounded-full bg-gnani-primary/10 blur-xl"
                         animate={{ opacity: [0.3, 0.6, 0.3] }}
                         transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
                     />
 
                     {/* Primary Ring - Steady Rotation */}
                     <motion.div
-                        className="absolute inset-0 rounded-full border-2 border-t-cyan-400 border-r-transparent border-b-cyan-400 border-l-transparent"
+                        className="absolute inset-0 rounded-full border-2 border-t-gnani-primary border-r-transparent border-b-gnani-primary border-l-transparent"
                         animate={{ rotate: 360 }}
                         transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
                     />
 
                     {/* Secondary Ring - Counter Rotation */}
                     <motion.div
-                        className="absolute inset-2 rounded-full border border-t-transparent border-r-blue-400 border-b-transparent border-l-blue-400 opacity-70"
+                        className="absolute inset-2 rounded-full border border-t-transparent border-r-gnani-secondary border-b-transparent border-l-gnani-secondary opacity-70"
                         animate={{ rotate: -360 }}
                         transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
                     />
 
                     {/* Inner Core Pulse */}
                     <motion.div
-                        className="absolute inset-[35%] rounded-full bg-cyan-400"
+                        className="absolute inset-[35%] rounded-full bg-gnani-primary"
                         animate={{
                             scale: [1, 1.2, 1],
                             opacity: [0.5, 0.8, 0.5],
                             boxShadow: [
-                                "0 0 10px rgba(34, 211, 238, 0.5)",
-                                "0 0 20px rgba(34, 211, 238, 0.8)",
-                                "0 0 10px rgba(34, 211, 238, 0.5)"
+                                "0 0 10px rgba(var(--primary-rgb), 0.5)",
+                                "0 0 20px rgba(var(--primary-rgb), 0.8)",
+                                "0 0 10px rgba(var(--primary-rgb), 0.5)"
                             ]
                         }}
                         transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
@@ -63,7 +63,7 @@ const LoginLoader: React.FC<LoginLoaderProps> = ({ message = 'Authenticating...'
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.2 }}
                 >
-                    <h3 className="text-lg font-medium text-cyan-400 tracking-wider uppercase" style={{ textShadow: '0 0 10px rgba(6,182,212,0.5)' }}>
+                    <h3 className="text-lg font-medium text-gnani-primary tracking-wider uppercase text-glow">
                         {message}
                     </h3>
 
@@ -72,7 +72,7 @@ const LoginLoader: React.FC<LoginLoaderProps> = ({ message = 'Authenticating...'
                         {[0, 1, 2].map((i) => (
                             <motion.div
                                 key={i}
-                                className="w-1.5 h-1.5 rounded-full bg-cyan-500"
+                                className="w-1.5 h-1.5 rounded-full bg-gnani-secondary"
                                 animate={{ opacity: [0.3, 1, 0.3] }}
                                 transition={{
                                     duration: 1.5,
@@ -100,8 +100,8 @@ const LoginLoader: React.FC<LoginLoaderProps> = ({ message = 'Authenticating...'
                         key={corner}
                         className={`absolute ${positions[corner as keyof typeof positions]} w-6 h-6 opacity-30`}
                     >
-                        <div className={`absolute ${corner.includes('top') ? 'top-0' : 'bottom-0'} ${corner.includes('left') ? 'left-0' : 'right-0'} w-full h-px bg-cyan-500`} />
-                        <div className={`absolute ${corner.includes('top') ? 'top-0' : 'bottom-0'} ${corner.includes('left') ? 'left-0' : 'right-0'} w-px h-full bg-cyan-500`} />
+                        <div className={`absolute ${corner.includes('top') ? 'top-0' : 'bottom-0'} ${corner.includes('left') ? 'left-0' : 'right-0'} w-full h-px bg-gnani-primary`} />
+                        <div className={`absolute ${corner.includes('top') ? 'top-0' : 'bottom-0'} ${corner.includes('left') ? 'left-0' : 'right-0'} w-px h-full bg-gnani-primary`} />
                     </div>
                 );
             })}

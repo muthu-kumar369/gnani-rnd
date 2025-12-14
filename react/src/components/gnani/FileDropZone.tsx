@@ -55,13 +55,13 @@ export const FileDropZone: React.FC<FileDropZoneProps> = ({ children, onFileDrop
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm border-2 border-dashed border-jarvis-cyan rounded-lg m-4"
+                        className="absolute inset-0 z-50 flex items-center justify-center bg-bg-overlay/80 backdrop-blur-sm border-2 border-dashed border-gnani-primary rounded-lg m-4"
                     >
-                        <div className="flex flex-col items-center gap-4 text-jarvis-cyan animate-pulse">
-                            <div className="p-4 rounded-full bg-jarvis-cyan/10 shadow-jarvis-glow">
+                        <div className="flex flex-col items-center gap-4 text-gnani-primary animate-pulse">
+                            <div className="p-4 rounded-full bg-gnani-primary/10 shadow-lg drop-shadow-glow">
                                 <Upload size={48} />
                             </div>
-                            <div className="text-2xl font-mono tracking-widest uppercase text-shadow-glow">
+                            <div className="text-2xl font-mono tracking-widest uppercase text-glow">
                                 Drop files to analyze
                             </div>
                         </div>

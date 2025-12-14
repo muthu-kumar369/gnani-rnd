@@ -133,12 +133,12 @@ const SessionReplayPage: React.FC = () => {
     }, [isPlaying, events, playbackSpeed]);
 
     return (
-        <div className="flex h-screen bg-gray-900 text-gray-100 overflow-hidden">
+        <div className="flex h-screen bg-canvas-panel text-type-primary overflow-hidden">
             {/* Sidebar List */}
-            <div className="w-80 border-r border-gray-800 flex flex-col">
-                <div className="p-4 border-b border-gray-800">
+            <div className="w-80 border-r border-line-base flex flex-col">
+                <div className="p-4 border-b border-line-base">
                     <h2 className="text-xl font-bold flex items-center gap-2">
-                        <Activity size={20} className="text-blue-400" /> Session Replay
+                        <Activity size={20} className="text-gnani-secondary" /> Session Replay
                     </h2>
                 </div>
                 <div className="flex-1 overflow-y-auto">
@@ -146,21 +146,21 @@ const SessionReplayPage: React.FC = () => {
                         <div
                             key={session.sessionId}
                             onClick={() => loadEvents(session.sessionId)}
-                            className={`p-4 border-b border-gray-800 cursor-pointer hover:bg-gray-800 transition-colors ${selectedSessionId === session.sessionId ? 'bg-gray-800 border-l-4 border-blue-500' : ''}`}
+                            className={`p-4 border-b border-line-base cursor-pointer hover:bg-canvas-surface transition-colors ${selectedSessionId === session.sessionId ? 'bg-canvas-surface border-l-4 border-gnani-secondary' : ''}`}
                         >
-                            <div className="font-mono text-xs text-gray-500 mb-1">{session.sessionId.substring(0, 8)}...</div>
+                            <div className="font-mono text-xs text-type-muted mb-1">{session.sessionId.substring(0, 8)}...</div>
                             <div className="flex items-center gap-2 text-sm mb-1">
-                                <Clock size={14} className="text-gray-400" />
+                                <Clock size={14} className="text-type-secondary" />
                                 {format(new Date(session.startTime), 'MMM d, HH:mm:ss')}
                             </div>
-                            <div className="flex justify-between items-center text-xs text-gray-400">
-                                <span className="bg-gray-700 px-2 py-0.5 rounded-full">{session.eventCount} events</span>
+                            <div className="flex justify-between items-center text-xs text-type-secondary">
+                                <span className="bg-canvas-surface/80 px-2 py-0.5 rounded-full">{session.eventCount} events</span>
                                 <span>{session.status}</span>
                             </div>
                         </div>
                     ))}
                     {sessions.length === 0 && !loading && (
-                        <div className="p-8 text-center text-gray-500">No recorded sessions found.</div>
+                        <div className="p-8 text-center text-type-muted">No recorded sessions found.</div>
                     )}
                 </div>
             </div>
@@ -170,30 +170,30 @@ const SessionReplayPage: React.FC = () => {
                 {selectedSessionId ? (
                     <>
                         {/* Header Controls */}
-                        <div className="h-16 border-b border-gray-800 flex items-center justify-between px-6 bg-gray-900 z-10">
-                            <div className="font-mono text-sm text-gray-400">
-                                Session: <span className="text-white">{selectedSessionId}</span>
+                        <div className="h-16 border-b border-line-base flex items-center justify-between px-6 bg-canvas-panel z-10">
+                            <div className="font-mono text-sm text-type-muted">
+                                Session: <span className="text-type-primary">{selectedSessionId}</span>
                             </div>
                             <div className="flex items-center gap-4">
                                 <button
                                     onClick={() => setPlaybackIndex(-1)}
-                                    className="p-2 hover:bg-gray-800 rounded-full"
+                                    className="p-2 hover:bg-canvas-surface rounded-full"
                                     title="Reset"
                                 >
                                     <SkipBack size={20} />
                                 </button>
                                 <button
                                     onClick={togglePlayback}
-                                    className={`p-3 rounded-full ${isPlaying ? 'bg-yellow-600 hover:bg-yellow-500' : 'bg-green-600 hover:bg-green-500'} text-white shadow-lg transition-all`}
+                                    className={`p-3 rounded-full ${isPlaying ? 'bg-status-warning hover:bg-status-warning/90' : 'bg-status-success hover:bg-status-success/90'} text-type-inverse shadow-lg transition-all`}
                                 >
                                     {isPlaying ? <Pause size={24} fill="currentColor" /> : <Play size={24} fill="currentColor" className="ml-1" />}
                                 </button>
-                                <div className="flex items-center bg-gray-800 rounded-lg p-1 ml-2">
+                                <div className="flex items-center bg-canvas-surface rounded-lg p-1 ml-2 border border-glass-border">
                                     {[1, 2, 5].map(speed => (
                                         <button
                                             key={speed}
                                             onClick={() => setPlaybackSpeed(speed)}
-                                            className={`px-3 py-1 text-xs rounded-md ${playbackSpeed === speed ? 'bg-gray-600 text-white' : 'text-gray-400 hover:text-white'}`}
+                                            className={`px-3 py-1 text-xs rounded-md transition-colors ${playbackSpeed === speed ? 'bg-gnani-primary/20 text-gnani-primary font-medium' : 'text-type-muted hover:text-type-primary hover:bg-glass-hover'}`}
                                         >
                                             {speed}x
                                         </button>
@@ -215,37 +215,37 @@ const SessionReplayPage: React.FC = () => {
                                         className={`relative pl-8 transition-all duration-300 ${isActive ? 'scale-105 opacity-100 z-10' : 'opacity-70 scale-100'} ${isPast ? 'opacity-50' : ''}`}
                                     >
                                         {/* Timeline Line */}
-                                        <div className="absolute left-3 top-0 bottom-0 w-0.5 bg-gray-700"></div>
+                                        <div className="absolute left-3 top-0 bottom-0 w-0.5 bg-line-base"></div>
 
                                         {/* Dot */}
-                                        <div className={`absolute left-1.5 top-4 w-3 h-3 rounded-full border-2 ${isActive ? 'bg-blue-500 border-blue-300 shadow-[0_0_10px_rgba(59,130,246,0.5)]' : 'bg-gray-800 border-gray-600'}`}></div>
+                                        <div className={`absolute left-1.5 top-4 w-3 h-3 rounded-full border-2 ${isActive ? 'bg-gnani-secondary border-gnani-secondary/50 shadow-glass' : 'bg-canvas-surface border-line-base'}`}></div>
 
                                         {/* Card */}
-                                        <div className={`bg-gray-800 rounded-lg p-4 border ${isActive ? 'border-blue-500 shadow-lg ring-1 ring-blue-500/20' : 'border-gray-700'}`}>
+                                        <div className={`bg-canvas-surface/50 rounded-lg p-4 border ${isActive ? 'border-gnani-secondary shadow-lg ring-1 ring-gnani-secondary/20' : 'border-line-base'}`}>
                                             <div className="flex justify-between items-start mb-2">
                                                 <div className="flex items-center gap-2">
                                                     <span className={`px-2 py-0.5 rounded text-xs font-bold uppercase tracking-wide
-                                                        ${event.type.includes('error') ? 'bg-red-900 text-red-200' :
-                                                            event.type.includes('llm') ? 'bg-purple-900 text-purple-200' :
-                                                                event.type.includes('tool') ? 'bg-orange-900 text-orange-200' :
-                                                                    'bg-gray-700 text-gray-300'
+                                                        ${event.type.includes('error') ? 'bg-status-error/20 text-status-error' :
+                                                            event.type.includes('llm') ? 'bg-gnani-secondary/20 text-gnani-secondary' :
+                                                                event.type.includes('tool') ? 'bg-status-warning/20 text-status-warning' :
+                                                                    'bg-canvas-surface text-type-muted'
                                                         }
                                                     `}>
                                                         {event.type}
                                                     </span>
-                                                    <span className="text-xs text-gray-500 font-mono">
+                                                    <span className="text-xs text-type-muted font-mono">
                                                         {format(new Date(event.timestamp), 'HH:mm:ss.SSS')}
                                                     </span>
                                                 </div>
                                             </div>
 
                                             {/* Data View */}
-                                            <div className="font-mono text-sm overflow-x-auto bg-gray-900 p-2 rounded text-gray-300">
+                                            <div className="font-mono text-sm overflow-x-auto bg-canvas-panel p-2 rounded text-type-secondary">
                                                 {typeof event.data === 'string' ? event.data : JSON.stringify(event.data, null, 2)}
                                             </div>
 
                                             {event.metadata && (
-                                                <div className="mt-2 pt-2 border-t border-gray-700/50 text-xs text-gray-500 font-mono">
+                                                <div className="mt-2 pt-2 border-t border-line-base text-xs text-type-muted font-mono">
                                                     Metadata: {JSON.stringify(event.metadata)}
                                                 </div>
                                             )}
@@ -255,12 +255,12 @@ const SessionReplayPage: React.FC = () => {
                             })}
 
                             {events.length === 0 && (
-                                <div className="text-center text-gray-500 mt-20">Select a session to view events.</div>
+                                <div className="text-center text-type-muted mt-20">Select a session to view events.</div>
                             )}
                         </div>
                     </>
                 ) : (
-                    <div className="flex-1 flex flex-col items-center justify-center text-gray-500 p-10">
+                    <div className="flex-1 flex flex-col items-center justify-center text-type-muted p-10">
                         <Terminal size={64} className="mb-4 opacity-20" />
                         <p className="text-xl">Select a session from the list to replay</p>
                     </div>

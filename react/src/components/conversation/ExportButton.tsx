@@ -60,20 +60,20 @@ const ExportButton: React.FC<ExportButtonProps> = ({ conversationId, className =
                         e.stopPropagation();
                         setIsOpen(!isOpen);
                     }}
-                    className="w-full px-3 py-2 text-left text-xs text-gray-300 hover:bg-jarvis-cyan/10 hover:text-jarvis-cyan transition-colors flex items-center gap-2"
+                    className="w-full px-3 py-2 text-left text-xs text-type-secondary hover:bg-glass-shimmer hover:text-gnani-primary transition-colors flex items-center gap-2"
                 >
                     <Download size={12} />
                     Export
                 </button>
 
                 {isOpen && (
-                    <div className="absolute left-full top-0 ml-1 w-32 bg-black/95 border border-jarvis-blue/40 rounded shadow-[0_0_15px_rgba(0,240,255,0.1)] z-50 overflow-hidden backdrop-blur-sm">
+                    <div className="absolute left-full top-0 ml-1 w-32 bg-canvas-surface rounded shadow-xl z-50 overflow-hidden">
                         <button
                             onClick={(e) => {
                                 e.stopPropagation();
                                 handleExport('markdown');
                             }}
-                            className="w-full flex items-center px-3 py-2 text-xs text-gray-300 hover:bg-jarvis-blue/20 hover:text-jarvis-cyan transition-colors text-left"
+                            className="w-full flex items-center px-3 py-2 text-xs text-type-secondary hover:bg-glass-shimmer hover:text-gnani-primary transition-colors text-left"
                         >
                             <FileText size={12} className="mr-2" />
                             Markdown
@@ -83,7 +83,7 @@ const ExportButton: React.FC<ExportButtonProps> = ({ conversationId, className =
                                 e.stopPropagation();
                                 handleExport('json');
                             }}
-                            className="w-full flex items-center px-3 py-2 text-xs text-gray-300 hover:bg-jarvis-blue/20 hover:text-jarvis-cyan transition-colors text-left"
+                            className="w-full flex items-center px-3 py-2 text-xs text-type-secondary hover:bg-glass-shimmer hover:text-gnani-primary transition-colors text-left"
                         >
                             <FileJson size={12} className="mr-2" />
                             JSON
@@ -102,20 +102,20 @@ const ExportButton: React.FC<ExportButtonProps> = ({ conversationId, className =
                     e.stopPropagation();
                     setIsOpen(!isOpen);
                 }}
-                className="p-1 hover:bg-jarvis-cyan/20 rounded text-jarvis-cyan transition-colors"
+                className="p-1 hover:bg-glass-shimmer rounded text-gnani-primary transition-colors"
                 title="Export Conversation"
             >
                 <Download size={12} />
             </button>
 
             {isOpen && (
-                <div className="absolute right-0 top-full mt-1 w-32 bg-black/90 border border-jarvis-blue/30 rounded shadow-[0_0_15px_rgba(0,240,255,0.1)] z-50 overflow-hidden backdrop-blur-sm">
+                <div className="absolute right-0 top-full mt-1 w-32 bg-canvas-surface rounded shadow-xl z-50 overflow-hidden">
                     <button
                         onClick={(e) => {
                             e.stopPropagation();
                             handleExport('markdown');
                         }}
-                        className="w-full flex items-center px-3 py-2 text-xs text-gray-300 hover:bg-jarvis-blue/20 hover:text-jarvis-cyan transition-colors text-left"
+                        className="w-full flex items-center px-3 py-2 text-xs text-type-secondary hover:bg-glass-shimmer hover:text-gnani-primary transition-colors text-left"
                     >
                         <FileText size={12} className="mr-2" />
                         Markdown
@@ -125,7 +125,7 @@ const ExportButton: React.FC<ExportButtonProps> = ({ conversationId, className =
                             e.stopPropagation();
                             handleExport('json');
                         }}
-                        className="w-full flex items-center px-3 py-2 text-xs text-gray-300 hover:bg-jarvis-blue/20 hover:text-jarvis-cyan transition-colors text-left"
+                        className="w-full flex items-center px-3 py-2 text-xs text-type-secondary hover:bg-glass-shimmer hover:text-gnani-primary transition-colors text-left"
                     >
                         <FileJson size={12} className="mr-2" />
                         JSON

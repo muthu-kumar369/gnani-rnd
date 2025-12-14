@@ -65,15 +65,15 @@ const ToolMarketplace: React.FC = () => {
     return (
         <div className="p-6 space-y-6">
             {/* Search and Filter Bar */}
-            <div className="relative z-30 flex flex-col md:flex-row gap-3 items-center justify-between bg-[#0a0a15]/50 p-3 rounded-lg border border-white/5 backdrop-blur-sm">
+            <div className="relative z-30 flex flex-col md:flex-row gap-3 items-center justify-between bg-canvas-panel p-3 rounded-lg border border-glass-border backdrop-blur-sm">
                 <div className="relative w-full md:w-96 group">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-cyan-500/50 group-focus-within:text-cyan-400 transition-colors" size={16} />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-type-muted group-focus-within:text-gnani-primary transition-colors" size={16} />
                     <input
                         type="text"
                         placeholder="Search tools..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full pl-9 pr-4 py-2 bg-black/40 border border-white/10 rounded-md text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 transition-all font-mono"
+                        className="w-full pl-9 pr-4 py-2 bg-canvas-surface border border-line-base rounded-md text-sm text-type-primary placeholder:text-type-muted focus:outline-none focus:border-gnani-primary/50 focus:ring-1 focus:ring-gnani-primary/50 transition-all font-mono"
                     />
                 </div>
 
@@ -81,7 +81,7 @@ const ToolMarketplace: React.FC = () => {
                 <div className="relative group w-full md:w-48 z-50">
                     <button
                         onClick={() => setIsFilterOpen(!isFilterOpen)}
-                        className="w-full flex items-center justify-between bg-black/40 border border-white/10 rounded-md py-2 px-3 text-sm text-cyan-400 font-medium hover:border-cyan-500/30 transition-all focus:outline-none focus:ring-1 focus:ring-cyan-500/50"
+                        className="w-full flex items-center justify-between bg-canvas-surface border border-line-base rounded-md py-2 px-3 text-sm text-gnani-primary font-medium hover:border-gnani-primary/30 transition-all focus:outline-none focus:ring-1 focus:ring-gnani-primary/50"
                     >
                         <span className="capitalize">{filter === 'all' ? 'All Tools' : filter}</span>
                         <ChevronDown size={14} className={`transition-transform duration-300 ${isFilterOpen ? 'rotate-180' : ''}`} />
@@ -93,7 +93,7 @@ const ToolMarketplace: React.FC = () => {
                                 initial={{ opacity: 0, y: 5 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 exit={{ opacity: 0, y: 5 }}
-                                className="absolute top-full right-0 left-0 mt-2 bg-[#0F0F1A] border border-white/10 rounded-lg shadow-xl overflow-hidden backdrop-blur-xl z-50"
+                                className="absolute top-full right-0 left-0 mt-2 bg-canvas-popover border border-glass-border rounded-lg shadow-xl overflow-hidden backdrop-blur-xl z-50"
                             >
                                 {(['all', 'enabled', 'disabled'] as const).map((f) => (
                                     <button
@@ -103,8 +103,8 @@ const ToolMarketplace: React.FC = () => {
                                             setIsFilterOpen(false);
                                         }}
                                         className={`w-full text-left px-3 py-2 text-sm transition-colors flex items-center justify-between ${filter === f
-                                            ? 'bg-cyan-500/10 text-cyan-400 font-semibold'
-                                            : 'text-slate-400 hover:bg-white/5 hover:text-white'
+                                            ? 'bg-gnani-primary/10 text-gnani-primary font-semibold'
+                                            : 'text-type-secondary hover:bg-glass-hover hover:text-type-primary'
                                             }`}
                                     >
                                         <span className="capitalize">{f === 'all' ? 'All Tools' : f}</span>
@@ -130,11 +130,11 @@ const ToolMarketplace: React.FC = () => {
                     </div>
                 ) : filteredTools.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-20 text-center">
-                        <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-cyan-500/5 to-purple-500/5 ring-1 ring-white/5 flex items-center justify-center mb-4">
-                            <Search size={24} className="text-slate-600" />
+                        <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-gnani-primary/5 to-gnani-secondary/5 ring-1 ring-glass-border flex items-center justify-center mb-4">
+                            <Search size={24} className="text-type-muted" />
                         </div>
-                        <h3 className="text-sm font-bold text-white mb-1">No tools found</h3>
-                        <p className="text-xs text-slate-500 max-w-sm">
+                        <h3 className="text-sm font-bold text-type-primary mb-1">No tools found</h3>
+                        <p className="text-xs text-type-muted max-w-sm">
                             {(searchQuery || filter !== 'all')
                                 ? "Try adjusting your search or filters to find what you're looking for."
                                 : "No tools are currently available in the marketplace."}

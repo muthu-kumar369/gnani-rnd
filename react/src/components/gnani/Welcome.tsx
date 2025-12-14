@@ -11,10 +11,10 @@ const Welcome: React.FC = () => {
       exit={{ opacity: 0, scale: 0.9 }}
       transition={{ duration: 0.5 }}
     >
-      <h1 className="text-5xl font-bold text-jarvis-blue shadow-jarvis-glow">
+      <h1 className="text-5xl font-bold text-gnani-primary text-glow">
         Gnani
       </h1>
-      <p className="text-xl text-jarvis-blue mt-4">Your AI Assistant</p>
+      <p className="text-xl text-gnani-primary mt-4">Your AI Assistant</p>
     </motion.div>
   );
 };

@@ -12,7 +12,7 @@ interface KeyboardShortcutsModalProps {
 
 const ShortcutGroup: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
     <div className="mb-6 last:mb-0">
-        <h3 className="text-gray-500 text-xs font-semibold uppercase tracking-wider mb-3 px-2">{title}</h3>
+        <h3 className="text-type-muted text-xs font-semibold uppercase tracking-wider mb-3 px-2">{title}</h3>
         <div className="space-y-1">
             {children}
         </div>
@@ -20,11 +20,11 @@ const ShortcutGroup: React.FC<{ title: string; children: React.ReactNode }> = ({
 );
 
 const ShortcutRow: React.FC<{ description: string; keys: string[] }> = ({ description, keys }) => (
-    <div className="flex items-center justify-between py-2 px-2 rounded-lg hover:bg-white/5 transition-colors group">
-        <span className="text-gray-300 text-sm font-medium group-hover:text-white transition-colors">{description}</span>
+    <div className="flex items-center justify-between py-2 px-2 rounded-lg hover:bg-glass-hover transition-colors group">
+        <span className="text-type-secondary text-sm font-medium group-hover:text-type-primary transition-colors">{description}</span>
         <div className="flex gap-1.5">
             {keys.map((key, i) => (
-                <kbd key={i} className="px-2 py-1 bg-white/5 border border-white/10 rounded-md text-[11px] text-gray-400 font-mono shadow-sm min-w-[24px] text-center flex items-center justify-center group-hover:border-white/20 group-hover:bg-white/10 group-hover:text-white transition-all">
+                <kbd key={i} className="px-2 py-1 bg-canvas-surface border border-line-base rounded-md text-[11px] text-type-muted font-mono shadow-sm min-w-[24px] text-center flex items-center justify-center group-hover:border-glass-border group-hover:bg-glass-base group-hover:text-type-primary transition-all">
                     {key}
                 </kbd>
             ))}
@@ -66,23 +66,22 @@ const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = ({ isOpen,
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: 20 }}
                         transition={{ duration: 0.2, ease: "easeOut" }}
-                        className="relative w-full max-w-lg bg-[#0d1117] border border-gray-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh]"
-                        style={{ boxShadow: '0 0 50px -12px rgba(0,0,0,0.5)' }}
+                        className="relative w-full max-w-lg bg-canvas-panel border border-glass-border rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh] shadow-[0_0_50px_-12px_rgba(0,0,0,0.5)]"
                     >
                         {/* Header */}
-                        <div className="flex items-center justify-between p-5 border-b border-white/5 bg-white/[0.02]">
+                        <div className="flex items-center justify-between p-5 border-b border-line-base bg-canvas-surface/20">
                             <div className="flex items-center gap-3">
-                                <div className="p-2 bg-gradient-to-br from-cyan-500/20 to-blue-500/20 rounded-lg border border-cyan-500/20">
-                                    <Keyboard className="w-5 h-5 text-cyan-400" />
+                                <div className="p-2 bg-gradient-to-br from-gnani-primary/20 to-gnani-secondary/20 rounded-lg border border-gnani-primary/20">
+                                    <Keyboard className="w-5 h-5 text-gnani-primary" />
                                 </div>
                                 <div>
-                                    <h2 id="shortcuts-modal-title" className="text-white font-semibold text-lg">Keyboard Shortcuts</h2>
-                                    <p className="text-gray-500 text-xs">Essential keys to navigate faster</p>
+                                    <h2 id="shortcuts-modal-title" className="text-type-primary font-semibold text-lg">Keyboard Shortcuts</h2>
+                                    <p className="text-type-secondary text-xs">Essential keys to navigate faster</p>
                                 </div>
                             </div>
                             <button
                                 onClick={onClose}
-                                className="p-2 text-gray-500 hover:text-white hover:bg-white/10 rounded-lg transition-all"
+                                className="p-2 text-type-muted hover:text-type-primary hover:bg-glass-hover rounded-lg transition-all"
                                 aria-label="Close"
                             >
                                 <X size={20} />
@@ -116,8 +115,8 @@ const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = ({ isOpen,
                         </div>
 
                         {/* Footer Hint */}
-                        <div className="p-3 bg-white/[0.02] border-t border-white/5 text-center">
-                            <p className="text-[10px] text-gray-500">Press <kbd className="font-sans font-semibold text-gray-400">Esc</kbd> to close</p>
+                        <div className="p-3 bg-canvas-surface/20 border-t border-line-base text-center">
+                            <p className="text-[10px] text-type-muted">Press <kbd className="font-sans font-semibold text-type-secondary">Esc</kbd> to close</p>
                         </div>
                     </motion.div>
                 </div>

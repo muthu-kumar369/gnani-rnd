@@ -59,17 +59,17 @@ const CreateFolderModal: React.FC<CreateFolderModalProps> = ({ isOpen, onClose }
                     initial={{ scale: 0.9, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
                     exit={{ scale: 0.9, opacity: 0 }}
-                    className="bg-gray-900 border border-cyan-500/30 rounded-lg p-6 max-w-md w-full mx-4"
+                    className="bg-canvas-panel border border-gnani-primary/30 rounded-lg p-6 max-w-md w-full mx-4"
                     onClick={(e) => e.stopPropagation()}
                 >
                     <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center gap-2">
-                            <FolderPlus size={20} className="text-cyan-400" />
-                            <h3 className="text-lg font-semibold text-cyan-400">Create Folder</h3>
+                            <FolderPlus size={20} className="text-gnani-primary" />
+                            <h3 className="text-lg font-semibold text-gnani-primary">Create Folder</h3>
                         </div>
                         <button
                             onClick={onClose}
-                            className="text-cyan-500/60 hover:text-cyan-400"
+                            className="text-gnani-primary/60 hover:text-gnani-primary"
                         >
                             <X size={20} />
                         </button>
@@ -78,7 +78,7 @@ const CreateFolderModal: React.FC<CreateFolderModalProps> = ({ isOpen, onClose }
                     <div className="space-y-4">
                         {/* Folder Name */}
                         <div>
-                            <label className="block text-sm text-cyan-500/80 mb-2">
+                            <label className="block text-sm text-gnani-primary/80 mb-2">
                                 Folder Name *
                             </label>
                             <input
@@ -86,14 +86,14 @@ const CreateFolderModal: React.FC<CreateFolderModalProps> = ({ isOpen, onClose }
                                 value={name}
                                 onChange={(e) => setName(e.target.value)}
                                 placeholder="e.g., Work Projects, Personal"
-                                className="w-full px-3 py-2 bg-black/40 border border-cyan-500/30 rounded text-cyan-400 placeholder-cyan-500/40 focus:outline-none focus:border-cyan-500"
+                                className="w-full px-3 py-2 bg-canvas-surface/40 border border-gnani-primary/30 rounded text-gnani-primary placeholder-gnani-primary/40 focus:outline-none focus:border-gnani-primary"
                                 autoFocus
                             />
                         </div>
 
                         {/* Icon Selection */}
                         <div>
-                            <label className="block text-sm text-cyan-500/80 mb-2">
+                            <label className="block text-sm text-gnani-primary/80 mb-2">
                                 Icon
                             </label>
                             <div className="flex flex-wrap gap-2">
@@ -102,8 +102,8 @@ const CreateFolderModal: React.FC<CreateFolderModalProps> = ({ isOpen, onClose }
                                         key={iconOption}
                                         onClick={() => setIcon(iconOption)}
                                         className={`text-2xl p-2 rounded border transition-colors ${icon === iconOption
-                                            ? 'border-cyan-500 bg-cyan-500/20'
-                                            : 'border-cyan-500/30 hover:border-cyan-500/50'
+                                            ? 'border-gnani-primary bg-gnani-primary/20'
+                                            : 'border-gnani-primary/30 hover:border-gnani-primary/50'
                                             }`}
                                     >
                                         {iconOption}
@@ -114,7 +114,7 @@ const CreateFolderModal: React.FC<CreateFolderModalProps> = ({ isOpen, onClose }
 
                         {/* Color Selection */}
                         <div>
-                            <label className="block text-sm text-cyan-500/80 mb-2">
+                            <label className="block text-sm text-gnani-primary/80 mb-2">
                                 Color
                             </label>
                             <div className="flex flex-wrap gap-2">
@@ -138,14 +138,14 @@ const CreateFolderModal: React.FC<CreateFolderModalProps> = ({ isOpen, onClose }
                             <button
                                 onClick={handleCreate}
                                 disabled={!name.trim()}
-                                className="flex-1 px-4 py-2 bg-cyan-500/20 border border-cyan-500/30 rounded text-cyan-400 hover:bg-cyan-500/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="flex-1 px-4 py-2 bg-gnani-primary/20 border border-gnani-primary/30 rounded text-gnani-primary hover:bg-gnani-primary/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 <Plus size={16} className="inline mr-2" />
                                 Create Folder
                             </button>
                             <button
                                 onClick={onClose}
-                                className="px-4 py-2 bg-black/40 border border-cyan-500/30 rounded text-cyan-400 hover:bg-cyan-500/10 transition-colors"
+                                className="px-4 py-2 bg-canvas-surface/40 border border-gnani-primary/30 rounded text-gnani-primary hover:bg-gnani-primary/10 transition-colors"
                             >
                                 Cancel
                             </button>
@@ -153,7 +153,7 @@ const CreateFolderModal: React.FC<CreateFolderModalProps> = ({ isOpen, onClose }
                     </div>
                 </motion.div>
             </motion.div>
-        </AnimatePresence>,
+        </AnimatePresence >,
         document.body
     );
 };

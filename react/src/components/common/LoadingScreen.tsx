@@ -23,38 +23,57 @@ const LoadingScreen: React.FC = () => {
     }, []);
 
     return (
-        <div className="flex flex-col items-center justify-center min-h-screen bg-black text-cyan-400 overflow-hidden relative">
-            {/* Background Effects */}
-            <div className="absolute inset-0 overflow-hidden">
-                <div className="absolute top-[-50%] left-[-50%] w-[200%] h-[200%] bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-cyan-900/20 via-black to-black animate-spin-slow opacity-30"></div>
+        <div className="flex flex-col items-center justify-center min-h-screen bg-canvas-app text-type-primary overflow-hidden relative transition-colors duration-300">
+            {/* Animated background grid - Subtle */}
+            <div className="absolute inset-0 opacity-[0.05] dark:opacity-10 pointer-events-none">
+                <div className="absolute inset-0 bg-grid-pattern animate-pulse" />
             </div>
 
-            {/* Main Loader */}
-            <div className="relative z-10 flex flex-col items-center">
-                <div className="relative w-24 h-24 mb-8">
-                    {/* Pulsing Rings */}
+            {/* Main Unified Loader Container */}
+            <div className="relative flex flex-col items-center justify-center z-10">
+
+                {/* Central Holographic Unit */}
+                <div className="relative w-32 h-32 mb-8">
+
+                    {/* Core Glow */}
                     <motion.div
-                        className="absolute inset-0 rounded-full border-4 border-cyan-500/30"
-                        animate={{ scale: [1, 1.2, 1], opacity: [0.5, 0, 0.5] }}
+                        className="absolute inset-0 rounded-full bg-gnani-primary/10 blur-xl"
+                        animate={{ opacity: [0.3, 0.6, 0.3] }}
                         transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
                     />
+
+                    {/* Primary Ring - Steady Rotation */}
                     <motion.div
-                        className="absolute inset-0 rounded-full border-4 border-cyan-400/50"
-                        animate={{ scale: [1, 1.1, 1], opacity: [0.8, 0.2, 0.8] }}
-                        transition={{ duration: 2, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
+                        className="absolute inset-0 rounded-full border-2 border-t-gnani-primary border-r-transparent border-b-gnani-primary border-l-transparent"
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
                     />
-                    {/* Center Core */}
+
+                    {/* Secondary Ring - Counter Rotation */}
                     <motion.div
-                        className="absolute inset-2 rounded-full bg-cyan-500/20 backdrop-blur-sm flex items-center justify-center border border-cyan-400/50"
-                        animate={{ boxShadow: ["0 0 10px rgba(6,182,212,0.5)", "0 0 30px rgba(6,182,212,0.8)", "0 0 10px rgba(6,182,212,0.5)"] }}
-                        transition={{ duration: 2, repeat: Infinity }}
-                    >
-                        <div className="w-3 h-3 bg-cyan-400 rounded-full shadow-[0_0_10px_#22d3ee]"></div>
-                    </motion.div>
+                        className="absolute inset-2 rounded-full border border-t-transparent border-r-gnani-secondary border-b-transparent border-l-gnani-secondary opacity-70"
+                        animate={{ rotate: -360 }}
+                        transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
+                    />
+
+                    {/* Inner Core Pulse */}
+                    <motion.div
+                        className="absolute inset-[35%] rounded-full bg-gnani-primary"
+                        animate={{
+                            scale: [1, 1.2, 1],
+                            opacity: [0.5, 0.8, 0.5],
+                            boxShadow: [
+                                "0 0 10px rgba(var(--primary-rgb), 0.5)",
+                                "0 0 20px rgba(var(--primary-rgb), 0.8)",
+                                "0 0 10px rgba(var(--primary-rgb), 0.5)"
+                            ]
+                        }}
+                        transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                    />
                 </div>
 
                 {/* Text */}
-                <h1 className="text-2xl font-bold tracking-[0.2em] text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 to-blue-500 mb-4">
+                <h1 className="text-2xl font-bold tracking-[0.2em] text-gnani-primary mb-4">
                     GNANI
                 </h1>
 
@@ -64,7 +83,7 @@ const LoadingScreen: React.FC = () => {
                         initial={{ y: 20, opacity: 0 }}
                         animate={{ y: 0, opacity: 1 }}
                         exit={{ y: -20, opacity: 0 }}
-                        className="text-sm text-cyan-500/70 font-mono"
+                        className="text-sm text-type-secondary font-mono"
                     >
                         {QUOTES[quoteIndex]}
                     </motion.p>

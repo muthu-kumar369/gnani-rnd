@@ -218,8 +218,8 @@ const TerminalPanel: React.FC<TerminalPanelProps> = ({ isVisible, onToggle }) =>
                 <div className="absolute inset-0 pointer-events-none opacity-20 bg-grid-pattern" />
 
                 {/* Header */}
-                <div className="relative z-10 flex items-center justify-between px-4 py-2 bg-cyan-950/50 border-b border-cyan-500/30">
-                    <div className="flex items-center gap-2 text-cyan-400">
+                <div className="relative z-10 flex items-center justify-between px-4 py-2 bg-canvas-panel border-b border-gnani-primary/30">
+                    <div className="flex items-center gap-2 text-gnani-primary">
                         <Terminal size={18} />
                         <span className="text-xs font-bold uppercase tracking-wider">
                             {title ? (title.length > 30 ? `${title.substring(0, 30)}...` : title) : 'Gnani Terminal'}
@@ -244,7 +244,7 @@ const TerminalPanel: React.FC<TerminalPanelProps> = ({ isVisible, onToggle }) =>
                                     clearMessages(); // Just clear if no session
                                 }
                             }}
-                            className="p-1.5 text-cyan-400/60 hover:text-red-400 hover:bg-red-900/20 rounded transition-colors"
+                            className="p-1.5 text-gnani-primary/60 hover:text-status-error hover:bg-status-error/10 rounded transition-colors"
                             title="Delete Conversation"
                         >
                             <Trash2 size={16} />
@@ -254,8 +254,8 @@ const TerminalPanel: React.FC<TerminalPanelProps> = ({ isVisible, onToggle }) =>
                         <button
                             onClick={() => setShowBranchTree(!showBranchTree)}
                             className={`p-1.5 rounded transition-colors ${showBranchTree
-                                ? 'text-cyan-300 bg-cyan-900/30'
-                                : 'text-cyan-400/60 hover:text-cyan-300 hover:bg-cyan-900/20'
+                                ? 'text-gnani-secondary bg-gnani-primary/20'
+                                : 'text-gnani-primary/60 hover:text-gnani-secondary hover:bg-gnani-primary/10'
                                 }`}
                             title="Toggle Branch Tree"
                         >
@@ -266,7 +266,7 @@ const TerminalPanel: React.FC<TerminalPanelProps> = ({ isVisible, onToggle }) =>
 
                         <button
                             onClick={() => setIsExpanded(!isExpanded)}
-                            className="p-1.5 text-cyan-400/60 hover:text-cyan-300 hover:bg-cyan-900/20 rounded transition-colors"
+                            className="p-1.5 text-gnani-primary/60 hover:text-gnani-secondary hover:bg-gnani-primary/10 rounded transition-colors"
                             title={isExpanded ? "Minimize" : "Maximize"}
                         >
                             {isExpanded ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
@@ -274,7 +274,7 @@ const TerminalPanel: React.FC<TerminalPanelProps> = ({ isVisible, onToggle }) =>
 
                         <button
                             onClick={onToggle}
-                            className="p-1.5 text-cyan-400/60 hover:text-cyan-300 hover:bg-cyan-900/20 rounded transition-colors"
+                            className="p-1.5 text-gnani-primary/60 hover:text-gnani-secondary hover:bg-gnani-primary/10 rounded transition-colors"
                             title="Close Terminal"
                         >
                             <ChevronDown size={18} />
@@ -285,7 +285,7 @@ const TerminalPanel: React.FC<TerminalPanelProps> = ({ isVisible, onToggle }) =>
                 {/* Messages Area */}
                 <div className="relative z-10 flex-1 overflow-hidden p-4">
                     {messages.length === 0 ? (
-                        <div className="h-full flex flex-col items-center justify-center text-cyan-500/30 gap-2">
+                        <div className="h-full flex flex-col items-center justify-center text-gnani-primary/30 gap-2">
                             <Terminal size={32} />
                             <p className="text-xs font-mono">System Ready. Waiting for input...</p>
                         </div>
@@ -414,7 +414,7 @@ const TerminalPanel: React.FC<TerminalPanelProps> = ({ isVisible, onToggle }) =>
                 )}
 
                 {/* Footer / Input Status */}
-                <div className="relative z-10 px-4 py-1.5 bg-cyan-950/30 border-t border-cyan-500/20 flex justify-between items-center text-[10px] font-mono text-cyan-500/60">
+                <div className="relative z-10 px-4 py-1.5 bg-canvas-panel/50 border-t border-gnani-primary/20 flex justify-between items-center text-[10px] font-mono text-gnani-primary/60">
                     <span>STATUS: {connectivityStatus?.online ? 'ONLINE' : 'OFFLINE'}</span>
                     <span>MEM: {systemStatus?.memory.usagePercent ? `${Math.round(systemStatus.memory.usagePercent)}%` : '--%'}</span>
                 </div>

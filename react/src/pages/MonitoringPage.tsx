@@ -9,15 +9,15 @@ const MonitoringPage: React.FC = () => {
     const navigate = useNavigate();
 
     return (
-        <div className="min-h-screen bg-gray-900 text-gray-100 p-8 font-mono">
-            <header className="flex justify-between items-center mb-8 border-b border-gray-800 pb-4">
+        <div className="min-h-screen bg-canvas text-type-primary p-8 font-mono">
+            <header className="flex justify-between items-center mb-8 border-b border-glass-border pb-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-jarvis-blue">Gnani System Monitor</h1>
-                    <p className="text-gray-500 text-sm mt-1">Real-time system health and resource tracking</p>
+                    <h1 className="text-2xl font-bold text-gnani-primary">Gnani System Monitor</h1>
+                    <p className="text-type-muted text-sm mt-1">Real-time system health and resource tracking</p>
                 </div>
                 <button
                     onClick={() => navigate('/')}
-                    className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded text-sm transition-colors"
+                    className="px-4 py-2 bg-glass-shimmer hover:bg-glass-shimmer/80 rounded text-sm transition-colors"
                 >
                     Back to App
                 </button>
@@ -30,7 +30,7 @@ const MonitoringPage: React.FC = () => {
                 <ErrorMonitor />
             </div>
 
-            <div className="mt-8 p-4 bg-gray-800/50 rounded border border-gray-800 text-xs text-gray-500">
+            <div className="mt-8 p-4 bg-canvas-surface rounded border border-glass-border text-xs text-type-muted">
                 <p>System Version: 2.0.0-rc1 | Environment: {import.meta.env.MODE}</p>
                 <p className="mt-1">
                     This dashboard pulls data directly from application singletons (`resourceTracker`, `messageCache`, `offlineQueue`).

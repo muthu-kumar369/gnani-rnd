@@ -74,17 +74,17 @@ const ToastNotification: React.FC<ToastNotificationProps> = ({ toast, onRemove }
     return () => clearTimeout(timer);
   }, [toast, onRemove]);
 
-  const bgColor = {
-    info: 'bg-blue-500',
-    success: 'bg-green-500',
-    warning: 'bg-yellow-500',
-    error: 'bg-red-500',
+  const styleConfig = {
+    info: 'bg-status-info/10 border-status-info/20 text-status-info shadow-[0_4px_20px_rgba(var(--info-rgb),0.2)]',
+    success: 'bg-status-success/10 border-status-success/20 text-status-success shadow-[0_4px_20px_rgba(var(--success-rgb),0.2)]',
+    warning: 'bg-status-warning/10 border-status-warning/20 text-status-warning shadow-[0_4px_20px_rgba(var(--warning-rgb),0.2)]',
+    error: 'bg-status-error/10 border-status-error/20 text-status-error shadow-[0_4px_20px_rgba(var(--error-rgb),0.2)]',
   }[toast.type];
 
   return (
-    <div className={`${bgColor} text-white px-4 py-2 rounded-md shadow-lg flex items-center justify-between`}>
-      <span>{toast.message}</span>
-      <button onClick={() => onRemove(toast.id)} className="ml-4 text-white hover:text-gray-200">
+    <div className={`${styleConfig} backdrop-blur-xl border px-4 py-3 rounded-xl flex items-center justify-between min-w-[300px] animate-slide-up`}>
+      <span className="font-medium">{toast.message}</span>
+      <button onClick={() => onRemove(toast.id)} className="ml-4 opacity-70 hover:opacity-100 transition-opacity">
         &times;
       </button>
     </div>

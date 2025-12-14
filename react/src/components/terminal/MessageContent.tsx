@@ -17,14 +17,14 @@ const MessageContent: React.FC<MessageContentProps> = ({ content, type, isLatest
     const { displayedText, isTyping } = useTypingEffect(content, isGnani && isLatest);
 
     return (
-        <div className={`font-mono text-sm leading-relaxed ${isTTS ? 'text-cyan-100' : 'text-cyan-200/90'} markdown-content`}>
+        <div className={`font-mono text-sm leading-relaxed ${isTTS ? 'text-type-primary' : 'text-type-secondary'} markdown-content`}>
             {isGnani && isLatest ? (
                 <>
                     <div className="markdown-content">
                         {renderMarkdown(displayedText)}
                     </div>
                     {isTyping && (
-                        <span className="inline-block w-2 h-4 ml-1 align-middle bg-cyan-500 animate-pulse" />
+                        <span className="inline-block w-2 h-4 ml-1 align-middle bg-gnani-primary animate-pulse" />
                     )}
                 </>
             ) : (

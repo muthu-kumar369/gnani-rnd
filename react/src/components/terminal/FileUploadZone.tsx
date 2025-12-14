@@ -71,32 +71,12 @@ const FileUploadZone: React.FC<FileUploadZoneProps> = ({ onFileDrop, children, d
             onDragLeave={handleDragLeave}
             onDragOver={handleDragOver}
             onDrop={handleDrop}
-            style={{ position: 'relative', width: '100%', height: '100%' }}
+            className="relative w-full h-full"
         >
             {children}
             {isDragging && (
-                <div
-                    style={{
-                        position: 'absolute',
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        backgroundColor: 'rgba(0, 255, 0, 0.1)',
-                        border: '2px dashed #00ff00',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        zIndex: 1000,
-                        pointerEvents: 'none'
-                    }}
-                >
-                    <div style={{
-                        color: '#00ff00',
-                        fontSize: '18px',
-                        fontWeight: 'bold',
-                        textShadow: '0 0 10px rgba(0, 255, 0, 0.5)'
-                    }}>
+                <div className="absolute inset-0 bg-gnani-primary/10 border-2 border-dashed border-gnani-primary flex items-center justify-center z-50 pointer-events-none">
+                    <div className="text-gnani-primary text-lg font-bold drop-shadow-[0_0_10px_rgba(6,182,212,0.5)]">
                         Drop file here
                     </div>
                 </div>

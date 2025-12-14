@@ -317,20 +317,13 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
             initial={{ width: isCollapsed ? 80 : 320 }}
             animate={{ width: isCollapsed ? 80 : 320 }}
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
-            className={`${isOverlay ? 'fixed top-0 left-0 h-full z-50 shadow-[0_0_30px_rgba(0,240,255,0.1)]' : 'h-full border-r border-jarvis-blue/30'} bg-black/90 flex flex-col overflow-hidden`}
+            className={`${isOverlay ? 'fixed top-0 left-0 h-full z-50 shadow-2xl backdrop-blur-xl' : 'h-full border-r border-transparent'} ${isCollapsed ? 'bg-white/5 dark:bg-white/5' : 'bg-canvas-panel'} flex flex-col overflow-hidden transition-colors duration-300`}
         >
             {/* Header */}
-            <div className={`p-4 border-b border-jarvis-blue/20 flex flex-col gap-4 ${isCollapsed ? 'items-center grid justify-stretch' : ''}`}>
+            <div className={`p-4 flex flex-col gap-4 ${isCollapsed ? 'items-center grid justify-stretch' : 'border-b border-black/5 dark:border-white/5 bg-white/5 dark:bg-white/5'}`}>
                 <div className={`flex items-center ${isCollapsed ? 'flex-col gap-4' : 'justify-between'}`}>
                     {/* Expand/Collapse Button for Overlay Mode or Manual Toggle */}
-                    {!isOverlay && isCollapsed && (
-                        <button
-                            onClick={toggleCollapse}
-                            className="p-2 hover:bg-white/10 rounded-lg text-gray-400 hover:text-white transition-colors cursor-pointer"
-                        >
-                            <PanelLeftOpen size={20} />
-                        </button>
-                    )}
+
                     {/* Logo - Click to expand when collapsed */}
                     <div
                         className={`flex items-center gap-3 overflow-hidden ${isCollapsed ? 'cursor-pointer hover:opacity-80 transition-opacity justify-center w-full' : ''}`}
@@ -343,7 +336,7 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                             className={`object-contain rounded-lg transition-all duration-300 ${isCollapsed ? 'w-10 h-10' : 'w-8 h-8'}`}
                         />
                         {!isCollapsed && (
-                            <span className="text-xl font-bold tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-600">
+                            <span className="text-xl font-bold tracking-center text-gnani-primary">
                                 GNANI
                             </span>
                         )}
@@ -353,7 +346,7 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                     {!isOverlay && !isCollapsed && (
                         <button
                             onClick={toggleCollapse}
-                            className="text-gray-400 hover:text-white transition-colors cursor-pointer"
+                            className="text-type-secondary hover:text-type-primary transition-colors cursor-pointer"
                         >
                             <PanelLeftClose size={20} />
                         </button>
@@ -361,7 +354,7 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                     {isOverlay && (
                         <button
                             onClick={onClose}
-                            className="text-gray-400 hover:text-white transition-colors cursor-pointer"
+                            className="text-type-secondary hover:text-type-primary transition-colors cursor-pointer"
                         >
                             <X size={20} />
                         </button>
@@ -372,19 +365,19 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                 <div className="flex flex-col gap-1 pb-2 z-10">
                     <button
                         onClick={handleNewConversation}
-                        className={`w-full flex items-center gap-3 px-2 py-2 text-sm text-gray-400 hover:text-white hover:bg-white/5 border border-transparent hover:border-white/10 rounded-lg transition-all group cursor-pointer ${isCollapsed ? 'justify-center aspect-square px-2' : ''}`}
+                        className={`w-full flex items-center gap-3 px-2 py-2 text-sm text-type-secondary hover:text-type-primary hover:bg-glass-shimmer border border-transparent hover:border-glass-border rounded-lg transition-all group cursor-pointer ${isCollapsed ? 'justify-center aspect-square px-2' : ''}`}
                         title="New Chat"
                     >
-                        <SquarePen size={16} className="group-hover:text-cyan-400 transition-colors" />
+                        <SquarePen size={16} className="group-hover:text-gnani-primary transition-colors" />
                         {!isCollapsed && <span className="font-medium">New Chat</span>}
                     </button>
 
                     <button
                         onClick={() => eventManager.dispatchEvent('open-advanced-search')}
-                        className={`w-full flex items-center gap-3 px-2 py-2 text-sm text-gray-400 hover:text-white hover:bg-white/10 border border-transparent hover:border-white/10 rounded-lg transition-all group cursor-pointer ${isCollapsed ? 'justify-center aspect-square px-2' : ''}`}
+                        className={`w-full flex items-center gap-3 px-2 py-2 text-sm text-type-secondary hover:text-type-primary hover:bg-glass-shimmer border border-transparent hover:border-glass-border rounded-lg transition-all group cursor-pointer ${isCollapsed ? 'justify-center aspect-square px-2' : ''}`}
                         title="Search chats"
                     >
-                        <Search size={16} className="group-hover:text-cyan-400 transition-colors" />
+                        <Search size={16} className="group-hover:text-gnani-primary transition-colors" />
                         {!isCollapsed && <span className="font-medium">Search</span>}
                     </button>
                 </div>
@@ -393,14 +386,14 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
 
             {/* Bulk Action Bar during Selection Mode */}
             {selectionMode && (
-                <div className="p-2 border-b border-jarvis-blue/20 bg-jarvis-blue/10 flex items-center justify-between animate-slide-down">
-                    <span className="text-xs text-jarvis-cyan font-mono">{selectedIds.size} Selected</span>
+                <div className="p-2 border-b border-line-base bg-glass flex items-center justify-between animate-slide-down">
+                    <span className="text-xs text-gnani-primary font-mono">{selectedIds.size} Selected</span>
                     <div className="flex gap-1">
                         <GlassTooltip content="Delete Selected">
                             <button
                                 onClick={handleBulkDelete}
                                 disabled={selectedIds.size === 0}
-                                className="p-1.5 rounded bg-red-500/10 text-red-400 hover:bg-red-500/20 disabled:opacity-50"
+                                className="p-1.5 rounded bg-status-error/10 text-status-error hover:bg-status-error/20 disabled:opacity-50"
                             >
                                 <Trash2 size={14} />
                             </button>
@@ -408,7 +401,7 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                         {/* We could add move logic here, simpler just delete for now unless folder menu added */}
                         <button
                             onClick={() => setSelectionMode(false)}
-                            className="p-1.5 rounded hover:bg-white/10 text-gray-400"
+                            className="p-1.5 rounded hover:bg-glass-shimmer text-type-secondary"
                         >
                             <X size={14} />
                         </button>
@@ -427,17 +420,17 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                     <>
                         {/* Collapsible Folder Section */}
                         {/* Collapsible Folder Section Header */}
-                        <div className="mt-4 mb-2 pl-2 pr-0 py-1.5 flex items-center justify-between rounded-r-md bg-gradient-to-r from-cyan-500/10 via-cyan-500/5 to-transparent border-l-2 border-cyan-500/50 hover:border-cyan-400 transition-all group cursor-pointer"
+                        <div className="mt-6 mb-2 pl-3 pr-2 py-2 flex items-center justify-between rounded-lg bg-white/5 dark:bg-white/5 border border-black/5 dark:border-white/5 cursor-pointer group hover:bg-white/10 dark:hover:bg-white/10 transition-all"
                             onClick={() => setIsFoldersExpanded(!isFoldersExpanded)}
                         >
                             <button
-                                onClick={() => setIsFoldersExpanded(!isFoldersExpanded)}
+                                onClick={(e) => { e.stopPropagation(); setIsFoldersExpanded(!isFoldersExpanded); }}
                                 className="flex items-center gap-2 group/btn cursor-pointer"
                             >
-                                <div className={`text-cyan-400/70 transition-transform duration-300 ${isFoldersExpanded ? 'rotate-0' : '-rotate-90'}`}>
-                                    <ChevronDown size={16} strokeWidth={2.5} />
+                                <div className={`text-type-secondary transition-transform duration-300 ${isFoldersExpanded ? 'rotate-0' : '-rotate-90'}`}>
+                                    <ChevronDown size={14} strokeWidth={2.5} />
                                 </div>
-                                <span className="text-[10px] font-bold text-cyan-400 uppercase tracking-[0.2em] drop-shadow-[0_0_8px_rgba(34,211,238,0.4)] transition-all group-hover/btn:text-cyan-300">
+                                <span className="text-[11px] font-bold text-type-primary uppercase tracking-wider">
                                     Folders
                                 </span>
                             </button>
@@ -448,9 +441,10 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                                         e.stopPropagation();
                                         setIsCreateFolderModalOpen(true);
                                     }}
-                                    className="p-1 rounded bg-cyan-500/5 text-cyan-400/70 ring-1 ring-cyan-500/20 hover:bg-cyan-400 hover:text-black hover:ring-cyan-400 hover:shadow-[0_0_15px_rgba(34,211,238,0.6)] transition-all duration-300 cursor-pointer"
+                                    className="p-1 rounded text-type-secondary hover:text-gnani-primary hover:bg-gnani-primary/10 transition-all duration-300 cursor-pointer"
+                                    aria-label="Create Folder"
                                 >
-                                    <FolderPlus size={15} strokeWidth={2} />
+                                    <FolderPlus size={14} strokeWidth={2} />
                                 </button>
                             </GlassTooltip>
                         </div>
@@ -461,17 +455,17 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                                     initial={{ height: 0, opacity: 0 }}
                                     animate={{ height: 'auto', opacity: 1 }}
                                     exit={{ height: 0, opacity: 0 }}
-                                    className="space-y-0.5 overflow-hidden"
+                                    className="space-y-0.5 overflow-hidden px-2 mb-4"
                                 >
                                     {/* "All Conversations" / Clear Filter */}
                                     <button
                                         onClick={() => setSelectedFolderId(null)}
                                         className={`w-full flex items-center gap-2 px-3 py-1.5 rounded-md text-sm transition-colors cursor-pointer ${selectedFolderId === null
-                                            ? 'bg-jarvis-blue/10 text-jarvis-cyan'
-                                            : 'text-gray-400 hover:bg-white/5 hover:text-gray-200'
+                                            ? 'bg-gnani-primary/10 text-gnani-primary font-medium'
+                                            : 'text-type-secondary hover:bg-white/5 hover:text-type-primary'
                                             }`}
                                     >
-                                        <Folder size={14} className={selectedFolderId === null ? "text-jarvis-cyan" : "text-gray-500"} />
+                                        <Folder size={14} className={selectedFolderId === null ? "text-gnani-primary" : "text-type-muted"} />
                                         <span className="flex-1 text-left">All Conversations</span>
                                     </button>
 
@@ -481,8 +475,8 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                                             key={folder.id}
                                             onClick={() => setSelectedFolderId(folder.id)}
                                             className={`w-full flex items-center gap-2 px-3 py-1.5 rounded-md text-sm transition-colors group cursor-pointer ${selectedFolderId === folder.id
-                                                ? 'bg-jarvis-blue/10 text-jarvis-cyan'
-                                                : 'text-gray-400 hover:bg-white/5 hover:text-gray-200'
+                                                ? 'bg-gnani-primary/10 text-gnani-primary font-medium'
+                                                : 'text-type-secondary hover:bg-white/5 hover:text-type-primary'
                                                 }`}
                                         >
                                             <span className="text-md opacity-80">{folder.icon}</span>
@@ -494,32 +488,29 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                             )}
                         </AnimatePresence>
 
-                        {/* Divider */}
-                        <div className="h-px bg-white/5 mx-2 my-2" />
-
                         {/* Conversation List Header */}
                         {!isCollapsed && (
-                            <div className="mt-4 mb-2 pl-2 pr-0 py-1.5 flex items-center justify-between rounded-r-md bg-gradient-to-r from-cyan-500/10 via-cyan-500/5 to-transparent border-l-2 border-cyan-500/50 hover:border-cyan-400 transition-all group cursor-default">
-                                <span className="text-[10px] font-bold text-cyan-400 uppercase tracking-[0.2em] drop-shadow-[0_0_8px_rgba(34,211,238,0.4)] transition-all group-hover:text-cyan-300">
+                            <div className="mt-2 mb-2 pl-3 pr-2 py-2 flex items-center justify-between rounded-lg bg-white/5 dark:bg-white/5 border border-black/5 dark:border-white/5 group cursor-default">
+                                <span className="text-[11px] font-bold text-type-primary uppercase tracking-wider">
                                     Your Conversations
                                 </span>
                                 <div className="relative">
                                     <button
                                         ref={moreMenuRef}
                                         onClick={() => setIsMoreMenuOpen(!isMoreMenuOpen)}
-                                        className={`w-6 h-6 flex items-center justify-center rounded hover:bg-white/10 text-cyan-400/70 hover:text-cyan-400 transition-colors cursor-pointer ${isMoreMenuOpen ? 'bg-white/10 text-cyan-400' : ''}`}
+                                        className={`w-6 h-6 flex items-center justify-center rounded hover:bg-white/10 text-type-secondary hover:text-type-primary transition-colors cursor-pointer ${isMoreMenuOpen ? 'bg-white/10 text-type-primary' : ''}`}
                                     >
                                         <MoreHorizontal size={14} />
                                     </button>
                                     <DropdownPortal isOpen={isMoreMenuOpen} buttonRef={moreMenuRef} placement="bottom-end" onClose={() => setIsMoreMenuOpen(false)}>
-                                        <div className="w-56 bg-[#0a0a0add] backdrop-blur-xl border border-white/10 rounded-lg shadow-2xl p-1 overflow-hidden z-[100]">
+                                        <div className="w-56 bg-canvas-surface rounded-xl shadow-xl p-1.5 overflow-hidden z-[100]">
                                             {/* Refresh Action */}
                                             <button
                                                 onClick={() => {
                                                     fetchConversations();
                                                     setIsMoreMenuOpen(false);
                                                 }}
-                                                className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-300 hover:bg-white/10 rounded transition-colors"
+                                                className="w-full flex items-center gap-2 px-3 py-2 text-xs text-type-secondary hover:text-gnani-primary hover:bg-glass-shimmer rounded transition-colors"
                                             >
                                                 <RotateCcw size={14} />
                                                 <span>Refresh List</span>
@@ -531,31 +522,32 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                                             <button
                                                 onClick={() => {
                                                     setSelectionMode(!selectionMode);
+                                                    setIsMoreMenuOpen(false);
                                                 }}
-                                                className="w-full flex items-center justify-between px-3 py-2 text-xs text-gray-300 hover:bg-white/10 rounded transition-colors"
+                                                className="w-full flex items-center justify-between px-3 py-2 text-xs text-type-secondary hover:text-gnani-primary hover:bg-glass-shimmer rounded transition-colors"
                                             >
                                                 <span className="flex items-center gap-2">
                                                     <CheckSquare size={14} /> Select Multiple
                                                 </span>
-                                                {selectionMode && <CheckSquare size={12} className="text-jarvis-cyan" />}
+                                                {selectionMode && <CheckSquare size={12} className="text-gnani-primary" />}
                                             </button>
 
                                             <div className="h-px bg-white/10 my-1" />
-                                            <div className="px-3 py-1 text-[10px] text-gray-500 uppercase tracking-wider font-semibold">Sort By</div>
+                                            <div className="px-3 py-1 text-[10px] text-type-muted uppercase tracking-wider font-semibold">Sort By</div>
 
                                             <button
                                                 onClick={() => { setSortBy('date'); setIsMoreMenuOpen(false); fetchConversations(); }}
-                                                className={`w-full flex items-center justify-between px-3 py-2 text-xs hover:bg-white/10 rounded transition-colors ${sortBy === 'date' ? 'text-jarvis-cyan' : 'text-gray-300'}`}
+                                                className={`w-full flex items-center justify-between px-3 py-2 text-xs hover:bg-glass-shimmer rounded transition-colors ${sortBy === 'date' ? 'text-gnani-primary' : 'text-type-secondary'}`}
                                             >
                                                 <span>Date</span>
-                                                {sortBy === 'date' && <div className="w-1.5 h-1.5 rounded-full bg-jarvis-cyan" />}
+                                                {sortBy === 'date' && <div className="w-1.5 h-1.5 rounded-full bg-gnani-primary" />}
                                             </button>
                                             <button
                                                 onClick={() => { setSortBy('name'); setIsMoreMenuOpen(false); fetchConversations(); }}
-                                                className={`w-full flex items-center justify-between px-3 py-2 text-xs hover:bg-white/10 rounded transition-colors ${sortBy === 'name' ? 'text-jarvis-cyan' : 'text-gray-300'}`}
+                                                className={`w-full flex items-center justify-between px-3 py-2 text-xs hover:bg-glass-shimmer rounded transition-colors ${sortBy === 'name' ? 'text-gnani-primary' : 'text-type-secondary'}`}
                                             >
                                                 <span>Name</span>
-                                                {sortBy === 'name' && <div className="w-1.5 h-1.5 rounded-full bg-jarvis-cyan" />}
+                                                {sortBy === 'name' && <div className="w-1.5 h-1.5 rounded-full bg-gnani-primary" />}
                                             </button>
 
                                             <div className="h-px bg-white/10 my-1" />
@@ -565,7 +557,7 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                                                     setIsMoreMenuOpen(false);
                                                     fetchConversations();
                                                 }}
-                                                className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-300 hover:bg-white/10 rounded transition-colors"
+                                                className="w-full flex items-center gap-2 px-3 py-2 text-xs text-type-secondary hover:text-gnani-primary hover:bg-glass-shimmer rounded transition-colors"
                                             >
                                                 <ArrowUpDown size={14} />
                                                 <span>{sortOrder === 'asc' ? 'Newest First' : 'Oldest First'}</span>
@@ -584,7 +576,7 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                             ) : (
                                 <>
                                     {(filteredConversations?.length || 0) === 0 ? (
-                                        <div className="text-center text-xs text-gray-600 mt-4">
+                                        <div className="text-center text-xs text-type-muted mt-4">
                                             No conversations
                                         </div>
                                     ) : (
@@ -611,7 +603,7 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                                     {/* Loading More Spinner */}
                                     {isLoading && (conversations?.length || 0) > 0 && (
                                         <div className="flex justify-center py-2">
-                                            <div className="w-4 h-4 border-2 border-jarvis-cyan/30 border-t-jarvis-cyan rounded-full animate-spin" />
+                                            <div className="w-4 h-4 border-2 border-gnani-primary/30 border-t-gnani-primary rounded-full animate-spin" />
                                         </div>
                                     )}
                                 </>
@@ -627,13 +619,13 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
 
             {/* Modals placed inside sidebar to share context/portal */}
             {/* User Profile Area */}
-            <div className="p-3 border-t border-jarvis-border/20 z-10" ref={profileRef}>
+            <div className={`p-3 z-10 mt-auto ${isCollapsed ? '' : 'border-t border-black/5 dark:border-white/5 bg-white/5 dark:bg-white/5'}`} ref={profileRef}>
                 <div className="relative">
                     <button
                         onClick={() => setIsProfileOpen(!isProfileOpen)}
-                        className={`w-full flex items-center gap-3 px-3 py-2 hover:bg-white/5 rounded-lg transition-colors text-left cursor-pointer ${isCollapsed ? 'justify-center p-2' : ''}`}
+                        className={`w-full flex items-center gap-3 px-3 py-2 hover:bg-glass-shimmer rounded-lg transition-colors text-left cursor-pointer ${isCollapsed ? 'justify-center p-2' : ''}`}
                     >
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-jarvis-blue to-purple-600 flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-jarvis-blue/20 flex-shrink-0 overflow-hidden relative">
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-gnani-primary to-gnani-secondary flex items-center justify-center text-type-inverse font-bold text-sm shadow-lg shadow-gnani-primary/20 flex-shrink-0 overflow-hidden relative">
                             {(user?.profile?.uploadedProfilePhotoId || user?.profile?.profilePhoto) ? (
                                 <img
                                     src={user.profile.uploadedProfilePhotoId
@@ -648,8 +640,8 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                                     }}
                                 />
                             ) : null}
-                            <div className={`absolute inset-0 flex items-center justify-center bg-gradient-to-br from-jarvis-blue to-purple-600 z-0 ${(user?.profile?.uploadedProfilePhotoId || user?.profile?.profilePhoto) ? 'hidden fallback-active:flex' : 'flex'}`}>
-                                <span className="text-sm font-bold text-white">
+                            <div className={`absolute inset-0 flex items-center justify-center bg-gradient-to-br from-gnani-primary to-gnani-secondary z-0 ${(user?.profile?.uploadedProfilePhotoId || user?.profile?.profilePhoto) ? 'hidden fallback-active:flex' : 'flex'}`}>
+                                <span className="text-sm font-bold text-type-inverse">
                                     {user?.profile?.firstName?.[0]?.toUpperCase() || 'U'}
                                 </span>
                             </div>
@@ -657,10 +649,10 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                         {!isCollapsed && (
                             <>
                                 <div className="flex-1 overflow-hidden animate-fade-in">
-                                    <p className="text-sm font-medium text-jarvis-text truncate">{user?.profile?.firstName || 'User'} {user?.profile?.lastName}</p>
-                                    <p className="text-xs text-gray-500 truncate">{user?.email || 'user@example.com'}</p>
+                                    <p className="text-sm font-medium text-type-primary truncate">{user?.profile?.firstName || 'User'} {user?.profile?.lastName}</p>
+                                    <p className="text-xs text-type-muted truncate">{user?.email || 'user@example.com'}</p>
                                 </div>
-                                <div className="px-2 py-0.5 rounded-full bg-gradient-to-r from-amber-200 to-yellow-400 text-black text-[10px] font-bold tracking-wide shadow-[0_0_10px_rgba(251,191,36,0.2)]">
+                                <div className="px-2 py-0.5 rounded-full bg-gnani-primary/10 border border-gnani-primary/20 text-gnani-primary text-[10px] font-bold tracking-wide">
                                     UPGRADE
                                 </div>
                             </>
@@ -669,13 +661,13 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
 
                     {/* Profile Popover - Using DropdownPortal if available or fallback to absolute */}
                     <DropdownPortal isOpen={isProfileOpen} buttonRef={profileRef} placement="top-start" onClose={() => setIsProfileOpen(false)}>
-                        <div className="w-64 bg-gray-900 border border-jarvis-border/30 rounded-lg shadow-xl overflow-hidden backdrop-blur-xl p-2 space-y-1">
+                        <div className="w-64 bg-canvas-popover border border-glass-border rounded-lg shadow-xl overflow-hidden backdrop-blur-xl p-2 space-y-1">
                             <button
                                 onClick={() => {
                                     setIsProfileOpen(false);
                                     openSettings('personalization');
                                 }}
-                                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-300 hover:text-white hover:bg-white/10 rounded-md transition-colors cursor-pointer"
+                                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-type-secondary hover:text-type-primary hover:bg-glass-shimmer rounded-md transition-colors cursor-pointer"
                             >
                                 <User className="w-4 h-4" />
                                 <span>Profile</span>
@@ -686,7 +678,7 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                                     setIsProfileOpen(false);
                                     setIsAnalyticsOpen(true);
                                 }}
-                                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-300 hover:text-white hover:bg-white/10 rounded-md transition-colors cursor-pointer"
+                                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-type-secondary hover:text-type-primary hover:bg-glass-shimmer rounded-md transition-colors cursor-pointer"
                             >
                                 <BarChart3 className="w-4 h-4" />
                                 <span>Analytics</span>
@@ -698,7 +690,7 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                                     setIsProfileOpen(false);
                                     openWorkspace('templates');
                                 }}
-                                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-300 hover:text-white hover:bg-white/10 rounded-md transition-colors cursor-pointer"
+                                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-type-secondary hover:text-type-primary hover:bg-glass-shimmer rounded-md transition-colors cursor-pointer"
                             >
                                 <Briefcase className="w-4 h-4" />
                                 <span>Workspace</span>
@@ -708,7 +700,7 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                                     setIsProfileOpen(false);
                                     openSettings('general');
                                 }}
-                                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-300 hover:text-white hover:bg-white/10 rounded-md transition-colors cursor-pointer"
+                                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-type-secondary hover:text-type-primary hover:bg-glass-shimmer rounded-md transition-colors cursor-pointer"
                             >
                                 <Settings className="w-4 h-4" />
                                 <span>Settings</span>
@@ -717,36 +709,36 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                                 onClick={() => {
                                     setIsProfileOpen(false);
                                 }}
-                                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-300 hover:text-white hover:bg-white/10 rounded-md transition-colors cursor-pointer"
+                                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-type-secondary hover:text-type-primary hover:bg-glass-shimmer rounded-md transition-colors cursor-pointer"
                             >
                                 <Sparkles className="w-4 h-4" />
                                 <span>Upgrade Plan</span>
-                                <span className="ml-2 inline-flex items-center justify-center h-4 px-1.5 text-[9px] font-bold text-black bg-gradient-to-r from-amber-200 to-yellow-400 rounded shadow-[0_0_6px_rgba(251,191,36,0.3)]">
+                                <span className="ml-2 inline-flex items-center justify-center h-4 px-1.5 text-[9px] font-bold text-gnani-primary bg-gnani-primary/10 border border-gnani-primary/20 rounded">
                                     PRO
                                 </span>
                             </button>
-                            <div className="h-px bg-white/10 my-1" />
+                            <div className="h-px bg-glass-border my-1" />
                             <button
                                 ref={helpRef}
                                 onMouseEnter={handleHelpMouseEnter}
                                 onMouseLeave={handleHelpMouseLeave}
-                                className="w-full flex items-center justify-between px-3 py-2 text-sm text-gray-300 hover:text-white hover:bg-white/10 rounded-md transition-colors group relative cursor-pointer"
+                                className="w-full flex items-center justify-between px-3 py-2 text-sm text-type-secondary hover:text-type-primary hover:bg-glass-shimmer rounded-md transition-colors group relative cursor-pointer"
                             >
                                 <div className="flex items-center gap-2">
                                     <HelpCircle className="w-4 h-4" />
                                     <span>Help</span>
                                 </div>
-                                <ChevronRight className="w-4 h-4 text-gray-500 group-hover:text-white" />
+                                <ChevronRight className="w-4 h-4 text-type-muted group-hover:text-type-primary" />
 
                                 {/* Submenu */}
                                 <DropdownPortal isOpen={isHelpOpen} buttonRef={helpRef} placement="right-start">
                                     <div
-                                        className="w-56 bg-gray-900 border border-jarvis-border/30 rounded-lg shadow-xl overflow-hidden backdrop-blur-xl p-2 space-y-1 z-[110]"
+                                        className="w-56 bg-canvas-popover border border-glass-border rounded-lg shadow-xl overflow-hidden backdrop-blur-xl p-2 space-y-1 z-[110]"
                                         onMouseEnter={handleHelpMouseEnter}
                                         onMouseLeave={handleHelpMouseLeave}
                                         onMouseDown={(e) => e.nativeEvent.stopImmediatePropagation()}
                                     >
-                                        <button className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-300 hover:text-white hover:bg-white/10 rounded-md transition-colors cursor-pointer">
+                                        <button className="w-full flex items-center gap-2 px-3 py-2 text-sm text-type-secondary hover:text-type-primary hover:bg-glass-shimmer rounded-md transition-colors cursor-pointer">
                                             <HelpCircle className="w-4 h-4" />
                                             <span>Help center</span>
                                         </button>
@@ -754,15 +746,15 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                                             <MessageSquareQuote className="w-4 h-4" />
                                             <span>Release notes</span>
                                         </button>
-                                        <button className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-300 hover:text-white hover:bg-white/10 rounded-md transition-colors cursor-pointer">
+                                        <button className="w-full flex items-center gap-2 px-3 py-2 text-sm text-type-secondary hover:text-type-primary hover:bg-glass-shimmer rounded-md transition-colors cursor-pointer">
                                             <FileText className="w-4 h-4" />
                                             <span>Terms & policies</span>
                                         </button>
-                                        <button className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-300 hover:text-white hover:bg-white/10 rounded-md transition-colors cursor-pointer">
+                                        <button className="w-full flex items-center gap-2 px-3 py-2 text-sm text-type-secondary hover:text-type-primary hover:bg-glass-shimmer rounded-md transition-colors cursor-pointer">
                                             <Flag className="w-4 h-4" />
                                             <span>Report Bug</span>
                                         </button>
-                                        <button className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-300 hover:text-white hover:bg-white/10 rounded-md transition-colors cursor-pointer">
+                                        <button className="w-full flex items-center gap-2 px-3 py-2 text-sm text-type-secondary hover:text-type-primary hover:bg-glass-shimmer rounded-md transition-colors cursor-pointer">
                                             <Download className="w-4 h-4" />
                                             <span>Download apps</span>
                                         </button>
@@ -773,7 +765,7 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                                                 setIsProfileOpen(false);
                                                 setIsShortcutsOpen(true);
                                             }}
-                                            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-300 hover:text-white hover:bg-white/10 rounded-md transition-colors cursor-pointer"
+                                            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-type-secondary hover:text-type-primary hover:bg-glass-shimmer rounded-md transition-colors cursor-pointer"
                                         >
                                             <Keyboard className="w-4 h-4" />
                                             <span>Keyboard shortcuts</span>
@@ -786,7 +778,7 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                                     setIsProfileOpen(false);
                                     logout();
                                 }}
-                                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-400 hover:bg-red-500/10 rounded-md transition-colors cursor-pointer"
+                                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-status-error hover:bg-status-error/10 rounded-md transition-colors cursor-pointer"
                             >
                                 <LogOut className="w-4 h-4" />
                                 <span>Log out</span>

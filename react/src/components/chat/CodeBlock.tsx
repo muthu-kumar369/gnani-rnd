@@ -32,17 +32,17 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
     const normalizedLang = normalizeLanguage(language);
 
     return (
-        <div className="code-block relative group my-4 rounded-lg overflow-hidden border border-cyan-500/20 shadow-lg shadow-cyan-900/10 transition-all hover:border-cyan-500/40">
+        <div className="code-block relative group my-4 rounded-lg overflow-hidden border border-gnani-primary/20 shadow-lg shadow-gnani-primary/10 transition-all hover:border-gnani-primary/40">
             {/* Header */}
-            <div className="flex items-center justify-between px-4 py-2 bg-cyan-950/40 border-b border-cyan-500/20 backdrop-blur-sm">
+            <div className="flex items-center justify-between px-4 py-2 bg-gnani-primary/10 border-b border-gnani-primary/20 backdrop-blur-sm">
                 <div className="flex items-center gap-2">
-                    <span data-testid="language-label" className="text-xs font-mono text-cyan-400 font-semibold uppercase tracking-wider">
+                    <span data-testid="language-label" className="text-xs font-mono text-gnani-primary font-semibold uppercase tracking-wider">
                         {normalizedLang}
                     </span>
                 </div>
                 <button
                     onClick={handleCopy}
-                    className="flex items-center gap-1.5 px-2 py-1 rounded text-xs text-cyan-500 hover:text-cyan-300 hover:bg-cyan-500/10 transition-all duration-200"
+                    className="flex items-center gap-1.5 px-2 py-1 rounded text-xs text-gnani-primary hover:text-gnani-primary/80 hover:bg-gnani-primary/10 transition-all duration-200"
                     title="Copy code"
                 >
                     {copied ? (
@@ -60,7 +60,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
             </div>
 
             {/* Code Content */}
-            <div className="relative bg-[#0a0a0a]/80">
+            <div className="relative bg-canvas-app/80">
                 <Suspense fallback={
                     <pre className="p-4 m-0 text-sm text-gray-300 bg-transparent overflow-auto font-mono">
                         {code}

@@ -47,19 +47,19 @@ const SharedConversationPage: React.FC = () => {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 flex items-center justify-center">
-                <div className="text-cyan-400 text-lg">Loading shared conversation...</div>
+            <div className="min-h-screen bg-canvas-app flex items-center justify-center">
+                <div className="text-gnani-primary text-lg">Loading shared conversation...</div>
             </div>
         );
     }
 
     if (error) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 flex items-center justify-center">
+            <div className="min-h-screen bg-canvas-app flex items-center justify-center">
                 <div className="text-center">
-                    <AlertCircle size={48} className="text-red-400 mx-auto mb-4" />
-                    <h2 className="text-xl text-red-400 mb-2">Error</h2>
-                    <p className="text-cyan-500/60">{error}</p>
+                    <AlertCircle size={48} className="text-status-error mx-auto mb-4" />
+                    <h2 className="text-xl text-status-error mb-2">Error</h2>
+                    <p className="text-type-muted">{error}</p>
                 </div>
             </div>
         );
@@ -70,21 +70,21 @@ const SharedConversationPage: React.FC = () => {
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900">
+        <div className="min-h-screen bg-canvas-app text-type-primary transition-colors duration-300">
             <div className="max-w-4xl mx-auto p-8">
                 {/* Header */}
                 <motion.div
                     initial={{ opacity: 0, y: -20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="mb-8 pb-6 border-b border-cyan-500/30"
+                    className="mb-8 pb-6 border-b border-line-base"
                 >
                     <div className="flex items-center gap-3 mb-2">
-                        <Share2 size={24} className="text-cyan-400" />
-                        <h1 className="text-2xl font-bold text-cyan-400">
+                        <Share2 size={24} className="text-gnani-primary" />
+                        <h1 className="text-2xl font-bold text-type-primary">
                             {data.conversation.title || 'Shared Conversation'}
                         </h1>
                     </div>
-                    <div className="flex items-center gap-4 text-sm text-cyan-500/60">
+                    <div className="flex items-center gap-4 text-sm text-type-secondary">
                         <div className="flex items-center gap-1">
                             <Eye size={14} />
                             <span>{data.viewCount} views</span>
@@ -126,10 +126,10 @@ const SharedConversationPage: React.FC = () => {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.5 }}
-                    className="mt-12 pt-6 border-t border-cyan-500/30 text-center"
+                    className="mt-12 pt-6 border-t border-line-base text-center"
                 >
-                    <p className="text-cyan-500/60 text-sm">
-                        Powered by <span className="text-cyan-400 font-semibold">Gnani</span>
+                    <p className="text-type-muted text-sm">
+                        Powered by <span className="text-gnani-primary font-semibold">Gnani</span>
                     </p>
                 </motion.div>
             </div>

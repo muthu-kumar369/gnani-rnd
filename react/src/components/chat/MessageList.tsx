@@ -96,7 +96,7 @@ const MessageList: React.FC<MessageListProps> = ({
         >
             {isFetchingMore && (
                 <div className="flex justify-center py-2">
-                    <div className="w-6 h-6 border-2 border-jarvis-blue/30 border-t-jarvis-blue rounded-full animate-spin" />
+                    <div className="w-6 h-6 border-2 border-gnani-primary/30 border-t-gnani-primary rounded-full animate-spin" />
                 </div>
             )}
 

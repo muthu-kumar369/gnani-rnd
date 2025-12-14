@@ -1,7 +1,6 @@
 // src/components/common/UndoToast.tsx
 import React, { useEffect, useState } from 'react';
 import { Trash2, Undo, X } from 'lucide-react';
-import './UndoToast.css';
 
 interface UndoToastProps {
     undoToken: string;
@@ -35,21 +34,27 @@ export const UndoToast: React.FC<UndoToastProps> = ({
     }, [expiresAt, onDismiss]);
 
     return (
-        <div className="undo-toast">
-            <div className="undo-content">
-                <Trash2 size={16} />
+        <div className="flex items-center justify-between gap-4 px-4 py-3 bg-canvas-panel border border-line-base rounded-lg shadow-lg min-w-[320px] max-w-[500px] animate-in slide-in-from-bottom-2 fade-in duration-300">
+            <div className="flex items-center gap-3 text-type-primary text-sm">
+                <Trash2 size={16} className="text-status-error flex-shrink-0" />
                 <span>
                     Message deleted
                     {cascadedCount > 0 && ` (${cascadedCount} response${cascadedCount > 1 ? 's' : ''} also deleted)`}
                 </span>
             </div>
 
-            <div className="undo-actions">
-                <button onClick={() => onUndo(undoToken)} className="undo-button">
-                    <Undo size={14} />
+            <div className="flex items-center gap-2">
+                <button
+                    onClick={() => onUndo(undoToken)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-gnani-primary text-type-inverse hover:bg-gnani-primary/90 rounded-md text-sm font-medium transition-all"
+                >
+                    <Undo size={14} className="flex-shrink-0" />
                     Undo ({timeLeft}s)
                 </button>
-                <button onClick={onDismiss} className="dismiss-button">
+                <button
+                    onClick={onDismiss}
+                    className="flex items-center justify-center p-1.5 text-type-muted hover:text-type-primary hover:bg-glass-hover rounded transition-all"
+                >
                     <X size={14} />
                 </button>
             </div>

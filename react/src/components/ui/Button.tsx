@@ -23,11 +23,11 @@ const Button: React.FC<ButtonProps> = ({
     const baseStyles = "relative font-mono tracking-wider rounded-sm transition-all duration-300 flex items-center justify-center gap-2 overflow-hidden group disabled:opacity-50 disabled:cursor-not-allowed";
 
     const variants = {
-        primary: "bg-jarvis-blue/20 border border-jarvis-blue text-jarvis-blue shadow-jarvis-glow hover:bg-jarvis-blue/30 hover:shadow-jarvis-glow-lg",
-        secondary: "bg-jarvis-panel border border-jarvis-border text-jarvis-cyan/70 hover:text-jarvis-blue hover:border-jarvis-blue hover:shadow-jarvis-border-glow",
-        ghost: "bg-transparent border border-transparent text-jarvis-cyan/60 hover:text-jarvis-cyan hover:bg-jarvis-blue/5",
-        danger: "bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 hover:border-red-500/50 hover:text-red-300",
-        outline: "bg-transparent border border-jarvis-border text-jarvis-cyan/70 hover:text-jarvis-blue hover:border-jarvis-blue hover:bg-jarvis-blue/5"
+        primary: "bg-gnani-primary/10 border border-gnani-primary text-gnani-primary shadow-[0_0_10px_rgba(var(--primary-rgb),0.3)] hover:bg-gnani-primary/20 hover:shadow-[0_0_15px_rgba(var(--primary-rgb),0.5)]",
+        secondary: "bg-canvas-surface border border-glass-border text-type-secondary hover:text-gnani-primary hover:border-gnani-primary hover:shadow-[0_0_10px_rgba(var(--primary-rgb),0.2)]",
+        ghost: "bg-transparent border border-transparent text-type-secondary hover:text-gnani-primary hover:bg-gnani-primary/5",
+        danger: "bg-status-error/10 border border-status-error/30 text-status-error hover:bg-status-error/20 hover:border-status-error/50 hover:text-status-error",
+        outline: "bg-transparent border border-glass-border text-type-secondary hover:text-gnani-primary hover:border-gnani-primary hover:bg-gnani-primary/5"
     };
 
     const sizes = {
@@ -44,7 +44,7 @@ const Button: React.FC<ButtonProps> = ({
         >
             {/* Hover Effect Overlay */}
             {variant !== 'ghost' && (
-                <div className="absolute inset-0 bg-jarvis-blue/10 translate-y-full group-hover:translate-y-0 transition-transform duration-300 pointer-events-none" />
+                <div className="absolute inset-0 bg-gnani-primary/10 translate-y-full group-hover:translate-y-0 transition-transform duration-300 pointer-events-none" />
             )}
 
             {isLoading ? (

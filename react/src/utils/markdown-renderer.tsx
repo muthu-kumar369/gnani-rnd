@@ -19,7 +19,7 @@ const CustomCodeBlock = ({ inline, className, children, node }: any) => {
 
     if (inline) {
         return (
-            <code className="px-1.5 py-0.5 bg-cyan-900/30 text-cyan-300 rounded text-xs font-mono border border-cyan-500/20">
+            <code className="px-1.5 py-0.5 bg-gnani-primary/10 text-gnani-primary rounded text-xs font-mono border border-gnani-primary/20">
                 {children}
             </code>
         );
@@ -42,7 +42,7 @@ const CustomCodeBlock = ({ inline, className, children, node }: any) => {
 // Custom component for tables
 const CustomTable = ({ children }: any) => (
     <div className="overflow-x-auto my-4">
-        <table className="min-w-full border-collapse border border-cyan-500/30 rounded-lg overflow-hidden">
+        <table className="min-w-full border-collapse border border-line-base rounded-lg overflow-hidden">
             {children}
         </table>
     </div>
@@ -50,14 +50,14 @@ const CustomTable = ({ children }: any) => (
 
 // Custom component for table headers
 const CustomTableHeader = ({ children }: any) => (
-    <th className="px-4 py-2 bg-cyan-900/30 border border-cyan-500/30 text-left text-xs font-bold uppercase tracking-wider text-cyan-400">
+    <th className="px-4 py-2 bg-gnani-primary/10 border border-gnani-primary/20 text-left text-xs font-bold uppercase tracking-wider text-gnani-primary">
         {children}
     </th>
 );
 
 // Custom component for table cells
 const CustomTableCell = ({ children }: any) => (
-    <td className="px-4 py-2 border border-cyan-500/20 text-sm text-cyan-200/90">
+    <td className="px-4 py-2 border border-line-base text-sm text-type-secondary">
         {children}
     </td>
 );
@@ -68,14 +68,14 @@ const CustomCheckbox = ({ checked, ...props }: any) => (
         type="checkbox"
         checked={checked}
         disabled
-        className="mr-2 w-4 h-4 rounded border-2 border-cyan-500/50 bg-transparent checked:bg-cyan-500 checked:border-cyan-500 cursor-default"
+        className="mr-2 w-4 h-4 rounded border-2 border-gnani-primary/50 bg-transparent checked:bg-gnani-primary checked:border-gnani-primary cursor-default"
         {...props}
     />
 );
 
 // Custom component for blockquotes
 const CustomBlockquote = ({ children }: any) => (
-    <blockquote className="border-l-4 border-cyan-500/50 pl-4 py-2 my-4 bg-cyan-900/10 italic text-cyan-200/80">
+    <blockquote className="border-l-4 border-gnani-primary/50 pl-4 py-2 my-4 bg-gnani-primary/10 italic text-type-secondary">
         {children}
     </blockquote>
 );
@@ -86,7 +86,7 @@ const CustomLink = ({ href, children }: any) => (
         href={href}
         target="_blank"
         rel="noopener noreferrer"
-        className="text-cyan-400 hover:text-cyan-300 underline decoration-cyan-500/30 hover:decoration-cyan-400 transition-colors"
+        className="text-gnani-primary hover:text-gnani-secondary underline decoration-gnani-primary/30 hover:decoration-gnani-primary transition-colors"
     >
         {children}
     </a>
@@ -96,7 +96,7 @@ const CustomLink = ({ href, children }: any) => (
 const CustomList = ({ ordered, children }: any) => {
     const Component = ordered ? 'ol' : 'ul';
     return (
-        <Component className={`my-2 ml-6 ${ordered ? 'list-decimal' : 'list-disc'} marker:text-cyan-500/70 space-y-1`}>
+        <Component className={`my-2 ml-6 ${ordered ? 'list-decimal' : 'list-disc'} marker:text-gnani-primary/70 space-y-1`}>
             {children}
         </Component>
     );
@@ -104,7 +104,7 @@ const CustomList = ({ ordered, children }: any) => {
 
 // Custom component for list items
 const CustomListItem = ({ children, ...props }: any) => (
-    <li className="text-cyan-200/90 text-sm leading-relaxed" {...props}>
+    <li className="text-type-secondary text-sm leading-relaxed" {...props}>
         {children}
     </li>
 );
@@ -120,15 +120,15 @@ const CustomParagraph = ({ children, node }: any) => {
     );
 
     if (hasCodeBlock) {
-        return <div className="text-sm text-cyan-200/90 leading-relaxed my-2">{children}</div>;
+        return <div className="text-sm text-type-secondary leading-relaxed my-2">{children}</div>;
     }
 
-    return <p className="text-sm text-cyan-200/90 leading-relaxed my-2">{children}</p>;
+    return <p className="text-sm text-type-secondary leading-relaxed my-2">{children}</p>;
 };
 
 // Custom component for horizontal rules
 const CustomHr = () => (
-    <hr className="my-4 border-t border-cyan-500/30" />
+    <hr className="my-4 border-t border-line-base" />
 );
 
 // Main markdown renderer function
@@ -148,12 +148,12 @@ export const renderMarkdown = (content: string) => {
                 ul: CustomList,
                 ol: CustomList,
                 li: CustomListItem,
-                h1: ({ children }: any) => <h1 className="text-2xl font-bold text-cyan-400 mt-4 mb-2 tracking-wide">{children}</h1>,
-                h2: ({ children }: any) => <h2 className="text-xl font-bold text-cyan-400 mt-4 mb-2 tracking-wide">{children}</h2>,
-                h3: ({ children }: any) => <h3 className="text-lg font-bold text-cyan-400 mt-4 mb-2 tracking-wide">{children}</h3>,
-                h4: ({ children }: any) => <h4 className="text-base font-bold text-cyan-400 mt-4 mb-2 tracking-wide">{children}</h4>,
-                h5: ({ children }: any) => <h5 className="text-sm font-bold text-cyan-400 mt-4 mb-2 tracking-wide">{children}</h5>,
-                h6: ({ children }: any) => <h6 className="text-xs font-bold text-cyan-400 mt-4 mb-2 tracking-wide">{children}</h6>,
+                h1: ({ children }: any) => <h1 className="text-2xl font-bold text-gnani-primary mt-4 mb-2 tracking-wide">{children}</h1>,
+                h2: ({ children }: any) => <h2 className="text-xl font-bold text-gnani-primary mt-4 mb-2 tracking-wide">{children}</h2>,
+                h3: ({ children }: any) => <h3 className="text-lg font-bold text-gnani-primary mt-4 mb-2 tracking-wide">{children}</h3>,
+                h4: ({ children }: any) => <h4 className="text-base font-bold text-gnani-primary mt-4 mb-2 tracking-wide">{children}</h4>,
+                h5: ({ children }: any) => <h5 className="text-sm font-bold text-gnani-primary mt-4 mb-2 tracking-wide">{children}</h5>,
+                h6: ({ children }: any) => <h6 className="text-xs font-bold text-gnani-primary mt-4 mb-2 tracking-wide">{children}</h6>,
                 p: CustomParagraph,
                 hr: CustomHr,
             }}

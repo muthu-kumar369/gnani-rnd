@@ -33,7 +33,7 @@ const TypingIndicator: React.FC<TypingIndicatorProps> = ({ status, message }) =>
                 className="typing-indicator"
             >
                 <div className="typing-avatar">
-                    <Bot size={16} className="text-cyan-300" />
+                    <Bot size={16} className="text-gnani-primary" />
                 </div>
                 <div className="typing-content">
                     <span className="typing-text">{getStatusText()}</span>

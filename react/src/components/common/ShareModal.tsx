@@ -63,7 +63,7 @@ const ShareModal: React.FC<ShareModalProps> = ({ conversationId, onClose }) => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm"
+            className="fixed inset-0 z-[9999] flex items-center justify-center bg-canvas-overlay backdrop-blur-sm"
             onClick={(e) => {
                 // Determine if click is on backdrop
                 if (e.target === e.currentTarget) {
@@ -75,17 +75,17 @@ const ShareModal: React.FC<ShareModalProps> = ({ conversationId, onClose }) => {
                 initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.9, opacity: 0 }}
-                className="bg-gray-900 border border-cyan-500/30 rounded-lg p-6 max-w-md w-full mx-4 relative"
+                className="bg-canvas-popover border border-glass-border rounded-lg p-6 max-w-md w-full mx-4 relative"
                 onClick={(e) => e.stopPropagation()}
             >
                 <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2">
-                        <Share2 size={20} className="text-cyan-400" />
-                        <h3 className="text-lg font-semibold text-cyan-400">Share Conversation</h3>
+                        <Share2 size={20} className="text-gnani-primary" />
+                        <h3 className="text-lg font-semibold text-gnani-primary">Share Conversation</h3>
                     </div>
                     <button
                         onClick={onClose}
-                        className="text-cyan-500/60 hover:text-cyan-400"
+                        className="text-type-muted hover:text-gnani-primary"
                     >
                         <X size={20} />
                     </button>
@@ -94,14 +94,14 @@ const ShareModal: React.FC<ShareModalProps> = ({ conversationId, onClose }) => {
                 {!shareUrl ? (
                     <div className="space-y-4">
                         <div>
-                            <label className="block text-sm text-cyan-500/80 mb-2">
+                            <label className="block text-sm text-type-secondary mb-2">
                                 <Clock size={14} className="inline mr-1" />
                                 Link expires in
                             </label>
                             <div className="relative">
                                 <button
                                     onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                                    className="w-full px-3 py-2 bg-black/40 border border-cyan-500/30 rounded text-cyan-400 flex items-center justify-between hover:border-cyan-500/50 transition-colors"
+                                    className="w-full px-3 py-2 bg-canvas-surface border border-glass-border rounded text-gnani-primary flex items-center justify-between hover:border-gnani-primary/50 transition-colors"
                                 >
                                     <span>
                                         {expiryOptions.find(opt => opt.value === expiresIn)?.label || 'Never'}
@@ -118,7 +118,7 @@ const ShareModal: React.FC<ShareModalProps> = ({ conversationId, onClose }) => {
                                             initial={{ opacity: 0, y: -10 }}
                                             animate={{ opacity: 1, y: 0 }}
                                             exit={{ opacity: 0, y: -10 }}
-                                            className="absolute top-full left-0 right-0 mt-1 bg-gray-900 border border-cyan-500/30 rounded-lg shadow-xl z-50 overflow-hidden"
+                                            className="absolute top-full left-0 right-0 mt-1 bg-canvas-popover border border-glass-border rounded-lg shadow-xl z-50 overflow-hidden"
                                         >
                                             {expiryOptions.map((option) => (
                                                 <button
@@ -127,7 +127,7 @@ const ShareModal: React.FC<ShareModalProps> = ({ conversationId, onClose }) => {
                                                         setExpiresIn(option.value);
                                                         setIsDropdownOpen(false);
                                                     }}
-                                                    className="w-full px-3 py-2 text-left text-cyan-400 hover:bg-cyan-500/10 transition-colors flex items-center justify-between"
+                                                    className="w-full px-3 py-2 text-left text-gnani-primary hover:bg-gnani-primary/10 transition-colors flex items-center justify-between"
                                                 >
                                                     <span>{option.label}</span>
                                                     {expiresIn === option.value && <Check size={14} />}
@@ -142,7 +142,7 @@ const ShareModal: React.FC<ShareModalProps> = ({ conversationId, onClose }) => {
                         <button
                             onClick={handleCreateShare}
                             disabled={loading}
-                            className="w-full px-4 py-2 bg-cyan-500/20 border border-cyan-500/30 rounded text-cyan-400 hover:bg-cyan-500/30 transition-colors disabled:opacity-50"
+                            className="w-full px-4 py-2 bg-gnani-primary/20 border border-gnani-primary/30 rounded text-gnani-primary hover:bg-gnani-primary/30 transition-colors disabled:opacity-50"
                         >
                             {loading ? 'Creating link...' : 'Create shareable link'}
                         </button>
@@ -150,7 +150,7 @@ const ShareModal: React.FC<ShareModalProps> = ({ conversationId, onClose }) => {
                 ) : (
                     <div className="space-y-4">
                         <div>
-                            <label className="block text-sm text-cyan-500/80 mb-2">
+                            <label className="block text-sm text-type-secondary mb-2">
                                 Shareable link
                             </label>
                             <div className="flex gap-2">
@@ -158,18 +158,18 @@ const ShareModal: React.FC<ShareModalProps> = ({ conversationId, onClose }) => {
                                     type="text"
                                     value={shareUrl}
                                     readOnly
-                                    className="flex-1 px-3 py-2 bg-black/40 border border-cyan-500/30 rounded text-cyan-400 text-sm"
+                                    className="flex-1 px-3 py-2 bg-canvas-surface border border-glass-border rounded text-gnani-primary text-sm"
                                 />
                                 <button
                                     onClick={handleCopy}
-                                    className="px-3 py-2 bg-cyan-500/20 border border-cyan-500/30 rounded text-cyan-400 hover:bg-cyan-500/30 transition-colors"
+                                    className="px-3 py-2 bg-gnani-primary/20 border border-gnani-primary/30 rounded text-gnani-primary hover:bg-gnani-primary/30 transition-colors"
                                 >
                                     {copied ? <Check size={16} /> : <Copy size={16} />}
                                 </button>
                             </div>
                         </div>
 
-                        <p className="text-xs text-cyan-500/60">
+                        <p className="text-xs text-type-muted">
                             Anyone with this link can view this conversation
                             {expiresIn && ` for the next ${expiresIn < 86400 ? `${expiresIn / 3600} hour(s)` : `${expiresIn / 86400} day(s)`}`}.
                         </p>

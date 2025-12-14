@@ -87,12 +87,12 @@ const TextInput: React.FC<TextInputProps> = ({
                     initial={{ height: 0, opacity: 0 }}
                     animate={{ height: 'auto', opacity: 1 }}
                     exit={{ height: 0, opacity: 0 }}
-                    className="border-t border-cyan-500/30 bg-cyan-950/30 backdrop-blur-sm"
+                    className="border-t border-gnani-primary/30 bg-canvas-panel/80 backdrop-blur-sm"
                 >
                     <div className="p-3">
                         {/* Streaming Indicator */}
                         {isStreaming && (
-                            <div className="mb-2 flex items-center gap-2 text-xs text-cyan-400">
+                            <div className="mb-2 flex items-center gap-2 text-xs text-gnani-primary">
                                 <div className="flex gap-1">
                                     <span className="animate-bounce" style={{ animationDelay: '0ms' }}>●</span>
                                     <span className="animate-bounce" style={{ animationDelay: '150ms' }}>●</span>
@@ -113,7 +113,7 @@ const TextInput: React.FC<TextInputProps> = ({
                                 aria-label="Message input"
                                 aria-disabled={disabled || isStreaming}
                                 aria-multiline="true"
-                                className="modern-input w-full p-3 text-sm text-cyan-100 placeholder-cyan-500/50 resize-none min-h-[44px] max-h-[150px] custom-scrollbar disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="modern-input w-full p-3 text-sm text-type-primary placeholder-gnani-primary/50 resize-none min-h-[44px] max-h-[150px] custom-scrollbar disabled:opacity-50 disabled:cursor-not-allowed"
                                 rows={1}
                             />
                         </div>
@@ -156,7 +156,7 @@ const TextInput: React.FC<TextInputProps> = ({
                                         whileTap={{ scale: 0.95 }}
                                         onClick={handleStop}
                                         aria-label="Stop generation"
-                                        className="h-10 w-10 flex items-center justify-center bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-full border border-red-500/50 backdrop-blur-sm transition-all"
+                                        className="h-10 w-10 flex items-center justify-center bg-status-error/10 hover:bg-status-error/20 text-status-error rounded-full border border-status-error/50 backdrop-blur-sm transition-all"
                                         title="Stop generation"
                                     >
                                         <div className="w-3 h-3 rounded-[2px] bg-current" />
@@ -173,7 +173,7 @@ const TextInput: React.FC<TextInputProps> = ({
                                         disabled={!canSend}
                                         aria-label="Send message"
                                         aria-disabled={!canSend}
-                                        className="h-10 w-10 flex items-center justify-center bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 rounded-full border border-cyan-500/50 backdrop-blur-sm disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                                        className="h-10 w-10 flex items-center justify-center bg-gnani-primary/10 hover:bg-gnani-primary/20 text-gnani-primary rounded-full border border-gnani-primary/50 backdrop-blur-sm disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                                         title="Send message"
                                     >
                                         <Send size={18} strokeWidth={2} />

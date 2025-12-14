@@ -71,7 +71,7 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ modelName, className = '', onOp
         : (models.length > 0 ? models[0].displayName : (modelName || 'Loading...'));
 
     return (
-        <div className={`h-16 border-b border-white/5 bg-black/40 backdrop-blur-md flex items-center justify-between px-4 md:px-6 ${className} z-20 relative transition-all duration-300`}>
+        <div className={`h-16 border-b border-glass-border bg-canvas-popover backdrop-blur-md flex items-center justify-between px-4 md:px-6 ${className} z-20 relative transition-all duration-300`}>
             {/* Left: Menu & Model Selector */}
             <div className="flex items-center gap-3 w-1/3">
                 <button
@@ -99,20 +99,20 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ modelName, className = '', onOp
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 exit={{ opacity: 0, y: 10 }}
-                                className="absolute top-full left-0 mt-2 w-64 bg-[#0a0a0a] border border-white/10 rounded-xl shadow-2xl overflow-hidden py-1 z-50"
+                                className="absolute top-full left-0 mt-2 w-64 bg-canvas-popover border border-glass-border rounded-xl shadow-2xl overflow-hidden py-1 z-50"
                             >
                                 {models.length > 0 ? (
                                     models.map((model) => (
                                         <button
                                             key={model.id}
                                             onClick={() => onModelSelect(model.id)}
-                                            className={`w-full text-left px-4 py-3 text-sm flex items-center justify-between hover:bg-white/5 transition-colors ${selectedModel === model.id ? 'bg-cyan-500/10 text-cyan-400' : 'text-gray-300'}`}
+                                            className={`w-full text-left px-4 py-3 text-sm flex items-center justify-between hover:bg-white/5 transition-colors ${selectedModel === model.id ? 'bg-gnani-primary/10 text-gnani-primary' : 'text-gray-300'}`}
                                         >
                                             <div className="flex flex-col gap-0.5">
                                                 <span className="font-medium">{model.displayName}</span>
                                                 {model.description && <span className="text-[10px] text-gray-500">{model.description}</span>}
                                             </div>
-                                            {selectedModel === model.id && <Check className="w-4 h-4 text-cyan-400" />}
+                                            {selectedModel === model.id && <Check className="w-4 h-4 text-gnani-primary" />}
                                         </button>
                                     ))
                                 ) : (
@@ -147,7 +147,7 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ modelName, className = '', onOp
                 <div className="relative" ref={statsRef}>
                     <button
                         onClick={() => setIsStatsOpen(!isStatsOpen)}
-                        className={`p-2 rounded-lg transition-colors ${isStatsOpen ? 'text-cyan-400 bg-cyan-500/10' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+                        className={`p-2 rounded-lg transition-colors ${isStatsOpen ? 'text-gnani-primary bg-gnani-primary/10' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
                         title="System Status"
                     >
                         <Activity size={18} />
@@ -160,7 +160,7 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ modelName, className = '', onOp
                                 initial={{ opacity: 0, x: 20, scale: 0.95 }}
                                 animate={{ opacity: 1, x: 0, scale: 1 }}
                                 exit={{ opacity: 0, x: 20, scale: 0.95 }}
-                                className="absolute top-full right-0 mt-3 w-72 bg-[#0a0a0a]/90 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden z-50"
+                                className="absolute top-full right-0 mt-3 w-72 bg-canvas-popover backdrop-blur-xl border border-glass-border rounded-2xl shadow-2xl overflow-hidden z-50"
                             >
                                 <div className="p-4 space-y-4">
                                     <div className="flex items-center justify-between pb-2 border-b border-white/5">
@@ -176,14 +176,14 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ modelName, className = '', onOp
                                             <div className="bg-white/5 rounded-lg p-3">
                                                 <div className="flex items-center justify-between mb-2">
                                                     <div className="flex items-center gap-2 text-sm text-gray-300">
-                                                        <Cpu size={14} className="text-cyan-400" />
+                                                        <Cpu size={14} className="text-gnani-primary" />
                                                         <span>CPU Usage</span>
                                                     </div>
                                                     <span className="text-sm font-mono">{Math.round(systemStatus.cpu.usage)}%</span>
                                                 </div>
                                                 <div className="h-1 bg-gray-700 rounded-full overflow-hidden">
                                                     <div
-                                                        className="h-full bg-cyan-400 transition-all duration-500"
+                                                        className="h-full bg-gnani-primary transition-all duration-500"
                                                         style={{ width: `${Math.min(systemStatus.cpu.usage, 100)}%` }}
                                                     />
                                                 </div>
@@ -192,14 +192,14 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ modelName, className = '', onOp
                                             <div className="bg-white/5 rounded-lg p-3">
                                                 <div className="flex items-center justify-between mb-2">
                                                     <div className="flex items-center gap-2 text-sm text-gray-300">
-                                                        <Activity size={14} className="text-purple-400" />
+                                                        <Activity size={14} className="text-gnani-secondary" />
                                                         <span>Memory</span>
                                                     </div>
                                                     <span className="text-sm font-mono">{Math.round(systemStatus.memory.usagePercent)}%</span>
                                                 </div>
                                                 <div className="h-1 bg-gray-700 rounded-full overflow-hidden">
                                                     <div
-                                                        className="h-full bg-purple-400 transition-all duration-500"
+                                                        className="h-full bg-gnani-secondary transition-all duration-500"
                                                         style={{ width: `${Math.min(systemStatus.memory.usagePercent, 100)}%` }}
                                                     />
                                                 </div>

@@ -31,16 +31,16 @@ const MessageTimestamp: React.FC<MessageTimestampProps> = ({ timestamp, classNam
             onMouseEnter={() => setShowTooltip(true)}
             onMouseLeave={() => setShowTooltip(false)}
         >
-            <span className="text-[10px] text-cyan-700 font-mono cursor-help">
+            <span className="text-[10px] text-type-muted/60 hover:text-gnani-primary/80 font-mono cursor-help transition-colors">
                 [{relativeTime}]
             </span>
 
             {/* Tooltip */}
             {showTooltip && (
-                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-black/90 border border-cyan-500/30 rounded text-[10px] text-cyan-300 font-mono whitespace-nowrap shadow-lg backdrop-blur-sm z-50">
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-canvas-popover border border-glass-border rounded text-[10px] text-gnani-primary font-mono whitespace-nowrap shadow-glass backdrop-blur-sm z-50">
                     {absoluteTime}
                     {/* Arrow */}
-                    <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-black/90" />
+                    <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-canvas-popover" />
                 </div>
             )}
         </span>

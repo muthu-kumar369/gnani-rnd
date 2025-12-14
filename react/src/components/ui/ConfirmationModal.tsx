@@ -41,7 +41,7 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
         <>
             <button
                 onClick={onClose}
-                className="px-4 py-2 text-sm font-medium text-gray-400 hover:text-white transition-colors"
+                className="px-4 py-2 text-sm font-medium text-type-muted hover:text-type-primary transition-colors"
             >
                 {cancelLabel}
             </button>
@@ -51,7 +51,7 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
                     onConfirm();
                     onClose();
                 }}
-                className={isDangerous ? 'bg-red-500/20 hover:bg-red-500/30 text-red-400 border-red-500/30' : ''}
+                className={isDangerous ? 'bg-status-error/20 hover:bg-status-error/30 text-status-error border-status-error/30' : ''}
             >
                 {confirmLabel}
             </Button>
@@ -64,15 +64,15 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
             onClose={onClose}
             title={title}
             footer={footerContent}
-            className={isDangerous ? 'border-red-500/20' : ''}
+            className={isDangerous ? 'border-status-error/20' : ''}
         >
             <div className="flex items-start gap-4">
                 {isDangerous && (
-                    <div className="p-3 bg-red-500/10 rounded-xl text-red-500 shrink-0">
+                    <div className="p-3 bg-status-error/10 rounded-xl text-status-error shrink-0">
                         <AlertTriangle size={24} />
                     </div>
                 )}
-                <p className="text-gray-300 leading-relaxed pt-1">
+                <p className="text-type-secondary leading-relaxed pt-1">
                     {message}
                 </p>
             </div>

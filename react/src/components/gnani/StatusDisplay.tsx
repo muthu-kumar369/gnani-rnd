@@ -26,8 +26,7 @@ const StatusDisplay: React.FC<StatusDisplayProps> = ({ status, subtext }) => {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -20 }}
                     transition={{ duration: 0.3 }}
-                    className="text-3xl font-bold tracking-widest text-cyan-100 uppercase"
-                    style={{ textShadow: "0 0 10px rgba(6,182,212,0.8)" }}
+                    className="text-3xl font-bold tracking-widest text-gnani-primary uppercase drop-shadow-[0_0_10px_rgba(var(--gnani-primary),0.8)]"
                 >
                     {getDisplayText(status)}
                 </motion.h2>
@@ -37,7 +36,7 @@ const StatusDisplay: React.FC<StatusDisplayProps> = ({ status, subtext }) => {
                 <motion.p
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    className="text-sm text-cyan-400/70 font-mono"
+                    className="text-sm text-gnani-secondary font-mono"
                 >
                     {subtext}
                 </motion.p>

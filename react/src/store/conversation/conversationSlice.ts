@@ -107,6 +107,7 @@ export const createConversationSlice: StateCreator<ConversationStore, [], [], Co
     },
 
     updateConversationTemplate: async (conversationId, templateId, accessToken) => {
+        if (!conversationId || !templateId) return; // Guard against nulls
         try {
             await conversationService.updateTemplate(conversationId, templateId, accessToken);
             set({ selectedTemplate: templateId });
@@ -117,6 +118,7 @@ export const createConversationSlice: StateCreator<ConversationStore, [], [], Co
     },
 
     updateConversationModel: async (conversationId, modelId, accessToken) => {
+        if (!conversationId || !modelId) return; // Guard against nulls
         try {
             await conversationService.updateModel(conversationId, modelId, accessToken);
             set({ selectedModel: modelId });

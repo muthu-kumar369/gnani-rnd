@@ -122,7 +122,7 @@ const ChatLayout: React.FC = () => {
     }, [navigate]);
 
     return (
-        <div className="flex h-screen w-full bg-jarvis-bg overflow-hidden text-jarvis-text font-sans">
+        <div className="flex h-screen w-full bg-canvas text-type-primary font-sans overflow-hidden">
             {/* Sidebar */}
             <ConversationSidebar
                 isOpen={isSidebarOpen}

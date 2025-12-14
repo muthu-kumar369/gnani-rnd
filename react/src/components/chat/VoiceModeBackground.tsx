@@ -1,33 +1,30 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import type { GnaniState } from '../../store/useGnaniStore';
+import { useThemeColors } from '../../hooks/useThemeColors';
 
 interface VoiceModeBackgroundProps {
     status: GnaniState;
 }
 
 const VoiceModeBackground: React.FC<VoiceModeBackgroundProps> = ({ status }) => {
-    // Determine color palette based on state
-    // Idle: Deep Cosmic Blue/Purple (Calm)
-    // Listening: Cyan/Teal (Attentive)
-    // Thinking: Violet/Magenta (Processing)
-    // Speaking: Blue/White/Cyan (Active communication)
+    const colors = useThemeColors();
 
     const variants = {
         idle: {
-            background: 'linear-gradient(135deg, #020617 0%, #172554 100%)',
+            background: `linear-gradient(135deg, ${colors.voiceBgIdleStart} 0%, ${colors.voiceBgIdleEnd} 100%)`,
             transition: { duration: 1.5, ease: 'easeInOut' }
         },
         listening: {
-            background: 'linear-gradient(135deg, #022c22 0%, #0d9488 100%)', // Brighter Teal
+            background: `linear-gradient(135deg, ${colors.voiceBgListeningStart} 0%, ${colors.voiceBgListeningEnd} 100%)`,
             transition: { duration: 0.5, ease: 'easeOut' }
         },
         thinking: {
-            background: 'linear-gradient(135deg, #2e1065 0%, #7e22ce 100%)', // Brighter Violet
+            background: `linear-gradient(135deg, ${colors.voiceBgThinkingStart} 0%, ${colors.voiceBgThinkingEnd} 100%)`,
             transition: { duration: 0.8, ease: 'easeInOut' }
         },
         speaking: {
-            background: 'linear-gradient(135deg, #172554 0%, #3b82f6 100%)', // Brighter Blue
+            background: `linear-gradient(135deg, ${colors.voiceBgSpeakingStart} 0%, ${colors.voiceBgSpeakingEnd} 100%)`,
             transition: { duration: 0.5, ease: 'easeOut' }
         }
     };
@@ -53,7 +50,7 @@ const VoiceModeBackground: React.FC<VoiceModeBackgroundProps> = ({ status }) => 
                         x: [0, 50, -50, 0],
                         y: [0, -30, 20, 0],
                         scale: [1, 1.1, 0.9, 1],
-                        backgroundColor: status === 'listening' ? '#2dd4bf' : status === 'thinking' ? '#d8b4fe' : '#60a5fa'
+                        backgroundColor: status === 'listening' ? colors.voiceBlobListening : status === 'thinking' ? colors.voiceBlobThinking : colors.voiceBlobSpeaking
                     }}
                     transition={{
                         duration: 15,
@@ -70,7 +67,7 @@ const VoiceModeBackground: React.FC<VoiceModeBackgroundProps> = ({ status }) => 
                         x: [0, -60, 40, 0],
                         y: [0, 50, -30, 0],
                         scale: [1, 1.2, 0.8, 1],
-                        backgroundColor: status === 'listening' ? '#14b8a6' : status === 'thinking' ? '#a855f7' : '#3b82f6'
+                        backgroundColor: status === 'listening' ? colors.voiceBlobListening : status === 'thinking' ? colors.voiceBlobThinking : colors.voiceBlobSpeaking
                     }}
                     transition={{
                         duration: 20,
@@ -89,7 +86,7 @@ const VoiceModeBackground: React.FC<VoiceModeBackgroundProps> = ({ status }) => 
                         animate={{
                             opacity: [0.4, 0.8, 0.4],
                             scale: [1, 1.4, 1],
-                            backgroundColor: status === 'listening' ? '#99f6e4' : status === 'thinking' ? '#f0abfc' : '#bfdbfe'
+                            backgroundColor: status === 'listening' ? colors.voiceBlobListening : status === 'thinking' ? colors.voiceBlobThinking : colors.voiceBlobSpeaking
                         }}
                         exit={{ opacity: 0 }}
                         transition={{

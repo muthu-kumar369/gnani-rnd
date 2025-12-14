@@ -95,14 +95,14 @@ const HUDBackground: React.FC<HUDBackgroundProps> = ({ status }) => {
   else if (status === 'mic-recording' || status === 'streaming' || status === 'receiving-stt') currentStatusVariant = 'micRecording';
 
   return (
-    <div className="absolute inset-0 z-0 overflow-hidden bg-jarvis-bg transition-colors duration-300">
+    <div className="absolute inset-0 z-0 overflow-hidden bg-canvas transition-colors duration-300">
       {/* Dynamic Grid */}
       <motion.div
         className="absolute inset-0 bg-repeat"
         style={{
           backgroundImage: `
-            linear-gradient(to right, rgba(0, 255, 255, 0.1) 1px, transparent 1px),
-            linear-gradient(to bottom, rgba(0, 255, 255, 0.1) 1px, transparent 1px)
+            linear-gradient(to right, rgba(var(--primary-rgb), 0.1) 1px, transparent 1px),
+            linear-gradient(to bottom, rgba(var(--primary-rgb), 0.1) 1px, transparent 1px)
           `,
           backgroundSize: '2rem 2rem',
         }}
@@ -121,7 +121,7 @@ const HUDBackground: React.FC<HUDBackgroundProps> = ({ status }) => {
 
       {/* Light Streak Motion */}
       <motion.div
-        className="absolute top-0 left-0 w-1 h-full bg-cyan-300/30"
+        className="absolute top-0 left-0 w-1 h-full bg-gnani-primary/30"
         animate={{
           x: ['-100%', '150vw'],
         }}
@@ -133,7 +133,7 @@ const HUDBackground: React.FC<HUDBackgroundProps> = ({ status }) => {
         }}
       />
       <motion.div
-        className="absolute top-0 right-0 w-2 h-full bg-blue-400/20"
+        className="absolute top-0 right-0 w-2 h-full bg-gnani-secondary/20"
         animate={{
           x: ['100%', '-150vw'],
         }}
@@ -145,7 +145,7 @@ const HUDBackground: React.FC<HUDBackgroundProps> = ({ status }) => {
         }}
       />
       <motion.div
-        className="absolute bottom-0 left-1/2 w-full h-1 bg-cyan-300/20"
+        className="absolute bottom-0 left-1/2 w-full h-1 bg-gnani-primary/20"
         animate={{
           y: ['-100%', '150vh'],
         }}
@@ -161,7 +161,7 @@ const HUDBackground: React.FC<HUDBackgroundProps> = ({ status }) => {
       <motion.div
         className="absolute top-1/2 left-1/2 w-[150vw] h-[150vw] origin-center"
         style={{
-          background: `conic-gradient(from 0deg, transparent 0%, transparent 75%, rgba(0, 255, 255, 0.2) 95%, transparent 100%)`,
+          background: `conic-gradient(from 0deg, transparent 0%, transparent 75%, rgba(var(--primary-rgb), 0.2) 95%, transparent 100%)`,
         }}
         variants={radarVariants}
         animate={currentStatusVariant}

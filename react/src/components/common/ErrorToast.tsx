@@ -30,19 +30,19 @@ const ErrorToast: React.FC<ErrorToastProps> = ({
             initial={{ opacity: 0, y: 50 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 50 }}
-            className="max-w-md bg-red-950/90 border border-red-500/50 rounded-lg p-4 shadow-lg backdrop-blur-sm"
+            className="max-w-md bg-status-error/90 border border-status-error/50 rounded-lg p-4 shadow-lg backdrop-blur-sm"
         >
             <div className="flex items-start gap-3">
-                <AlertCircle size={20} className="text-red-400 flex-shrink-0 mt-0.5" />
+                <AlertCircle size={20} className="text-type-inverse flex-shrink-0 mt-0.5" />
 
                 <div className="flex-1">
                     {/* Error Title */}
-                    <h4 className="text-sm font-semibold text-red-100 mb-1">
+                    <h4 className="text-sm font-semibold text-type-inverse mb-1">
                         {parsedError.title}
                     </h4>
 
                     {/* Error Message */}
-                    <p className="text-xs text-red-200/80 mb-3">
+                    <p className="text-xs text-type-inverse/80 mb-3">
                         {parsedError.message}
                     </p>
 
@@ -51,7 +51,7 @@ const ErrorToast: React.FC<ErrorToastProps> = ({
                         {parsedError.action && onRetry && (
                             <button
                                 onClick={onRetry}
-                                className="px-3 py-1.5 text-xs bg-red-500 hover:bg-red-400 text-white rounded"
+                                className="px-3 py-1.5 text-xs bg-status-error hover:bg-status-error/80 text-white rounded border border-white/20"
                             >
                                 {parsedError.action}
                             </button>
@@ -61,13 +61,13 @@ const ErrorToast: React.FC<ErrorToastProps> = ({
                                 const text = `${parsedError.title}\n${parsedError.message}\n${parsedError.code ? `Code: ${parsedError.code}` : ''}`;
                                 navigator.clipboard.writeText(text);
                             }}
-                            className="px-3 py-1.5 text-xs bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-200 rounded"
+                            className="px-3 py-1.5 text-xs bg-black/20 hover:bg-black/30 text-white/90 rounded border border-white/10"
                         >
                             Copy Error
                         </button>
                         <button
                             onClick={onDismiss}
-                            className="px-3 py-1.5 text-xs bg-red-500/20 hover:bg-red-500/30 text-red-200 rounded"
+                            className="px-3 py-1.5 text-xs bg-black/20 hover:bg-black/30 text-white/90 rounded border border-white/10"
                         >
                             Dismiss
                         </button>
@@ -75,13 +75,13 @@ const ErrorToast: React.FC<ErrorToastProps> = ({
 
                     {/* Error Code (Dev Mode) */}
                     {import.meta.env.MODE === 'development' && (
-                        <p className="text-xs text-red-400/60 mt-2">
+                        <p className="text-xs text-white/60 mt-2">
                             Error Code: {parsedError.code}
                         </p>
                     )}
                 </div>
 
-                <button onClick={onDismiss} className="text-red-400 hover:text-red-300 flex-shrink-0">
+                <button onClick={onDismiss} className="text-white/80 hover:text-white flex-shrink-0">
                     <X size={16} />
                 </button>
             </div>

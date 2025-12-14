@@ -18,75 +18,37 @@ const AttachedFilesList: React.FC<AttachedFilesListProps> = ({ files, onRemove }
     };
 
     return (
-        <div style={{
-            padding: '8px 0',
-            borderTop: '1px solid rgba(0, 255, 0, 0.2)',
-            marginBottom: '8px'
-        }}>
+        <div className="py-2 border-t border-gnani-primary/20 mb-2">
             {files.map((file) => (
                 <div
                     key={file.id}
-                    style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        padding: '8px 12px',
-                        backgroundColor: 'rgba(0, 255, 0, 0.05)',
-                        border: '1px solid rgba(0, 255, 0, 0.2)',
-                        borderRadius: '4px',
-                        marginBottom: '4px',
-                        position: 'relative'
-                    }}
+                    className="flex items-center p-2 px-3 bg-gnani-primary/5 border border-gnani-primary/20 rounded mb-1 relative"
                 >
-                    <FileText size={16} color="#00ff00" style={{ marginRight: '8px', flexShrink: 0 }} />
+                    <FileText size={16} className="text-gnani-primary mr-2 shrink-0" />
 
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{
-                            color: '#00ff00',
-                            fontSize: '13px',
-                            whiteSpace: 'nowrap',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis'
-                        }}>
+                    <div className="flex-1 min-w-0">
+                        <div className="text-gnani-primary text-[13px] whitespace-nowrap overflow-hidden text-ellipsis">
                             {file.fileName}
                         </div>
-                        <div style={{
-                            color: 'rgba(0, 255, 0, 0.6)',
-                            fontSize: '11px'
-                        }}>
+                        <div className="text-gnani-primary/60 text-[11px]">
                             {formatFileSize(file.fileSize)}
                         </div>
                     </div>
 
                     {file.uploadProgress !== undefined && file.uploadProgress < 100 ? (
-                        <div style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            marginLeft: '8px'
-                        }}>
-                            <Loader size={16} color="#00ff00" className="animate-spin" />
-                            <span style={{
-                                color: '#00ff00',
-                                fontSize: '11px',
-                                marginLeft: '4px'
-                            }}>
+                        <div className="flex items-center ml-2">
+                            <Loader size={16} className="text-gnani-primary animate-spin" />
+                            <span className="text-gnani-primary text-[11px] ml-1">
                                 {file.uploadProgress}%
                             </span>
                         </div>
                     ) : (
                         <button
                             onClick={() => onRemove(file.id)}
-                            style={{
-                                background: 'transparent',
-                                border: 'none',
-                                cursor: 'pointer',
-                                padding: '4px',
-                                display: 'flex',
-                                alignItems: 'center',
-                                marginLeft: '8px'
-                            }}
+                            className="bg-transparent border-0 cursor-pointer p-1 flex items-center ml-2 hover:bg-status-error/10 rounded transition-colors"
                             title="Remove file"
                         >
-                            <X size={16} color="#ff0000" />
+                            <X size={16} className="text-status-error" />
                         </button>
                     )}
                 </div>

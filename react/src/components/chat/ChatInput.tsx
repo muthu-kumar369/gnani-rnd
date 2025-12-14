@@ -148,10 +148,10 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSend, onMicClick, disabled = fa
     }, []);
 
     return (
-        <div className="w-full px-4 md:px-6 pb-6 pt-2 bg-gradient-to-t from-black/80 via-black/40 to-transparent z-10 relative">
+        <div className="w-full px-4 md:px-6 pb-6 pt-2 bg-gradient-to-t from-canvas via-canvas/40 to-transparent z-10 relative">
             {/* Subtle Animated Progress Strip */}
             {isStreaming && (
-                <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-cyan-500 to-transparent animate-shimmer" />
+                <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-gnani-primary to-transparent animate-shimmer" />
             )}
 
             {/* Attachments Preview - Floating above */}
@@ -164,7 +164,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSend, onMicClick, disabled = fa
             <FileUploadZone
                 onFileSelect={processFileUpload}
                 disabled={disabled || isUploading}
-                className={`max-w-4xl mx-auto relative bg-[#050A14]/95 backdrop-blur-xl shadow-2xl transition-all duration-300 ease-out !border-none !ring-0 !outline-none group ${isMultiLine
+                className={`max-w-4xl mx-auto relative bg-white/5 dark:bg-slate-800/90 backdrop-blur-xl shadow-2xl transition-all duration-300 ease-out border border-black/5 dark:border-white/10 ring-0 outline-none group ${isMultiLine
                     ? 'grid grid-cols-2 gap-2 p-4 rounded-[28px]'
                     : 'flex items-end gap-3 p-3 rounded-[26px]'
                     }`}
@@ -182,11 +182,11 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSend, onMicClick, disabled = fa
                     <button
                         onClick={() => fileInputRef.current?.click()}
                         disabled={disabled || isUploading}
-                        className="p-2 text-gray-400 hover:text-cyan-400 hover:bg-cyan-400/10 rounded-full transition-all duration-200 disabled:opacity-50 group/attach cursor-pointer"
+                        className="p-2 text-type-muted hover:text-gnani-primary hover:bg-gnani-primary/10 rounded-full transition-all duration-200 disabled:opacity-50 group/attach cursor-pointer"
                         aria-label="Attach file"
                     >
                         {isUploading ? (
-                            <Loader2 className="w-5 h-5 animate-spin text-cyan-500" />
+                            <Loader2 className="w-5 h-5 animate-spin text-gnani-primary" />
                         ) : (
                             <Paperclip className="w-5 h-5 transition-transform group-hover/attach:rotate-45" />
                         )}
@@ -197,7 +197,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSend, onMicClick, disabled = fa
                         value={selectedTemplate || 'default'}
                         onChange={handleTemplateChange}
                         placeholder="Template"
-                        className="!bg-white/5 !border-white/10 !py-1.5 !px-3 !text-xs !rounded-lg hover:!bg-white/10 !h-[32px] !w-[160px]"
+                        className="!bg-glass-shimmer !border-glass-border !py-1.5 !px-3 !text-xs !rounded-lg hover:!bg-glass-border !h-[32px] !w-[160px] !text-type-secondary"
                         menuClassName="!w-[220px] !mb-2"
                         placement="top-start"
                         disabled={disabled || isStreaming}
@@ -213,7 +213,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSend, onMicClick, disabled = fa
                     onPaste={handlePaste}
                     disabled={disabled}
                     placeholder="Message Gnani..."
-                    className={`bg-transparent !border-none !outline-none focus:!outline-none focus:!ring-0 focus:!border-none shadow-none ring-0 text-white placeholder-gray-500/80 resize-none max-h-[200px] py-3 text-[16px] leading-[1.6] custom-scrollbar selection:bg-cyan-500/30 transition-all duration-200 ease-in-out ${isMultiLine ? 'order-1 col-span-2 w-full mb-1 px-1' : 'flex-1'
+                    className={`bg-transparent !border-none !outline-none focus:!outline-none focus:!ring-0 focus:!border-none shadow-none ring-0 text-type-primary placeholder-type-muted/80 resize-none max-h-[200px] py-3 text-[16px] leading-[1.6] custom-scrollbar selection:bg-gnani-primary/30 transition-all duration-200 ease-in-out ${isMultiLine ? 'order-1 col-span-2 w-full mb-1 px-1' : 'flex-1'
                         }`}
                     rows={1}
                 />
@@ -226,19 +226,19 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSend, onMicClick, disabled = fa
                             <button
                                 onClick={onMicClick}
                                 className={`h-10 w-10 flex items-center justify-center rounded-full transition-all duration-200 ${isStreaming
-                                    ? 'bg-red-500/20 text-red-500 shadow-[0_0_15px_rgba(239,68,68,0.4)] animate-pulse cursor-pointer'
-                                    : 'bg-transparent text-gray-400 cursor-pointer'
+                                    ? 'bg-status-error/20 text-status-error shadow-[0_0_15px_rgba(239,68,68,0.4)] animate-pulse cursor-pointer'
+                                    : 'bg-transparent text-type-muted cursor-pointer'
                                     }`}
                                 aria-label={isStreaming ? "Stop voice mode" : "Start voice mode"}
                             >
                                 {isStreaming ? (
                                     <div onClick={(e) => { e.stopPropagation(); onStop?.(); }} className="h-full w-full flex items-center justify-center relative cursor-pointer">
-                                        <div className="absolute inset-0 bg-red-500/20 rounded-full animate-ping" />
-                                        <div className="w-3 h-3 bg-red-500 rounded-sm relative z-10" />
+                                        <div className="absolute inset-0 bg-status-error/20 rounded-full animate-ping" />
+                                        <div className="w-3 h-3 bg-status-error rounded-sm relative z-10" />
                                     </div>
                                 ) : (
                                     <div className="relative w-full h-full rounded-full overflow-hidden flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                                        <div className="absolute inset-0 bg-cyan-500/30 rounded-full blur-md opacity-0 group-hover:opacity-100 transition-opacity" />
+                                        <div className="absolute inset-0 bg-gnani-primary/30 rounded-full blur-md opacity-0 group-hover:opacity-100 transition-opacity" />
                                         <img
                                             src={voiceModeIcon}
                                             alt="Voice Mode"
@@ -256,8 +256,8 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSend, onMicClick, disabled = fa
                             onClick={handleSend}
                             disabled={disabled || isUploading || (!input.trim() && attachments.length === 0)}
                             className={`h-10 w-10 flex items-center justify-center rounded-full transition-all duration-200 ${input.trim() || attachments.length > 0
-                                ? 'bg-white text-black hover:bg-gray-200 shadow-lg transform hover:scale-105 cursor-pointer'
-                                : 'bg-transparent text-gray-400 cursor-not-allowed hidden'
+                                ? 'bg-type-primary text-type-inverse hover:bg-type-secondary shadow-lg transform hover:scale-105 cursor-pointer'
+                                : 'bg-transparent text-type-muted cursor-not-allowed hidden'
                                 }`}
                             aria-label="Send message"
                         >

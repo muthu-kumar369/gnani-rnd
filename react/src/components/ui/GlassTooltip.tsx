@@ -101,7 +101,7 @@ const GlassTooltip: React.FC<GlassTooltipProps> = ({ content, children, placemen
                                 // Actually, let's use standard transform and just animate opacity/scale to keep it simple and robust.
                                 transform: `translate(${isVertical ? '-50%' : placement === 'left' ? '-100%' : '0'}, ${isVertical ? (placement === 'top' ? '-100%' : '0') : '-50%'})`
                             }}
-                            className="px-2 py-1 bg-black/80 backdrop-blur-md border border-white/10 rounded text-xs text-white shadow-lg whitespace-nowrap"
+                            className="px-2 py-1 bg-canvas-popover backdrop-blur-md border border-glass-border rounded text-xs text-type-primary shadow-lg whitespace-nowrap"
                         >
                             {content}
                         </motion.div>

@@ -50,28 +50,17 @@ const FileAttachmentButton: React.FC<FileAttachmentButtonProps> = ({ onFileSelec
             <button
                 onClick={handleClick}
                 disabled={disabled}
-                className="file-attachment-button"
+                className="file-attachment-button p-2 flex items-center justify-center bg-transparent border-0 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 transition-opacity hover:opacity-80 active:scale-95 transition-transform"
                 title="Attach file"
-                style={{
-                    background: 'transparent',
-                    border: 'none',
-                    cursor: disabled ? 'not-allowed' : 'pointer',
-                    padding: '8px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    opacity: disabled ? 0.5 : 1,
-                    transition: 'opacity 0.2s'
-                }}
             >
-                <Paperclip size={20} color="#00ff00" />
+                <Paperclip size={20} className="text-gnani-primary" />
             </button>
             <input
                 ref={fileInputRef}
                 type="file"
                 accept=".pdf,.txt,.md,.doc,.docx,text/plain,text/markdown,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                 onChange={handleFileChange}
-                style={{ display: 'none' }}
+                className="hidden"
             />
         </>
     );

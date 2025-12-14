@@ -22,11 +22,11 @@ const StateIndicator: React.FC<StateIndicatorProps> = ({ message }) => {
 
     const getStateColor = (state?: string) => {
         switch (state) {
-            case 'listening': return 'text-red-400';
-            case 'thinking': return 'text-yellow-400';
-            case 'speaking': return 'text-cyan-400';
-            case 'idle': return 'text-gray-400';
-            default: return 'text-gray-500';
+            case 'listening': return 'text-status-error';
+            case 'thinking': return 'text-status-warning';
+            case 'speaking': return 'text-gnani-primary';
+            case 'idle': return 'text-type-muted';
+            default: return 'text-type-secondary';
         }
     };
 
@@ -44,15 +44,15 @@ const StateIndicator: React.FC<StateIndicatorProps> = ({ message }) => {
             animate={{ opacity: 1, y: 0 }}
             className="flex items-center justify-center gap-3 my-2 py-1"
         >
-            <div className="h-px w-8 bg-gradient-to-r from-transparent to-cyan-900/50" />
+            <div className="h-px w-8 bg-gradient-to-r from-transparent to-gnani-primary/30" />
 
-            <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-black/40 border border-cyan-900/30 text-[10px] font-mono uppercase tracking-wider text-cyan-600/80">
+            <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-canvas-panel/60 border border-line-base text-[10px] font-mono uppercase tracking-wider text-gnani-primary/80">
                 <span className={`flex items-center gap-1 ${getStateColor(fromState as string)}`}>
                     {getStateIcon(fromState as string)}
                     {fromState}
                 </span>
 
-                <ArrowRight size={10} className="text-cyan-800" />
+                <ArrowRight size={10} className="text-type-muted" />
 
                 <span className={`flex items-center gap-1 ${getStateColor(toState as string)}`}>
                     {getStateIcon(toState as string)}
@@ -60,7 +60,7 @@ const StateIndicator: React.FC<StateIndicatorProps> = ({ message }) => {
                 </span>
             </div>
 
-            <div className="h-px w-8 bg-gradient-to-l from-transparent to-cyan-900/50" />
+            <div className="h-px w-8 bg-gradient-to-l from-transparent to-gnani-primary/30" />
         </motion.div>
     );
 };

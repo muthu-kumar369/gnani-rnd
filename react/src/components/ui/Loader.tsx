@@ -19,25 +19,25 @@ const Loader: React.FC<LoaderProps> = ({ size = 'md', className = '', text }) =>
             <div className={`relative ${sizeClasses[size]} flex items-center justify-center`}>
                 {/* Outer Ring */}
                 <motion.div
-                    className="absolute inset-0 rounded-full border-2 border-transparent border-t-jarvis-blue border-r-jarvis-blue/50"
+                    className="absolute inset-0 rounded-full border-2 border-transparent border-t-gnani-primary border-r-gnani-primary/50"
                     animate={{ rotate: 360 }}
                     transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
                 />
                 {/* Inner Ring */}
                 <motion.div
-                    className="absolute inset-2 rounded-full border-2 border-transparent border-b-jarvis-cyan border-l-jarvis-cyan/50"
+                    className="absolute inset-2 rounded-full border-2 border-transparent border-b-gnani-secondary border-l-gnani-secondary/50"
                     animate={{ rotate: -360 }}
                     transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
                 />
                 {/* Core Pulse */}
                 <motion.div
-                    className="w-2 h-2 bg-jarvis-blue rounded-full shadow-jarvis-glow"
+                    className="w-2 h-2 bg-gnani-primary rounded-full shadow-[0_0_10px_rgba(var(--primary-rgb),0.8)]"
                     animate={{ scale: [1, 1.5, 1], opacity: [0.5, 1, 0.5] }}
                     transition={{ duration: 1, repeat: Infinity }}
                 />
             </div>
             {text && (
-                <span className="text-jarvis-cyan/80 text-xs font-mono tracking-widest uppercase animate-pulse">
+                <span className="text-gnani-primary/80 text-xs font-mono tracking-widest uppercase animate-pulse">
                     {text}
                 </span>
             )}

@@ -1,42 +1,44 @@
 import React, { useEffect, useRef, useState } from 'react';
 import mermaid from 'mermaid';
+import { useThemeColors } from '../../hooks/useThemeColors';
 
 interface MermaidDiagramProps {
     chart: string;
 }
 
-// Initialize mermaid with Jarvis theme
-mermaid.initialize({
-    startOnLoad: false,
-    theme: 'dark',
-    themeVariables: {
-        primaryColor: '#0891b2', // cyan-600
-        primaryTextColor: '#a5f3fc', // cyan-200
-        primaryBorderColor: '#22d3ee', // cyan-500
-        lineColor: '#67e8f9', // cyan-300
-        secondaryColor: '#164e63', // cyan-900
-        tertiaryColor: '#083344', // cyan-950
-        background: 'transparent', // Transparent to blend with chat bubble
-        mainBkg: 'transparent',
-        secondBkg: '#164e63',
-        textColor: '#a5f3fc',
-        border1: '#22d3ee',
-        border2: '#0891b2',
-        fontSize: '14px',
-        fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace'
-    },
-    flowchart: {
-        htmlLabels: true,
-        curve: 'basis'
-    }
-});
-
 const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ chart }) => {
     const elementRef = useRef<HTMLDivElement>(null);
     const [renderError, setRenderError] = useState<string | null>(null);
     const idRef = useRef(`mermaid-${Math.random().toString(36).substr(2, 9)}`);
+    const colors = useThemeColors();
 
     useEffect(() => {
+        // Initialize with dynamic theme
+        mermaid.initialize({
+            startOnLoad: false,
+            theme: 'base',
+            themeVariables: {
+                primaryColor: colors.primary,
+                primaryTextColor: colors.typePrimary,
+                primaryBorderColor: colors.primary,
+                lineColor: colors.lineBase,
+                secondaryColor: colors.secondary,
+                tertiaryColor: colors.canvasSurface,
+                background: 'transparent', // Transparent for chat bubbles
+                mainBkg: 'transparent',
+                secondBkg: colors.canvasPanel,
+                textColor: colors.typePrimary,
+                border1: colors.primary,
+                border2: colors.secondary,
+                fontSize: '14px',
+                fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace'
+            },
+            flowchart: {
+                htmlLabels: true,
+                curve: 'basis'
+            }
+        });
+
         if (!elementRef.current || !chart) return;
 
         const renderDiagram = async () => {
@@ -57,11 +59,11 @@ const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ chart }) => {
         };
 
         renderDiagram();
-    }, [chart]);
+    }, [chart, colors]);
 
     if (renderError) {
         return (
-            <div className="text-red-400 text-xs p-3 border border-red-500/30 rounded bg-red-900/10 font-mono my-2">
+            <div className="text-status-error text-xs p-3 border border-status-error/30 rounded bg-status-error/10 font-mono my-2">
                 <strong>Diagram Error:</strong> {renderError}
                 <pre className="mt-2 text-[10px] opacity-70 overflow-auto whitespace-pre-wrap">{chart}</pre>
             </div>
@@ -71,7 +73,7 @@ const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ chart }) => {
     return (
         <div
             ref={elementRef}
-            className="mermaid-diagram my-4 p-4 bg-cyan-950/20 border border-cyan-500/20 rounded-lg overflow-x-auto flex justify-center backdrop-blur-sm"
+            className="mermaid-diagram my-4 p-4 bg-gnani-primary/10 border border-gnani-primary/20 rounded-lg overflow-x-auto flex justify-center backdrop-blur-sm"
         />
     );
 };

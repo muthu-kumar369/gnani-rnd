@@ -25,22 +25,22 @@ const DeleteConfirmDialog: React.FC<DeleteConfirmDialogProps> = ({
     return (
         <AnimatePresence>
             {isOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-bg-overlay backdrop-blur-sm">
                     <motion.div
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.9 }}
-                        className="w-full max-w-md bg-gray-900 border border-red-500/30 rounded-lg shadow-2xl overflow-hidden"
+                        className="w-full max-w-md bg-canvas-panel border border-status-error/30 rounded-lg shadow-glass overflow-hidden"
                     >
-                        <div className="flex items-center gap-3 px-6 py-4 border-b border-red-500/20 bg-red-950/10">
-                            <div className="p-2 bg-red-500/10 rounded-full text-red-400">
+                        <div className="flex items-center gap-3 px-6 py-4 border-b border-status-error/20 bg-status-error/10">
+                            <div className="p-2 bg-status-error/10 rounded-full text-status-error">
                                 <AlertTriangle size={20} />
                             </div>
-                            <h3 className="text-red-400 font-semibold text-lg">Delete Message?</h3>
+                            <h3 className="text-status-error font-semibold text-lg">Delete Message?</h3>
                         </div>
 
                         <div className="p-6">
-                            <p className="text-gray-300 text-sm mb-4">
+                            <p className="text-type-secondary text-sm mb-4">
                                 Are you sure you want to delete this message? This action cannot be undone and will remove all subsequent messages in this conversation branch.
                             </p>
 
@@ -51,10 +51,10 @@ const DeleteConfirmDialog: React.FC<DeleteConfirmDialogProps> = ({
                             )}
                         </div>
 
-                        <div className="flex justify-end gap-3 px-6 py-4 bg-gray-900/50 border-t border-gray-800">
+                        <div className="flex justify-end gap-3 px-6 py-4 bg-canvas-surface/50 border-t border-line-base">
                             <button
                                 onClick={onClose}
-                                className="px-4 py-2 text-sm font-medium text-gray-400 hover:text-white transition-colors"
+                                className="px-4 py-2 text-sm font-medium text-type-muted hover:text-type-primary transition-colors"
                             >
                                 Cancel
                             </button>
@@ -63,7 +63,7 @@ const DeleteConfirmDialog: React.FC<DeleteConfirmDialogProps> = ({
                                     onConfirm();
                                     onClose();
                                 }}
-                                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded transition-colors shadow-lg shadow-red-900/20"
+                                className="px-4 py-2 bg-status-error hover:bg-status-error/90 text-type-inverse text-sm font-medium rounded transition-colors shadow-lg shadow-status-error/20"
                             >
                                 Delete
                             </button>

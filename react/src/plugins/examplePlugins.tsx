@@ -30,11 +30,11 @@ export const CodeHighlightPlugin: GnaniPlugin = {
 
     renderSettings: () => (
         <div className="p-4">
-            <h3 className="text-cyan-400 font-semibold mb-2">Code Highlighting Settings</h3>
+            <h3 className="text-gnani-primary font-semibold mb-2">Code Highlighting Settings</h3>
             <div className="space-y-2">
-                <label className="block text-sm text-cyan-500/80">
+                <label className="block text-sm text-gnani-primary/80">
                     Theme
-                    <select className="w-full mt-1 px-2 py-1 bg-black/40 border border-cyan-500/30 rounded text-cyan-400">
+                    <select className="w-full mt-1 px-2 py-1 bg-canvas-surface border border-gnani-primary/30 rounded text-gnani-primary">
                         <option>Dark Theme</option>
                         <option>Light Theme</option>
                         <option>Monokai</option>
@@ -65,7 +65,7 @@ export const TimestampPlugin: GnaniPlugin = {
     },
 
     renderMessageAction: (message) => (
-        <span className="text-xs text-cyan-500/60">
+        <span className="text-xs text-type-muted">
             {new Date(message.timestamp).toLocaleTimeString()}
         </span>
     ),
@@ -96,16 +96,16 @@ export const AutoSavePlugin: GnaniPlugin = {
 
     renderSettings: () => (
         <div className="p-4">
-            <h3 className="text-cyan-400 font-semibold mb-2">Auto-Save Settings</h3>
+            <h3 className="text-gnani-primary font-semibold mb-2">Auto-Save Settings</h3>
             <div className="space-y-2">
-                <label className="block text-sm text-cyan-500/80">
+                <label className="block text-sm text-gnani-primary/80">
                     Save Interval (seconds)
                     <input
                         type="number"
                         defaultValue={30}
                         min={10}
                         max={300}
-                        className="w-full mt-1 px-2 py-1 bg-black/40 border border-cyan-500/30 rounded text-cyan-400"
+                        className="w-full mt-1 px-2 py-1 bg-canvas-surface border border-gnani-primary/30 rounded text-gnani-primary"
                     />
                 </label>
             </div>

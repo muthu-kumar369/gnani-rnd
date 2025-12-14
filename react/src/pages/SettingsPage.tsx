@@ -8,7 +8,7 @@ const SettingsPage: React.FC = () => {
     // In a full page context, we treat the modal as always open
     // onClose navigates back to the previous page (likely /chat)
     return (
-        <div className="bg-jarvis-bg min-h-screen">
+        <div className="bg-canvas min-h-screen">
             <SettingsModal
                 isOpen={true}
                 onClose={() => navigate(-1)}

@@ -16,9 +16,9 @@ const MENU_ITEMS: { id: WorkspaceTab; label: string; icon: React.ElementType }[]
 
 const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({ activeTab, onTabChange }) => {
     return (
-        <div className="w-64 bg-[#05050a]/50 border-r border-white/5 flex flex-col h-full backdrop-blur-xl">
-            <div className="p-4 border-b border-white/5">
-                <h2 className="text-xs font-bold text-slate-500 tracking-[0.2em] uppercase flex items-center gap-2 pl-2">
+        <div className="w-64 bg-canvas-sidebar/50 border-r border-line-base flex flex-col h-full backdrop-blur-xl">
+            <div className="p-4 border-b border-line-base">
+                <h2 className="text-xs font-bold text-type-muted tracking-[0.2em] uppercase flex items-center gap-2 pl-2">
                     Workspace
                 </h2>
             </div>
@@ -30,16 +30,15 @@ const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({ activeTab, onTabCha
                         return (
                             <li key={item.id}>
                                 <button
-                                    onClick={() => onTabChange(item.id)}
                                     className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg transition-all duration-200 group ${isActive
-                                        ? 'bg-cyan-500/10 text-cyan-400'
-                                        : 'text-slate-400 hover:text-white hover:bg-white/5'
+                                        ? 'bg-gnani-primary/10 text-gnani-primary'
+                                        : 'text-type-muted hover:text-type-primary hover:bg-glass-hover'
                                         }`}
                                 >
-                                    <Icon size={16} strokeWidth={1.5} className={`${isActive ? 'text-cyan-400' : 'text-slate-500 group-hover:text-white'}`} />
+                                    <Icon size={16} strokeWidth={1.5} className={`${isActive ? 'text-gnani-primary' : 'text-type-muted group-hover:text-type-primary'}`} />
                                     <span className="text-sm font-medium">{item.label}</span>
                                     {isActive && (
-                                        <div className="ml-auto w-1 h-1 rounded-full bg-cyan-400" />
+                                        <div className="ml-auto w-1 h-1 rounded-full bg-gnani-primary" />
                                     )}
                                 </button>
                             </li>

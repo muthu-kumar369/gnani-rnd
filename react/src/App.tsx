@@ -93,7 +93,7 @@ function App() {
   }
 
   return (
-    <div className="bg-jarvis-bg min-h-screen w-full overflow-hidden text-jarvis-text font-sans selection:bg-jarvis-blue selection:text-jarvis-bg">
+    <div className="bg-canvas min-h-screen w-full overflow-hidden text-type-primary font-sans selection:bg-gnani-primary selection:text-type-inverse transition-colors duration-300">
       {/* STAGE 25: Skip to main content link */}
       <SkipLink />
       {/* STAGE 25: Screen reader announcements */}

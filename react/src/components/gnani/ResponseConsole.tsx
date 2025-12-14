@@ -40,7 +40,7 @@ const TypewriterText: React.FC<{ message: Message }> = ({ message }) => {
           variants={childVariants}
           style={
             !isFinal && sender === "gnani"
-              ? { textShadow: "0 0 5px rgba(0, 255, 255, 0.5)" } // Subtle glow for typing Gnani
+              ? { textShadow: "0 0 5px rgba(var(--primary-rgb), 0.5)" } // Subtle glow for typing Gnani
               : {}
           }
         >
@@ -50,7 +50,7 @@ const TypewriterText: React.FC<{ message: Message }> = ({ message }) => {
       {/* Blinking cursor for non-final messages */}
       {!isFinal && (
         <motion.span
-          className="inline-block w-2 h-4 bg-cyan-300 ml-1 rounded-sm" // Rounded cursor
+          className="inline-block w-2 h-4 bg-gnani-primary ml-1 rounded-sm" // Rounded cursor
           animate={{ opacity: [0, 1, 0] }}
           transition={{ repeat: Infinity, duration: 0.8, ease: "easeInOut" }} // Smoother blink
         />
@@ -78,17 +78,17 @@ const ResponseConsole: React.FC<ResponseConsoleProps> = ({ messages }) => {
   return (
     <motion.div // Added motion for console div itself
       ref={scrollRef}
-      className="w-full h-64 p-4 space-y-4 overflow-y-auto bg-black/40 backdrop-blur-sm rounded-lg"
+      className="w-full h-64 p-4 space-y-4 overflow-y-auto bg-canvas-panel/60 backdrop-blur-sm rounded-lg"
       style={{
         scrollbarWidth: "thin",
-        scrollbarColor: "rgba(0,255,255,0.5) transparent",
+        scrollbarColor: "rgba(var(--primary-rgb),0.5) transparent",
         border: "1px solid", // Dynamic border
-        borderColor: "rgba(0,255,255,0.2)",
-        boxShadow: "0 0 10px rgba(0,255,255,0.2)", // Subtle glow
+        borderColor: "rgba(var(--primary-rgb),0.2)",
+        boxShadow: "0 0 10px rgba(var(--primary-rgb),0.2)", // Subtle glow
       }}
       animate={{
-        boxShadow: ["0 0 10px rgba(0,255,255,0.2)", "0 0 15px rgba(0,255,255,0.4)", "0 0 10px rgba(0,255,255,0.2)"],
-        borderColor: ["rgba(0,255,255,0.2)", "rgba(0,255,255,0.4)", "rgba(0,255,255,0.2)"],
+        boxShadow: ["0 0 10px rgba(var(--primary-rgb),0.2)", "0 0 15px rgba(var(--primary-rgb),0.4)", "0 0 10px rgba(var(--primary-rgb),0.2)"],
+        borderColor: ["rgba(var(--primary-rgb),0.2)", "rgba(var(--primary-rgb),0.4)", "rgba(var(--primary-rgb),0.2)"],
       }}
       transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
     >
@@ -96,9 +96,8 @@ const ResponseConsole: React.FC<ResponseConsoleProps> = ({ messages }) => {
         {messages.map((msg) => (
           <motion.div
             key={msg.id}
-            className={`flex ${
-              msg.sender === "user" ? "justify-end" : "justify-start"
-            }`}
+            className={`flex ${msg.sender === "user" ? "justify-end" : "justify-start"
+              }`}
             initial={{ opacity: 0, y: 10, scale: 0.98 }} // Subtle scale-in
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.98 }}
@@ -106,16 +105,14 @@ const ResponseConsole: React.FC<ResponseConsoleProps> = ({ messages }) => {
           >
             <div className="max-w-3xl">
               <span
-                className={`text-xs font-mono uppercase ${
-                  msg.sender === "user" ? "text-white/70" : "text-cyan-300/70"
-                }`}
+                className={`text-xs font-mono uppercase ${msg.sender === "user" ? "text-type-muted" : "text-gnani-primary/70"
+                  }`}
               >
                 {msg.sender === "user" ? "> User" : "< Gnani"}
               </span>
               <div
-                className={`font-mono text-lg ${
-                  msg.sender === "user" ? "text-white" : "text-cyan-300"
-                }`}
+                className={`font-mono text-lg ${msg.sender === "user" ? "text-type-primary" : "text-gnani-primary"
+                  }`}
                 style={{ textShadow: "0 0 5px" }}
               >
                 <TypewriterText message={msg} />

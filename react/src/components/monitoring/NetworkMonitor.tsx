@@ -14,25 +14,25 @@ export const NetworkMonitor: React.FC = () => {
     }, []);
 
     return (
-        <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
-            <h3 className="text-lg font-semibold text-gray-200 mb-4">Network & Queue</h3>
+        <div className="bg-canvas-panel p-4 rounded-lg border border-line-base">
+            <h3 className="text-lg font-semibold text-type-primary mb-4">Network & Queue</h3>
 
-            <div className="flex items-center justify-between mb-6 p-3 bg-gray-900 rounded">
-                <span className="text-sm text-gray-300">Connection Status</span>
-                <div className={`flex items-center space-x-2 px-3 py-1 rounded-full text-xs font-bold ${isOnline ? 'bg-green-900/30 text-green-400' : 'bg-red-900/30 text-red-400'
+            <div className="flex items-center justify-between mb-6 p-3 bg-canvas-surface rounded">
+                <span className="text-sm text-type-secondary">Connection Status</span>
+                <div className={`flex items-center space-x-2 px-3 py-1 rounded-full text-xs font-bold ${isOnline ? 'bg-status-success/30 text-status-success' : 'bg-status-error/30 text-status-error'
                     }`}>
-                    <span className={`w-2 h-2 rounded-full ${isOnline ? 'bg-green-500' : 'bg-red-500'}`}></span>
+                    <span className={`w-2 h-2 rounded-full ${isOnline ? 'bg-status-success' : 'bg-status-error'}`}></span>
                     <span>{isOnline ? 'ONLINE' : 'OFFLINE'}</span>
                 </div>
             </div>
 
-            <div className="bg-gray-900 p-4 rounded text-center mb-4">
-                <p className="text-gray-400 text-xs uppercase mb-1">Offline Queue</p>
+            <div className="bg-canvas-surface p-4 rounded text-center mb-4">
+                <p className="text-type-muted text-xs uppercase mb-1">Offline Queue</p>
                 <div className="flex items-end justify-center space-x-1">
-                    <span className={`text-3xl font-bold ${queueSize > 0 ? 'text-yellow-400' : 'text-gray-500'}`}>
+                    <span className={`text-3xl font-bold ${queueSize > 0 ? 'text-status-warning' : 'text-type-muted'}`}>
                         {queueSize}
                     </span>
-                    <span className="text-gray-500 text-sm mb-1.5">requests</span>
+                    <span className="text-type-muted text-sm mb-1.5">requests</span>
                 </div>
             </div>
 
@@ -41,15 +41,15 @@ export const NetworkMonitor: React.FC = () => {
                     onClick={() => offlineQueue.processQueue()}
                     disabled={queueSize === 0 || !isOnline}
                     className={`w-full py-2 rounded text-xs font-bold transition-colors ${queueSize > 0 && isOnline
-                            ? 'bg-blue-600 hover:bg-blue-500 text-white'
-                            : 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                        ? 'bg-gnani-primary hover:bg-gnani-primary/90 text-type-inverse'
+                        : 'bg-canvas-surface text-type-muted cursor-not-allowed'
                         }`}
                 >
                     Force Process Queue
                 </button>
             </div>
 
-            <div className="mt-4 text-[10px] text-gray-500 text-center">
+            <div className="mt-4 text-[10px] text-type-muted text-center">
                 Automatic sync triggered when connection restores.
             </div>
         </div>

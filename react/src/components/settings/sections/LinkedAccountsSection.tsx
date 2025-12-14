@@ -139,39 +139,39 @@ const LinkedAccountsSection: React.FC = () => {
                 animate={{ opacity: 1, scale: 1 }}
                 whileHover={{ scale: disabled ? 1 : 1.02 }}
                 className={`group relative overflow-hidden rounded-xl border p-4 transition-all duration-300 ${linked
-                    ? 'bg-cyan-900/10 border-cyan-500/30 shadow-[0_0_15px_-5px_rgba(6,182,212,0.15)]'
+                    ? 'bg-canvas-surface/40 border-gnani-primary/30 shadow-[0_0_15px_-5px_rgba(var(--primary-rgb),0.15)]'
                     : disabled
-                        ? 'bg-gray-900/20 border-white/5 opacity-60'
-                        : 'bg-[#0a0a15]/60 border-white/5 hover:border-cyan-500/20 hover:bg-[#0f0f1a]'
+                        ? 'bg-canvas-surface/10 border-glass-border/50 opacity-60'
+                        : 'bg-canvas-surface/20 border-glass-border hover:border-gnani-primary/20 hover:bg-canvas-surface/40'
                     }`}
             >
                 {/* Glow Effect for Connected */}
                 {linked && (
-                    <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-cyan-500/10 blur-2xl transition-all group-hover:bg-cyan-500/20" />
+                    <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-gnani-primary/10 blur-2xl transition-all group-hover:bg-gnani-primary/20" />
                 )}
 
                 <div className="relative flex items-start justify-between">
                     <div className="flex gap-4">
                         {/* Icon Container */}
                         <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border transition-colors ${linked
-                            ? 'bg-[#0f0f1a] border-cyan-500/30'
-                            : 'bg-[#0f0f1a] border-white/5 group-hover:border-white/10'
+                            ? 'bg-canvas-surface border-gnani-primary/30'
+                            : 'bg-canvas-surface border-glass-border group-hover:border-glass-border/80'
                             }`}>
                             <Icon size={24} className={connector.color} />
                         </div>
 
                         {/* Info */}
                         <div className="flex flex-col gap-1">
-                            <h3 className="flex items-center gap-2 text-sm font-bold text-white">
+                            <h3 className="flex items-center gap-2 text-sm font-bold text-type-primary">
                                 {connector.name}
-                                {linked && <CheckCircle2 size={12} className="text-cyan-400" />}
-                                {disabled && <span className="rounded-full bg-white/5 px-2 py-0.5 text-[10px] font-medium text-slate-400 uppercase tracking-wide">Coming Soon</span>}
+                                {linked && <CheckCircle2 size={12} className="text-gnani-primary" />}
+                                {disabled && <span className="rounded-full bg-glass-shimmer px-2 py-0.5 text-[10px] font-medium text-type-muted uppercase tracking-wide">Coming Soon</span>}
                             </h3>
-                            <p className="text-xs text-slate-400 leading-relaxed max-w-[200px]">
+                            <p className="text-xs text-type-muted leading-relaxed max-w-[200px]">
                                 {connector.description}
                             </p>
                             {linked && (
-                                <p className="text-[10px] text-cyan-400/60 mt-1 font-mono">
+                                <p className="text-[10px] text-gnani-primary/60 mt-1 font-mono">
                                     Connected on {getLinkedDate(connector.id)}
                                 </p>
                             )}
@@ -192,8 +192,8 @@ const LinkedAccountsSection: React.FC = () => {
                                 onClick={() => handleLink(connector)}
                                 disabled={disabled || processing}
                                 className={`flex items-center gap-2 rounded-lg px-4 py-2 text-[11px] font-bold uppercase tracking-wider transition-all ${disabled
-                                    ? 'cursor-not-allowed bg-white/5 text-slate-500'
-                                    : 'bg-cyan-500/10 text-cyan-400 hover:bg-cyan-500/20 hover:text-cyan-300 hover:shadow-[0_0_10px_-2px_rgba(6,182,212,0.3)]'
+                                    ? 'cursor-not-allowed bg-glass-shimmer text-type-muted'
+                                    : 'bg-gnani-primary/10 text-gnani-primary hover:bg-gnani-primary/20 hover:text-gnani-secondary hover:shadow-[0_0_10px_-2px_rgba(var(--primary-rgb),0.3)]'
                                     }`}
                             >
                                 {processing ? (
@@ -222,8 +222,8 @@ const LinkedAccountsSection: React.FC = () => {
                         <Database size={20} />
                     </div>
                     <div>
-                        <h3 className="text-sm font-bold text-white uppercase tracking-wide">Data Sources</h3>
-                        <p className="mt-1 text-xs text-slate-400 leading-relaxed">
+                        <h3 className="text-sm font-bold text-type-primary uppercase tracking-wide">Data Sources</h3>
+                        <p className="mt-1 text-xs text-type-muted leading-relaxed">
                             Connect your accounts to let Gnani access your personal data context.
                             This allows for more personalized and intelligent responses based on your documents, chats, and code.
                         </p>
@@ -236,7 +236,7 @@ const LinkedAccountsSection: React.FC = () => {
 
                 {/* Available Now */}
                 <div className="space-y-3">
-                    <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest px-1">Available Connectors</h4>
+                    <h4 className="text-xs font-bold text-type-secondary uppercase tracking-widest px-1">Available Connectors</h4>
                     <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
                         {CONNECTORS.filter(c => c.status !== 'coming_soon').map(renderConnectorCard)}
                     </div>
@@ -244,7 +244,7 @@ const LinkedAccountsSection: React.FC = () => {
 
                 {/* Coming Soon */}
                 <div className="space-y-3">
-                    <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest px-1">Coming Soon</h4>
+                    <h4 className="text-xs font-bold text-type-muted uppercase tracking-widest px-1">Coming Soon</h4>
                     <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
                         {CONNECTORS.filter(c => c.status === 'coming_soon').map(renderConnectorCard)}
                     </div>

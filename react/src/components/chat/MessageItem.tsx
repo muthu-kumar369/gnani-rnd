@@ -92,8 +92,8 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, isLast }) => {
         <div className={`flex gap-4 max-w-4xl mx-auto group animate-slide-up ${isUser ? 'flex-row-reverse' : ''}`}>
             {/* Avatar */}
             <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-1 shadow-lg overflow-hidden ${isUser
-                ? 'bg-gray-800 border border-gray-700 text-gray-400'
-                : 'bg-black border border-cyan-500/50 shadow-[0_0_10px_rgba(6,182,212,0.2)]'
+                ? 'bg-canvas-surface border border-glass-border text-type-muted'
+                : 'bg-canvas-panel border border-gnani-primary/50 shadow-[0_0_10px_rgba(var(--primary-rgb),0.2)]'
                 }`}>
                 {isUser ? (
                     (user?.profile?.uploadedProfilePhotoId || user?.profile?.profilePhoto) ? (
@@ -131,11 +131,11 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, isLast }) => {
             <div className={`flex flex-col gap-1 max-w-[85%] ${isUser ? 'items-end' : 'items-start'}`}>
                 {/* Header (Name + Date + Pagination) */}
                 <div className="flex items-center gap-2 mb-1 opacity-80">
-                    <span className={`text-xs font-bold tracking-wide uppercase ${isUser ? 'text-gray-400' : 'text-jarvis-cyan'}`}>
+                    <span className={`text-xs font-bold tracking-wide uppercase ${isUser ? 'text-type-muted' : 'text-gnani-primary'}`}>
                         {isUser ? 'You' : 'Gnani'}
                     </span>
                     {showTimestamp && (
-                        <span className="text-[10px] text-slate-500">
+                        <span className="text-[10px] text-type-muted">
                             {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </span>
                     )}
@@ -166,8 +166,8 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, isLast }) => {
                 ) : (
                     <>
                         <div className={`prose prose-invert prose-sm max-w-none rounded-2xl px-5 py-4 border backdrop-blur-sm shadow-md transition-colors duration-200 ${isUser
-                            ? 'bg-jarvis-cyan/10 border-jarvis-cyan/30 text-cyan-50 rounded-tr-sm shadow-[0_0_15px_rgba(0,255,255,0.05)]'
-                            : 'bg-black/60 border-jarvis-blue/20 text-gray-200 rounded-tl-sm hover:bg-black/80 shadow-[0_0_10px_rgba(14,165,233,0.05)]'
+                            ? 'bg-gnani-primary/10 border-gnani-primary/30 text-type-primary rounded-tr-sm shadow-[0_0_15px_rgba(var(--primary-rgb),0.05)]'
+                            : 'bg-canvas-panel/60 border-gnani-secondary/20 text-type-primary rounded-tl-sm hover:bg-canvas-panel/80 shadow-[0_0_10px_rgba(var(--secondary-rgb),0.05)]'
                             }`}>
                             <ReactMarkdown
                                 components={{
@@ -212,7 +212,7 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, isLast }) => {
                         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                             <button
                                 onClick={handleCopy}
-                                className="p-1.5 hover:text-white text-gray-500 rounded hover:bg-white/10 transition-colors"
+                                className="p-1.5 hover:text-type-primary text-type-muted rounded hover:bg-glass-shimmer transition-colors"
                                 title="Copy"
                             >
                                 <Copy size={12} />
@@ -234,7 +234,7 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, isLast }) => {
                                     onClick={() => {
                                         setIsEditing(true);
                                     }}
-                                    className="p-1.5 hover:text-white text-gray-500 rounded hover:bg-white/10 transition-colors"
+                                    className="p-1.5 hover:text-type-primary text-type-muted rounded hover:bg-glass-shimmer transition-colors"
                                     title="Edit"
                                 >
                                     <Edit2 size={12} />
@@ -243,7 +243,7 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, isLast }) => {
                                 <>
                                     <button
                                         onClick={handleRegenerate}
-                                        className="p-1.5 hover:text-white text-gray-500 rounded hover:bg-white/10 transition-colors"
+                                        className="p-1.5 hover:text-type-primary text-type-muted rounded hover:bg-glass-shimmer transition-colors"
                                         title="Regenerate"
                                     >
                                         <RefreshCw size={12} />
@@ -254,7 +254,7 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, isLast }) => {
                             {/* Branch Toggle */}
                             <button
                                 onClick={() => setShowBranchTree(!showBranchTree)}
-                                className={`p-1.5 rounded transition-colors ${showBranchTree ? 'bg-jarvis-blue/20 text-jarvis-blue' : 'text-gray-500 hover:text-white hover:bg-white/10'}`}
+                                className={`p-1.5 rounded transition-colors ${showBranchTree ? 'bg-gnani-primary/20 text-gnani-primary' : 'text-type-muted hover:text-type-primary hover:bg-glass-shimmer'}`}
                                 title="Toggle Branch Tree"
                             >
                                 <GitBranch size={12} />

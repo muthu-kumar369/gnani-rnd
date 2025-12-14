@@ -140,7 +140,7 @@ const AdvancedSearch: React.FC<AdvancedSearchProps> = ({ isOpen, onClose }) => {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.15 }}
-                className="fixed inset-0 z-[100] grid place-items-center bg-black/60 backdrop-blur-sm p-4"
+                className="fixed inset-0 z-[100] grid place-items-center bg-bg-overlay backdrop-blur-sm p-4"
                 onClick={onClose}
             >
                 <motion.div
@@ -148,13 +148,13 @@ const AdvancedSearch: React.FC<AdvancedSearchProps> = ({ isOpen, onClose }) => {
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.95 }}
                     transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-                    // Theme: Dark Gray/Black, Rounded
-                    className="w-full max-w-2xl bg-[#18181b] border border-[#27272a] rounded-xl shadow-2xl overflow-hidden flex flex-col"
+                    // Theme: Semantic Colors
+                    className="w-full max-w-2xl bg-canvas-panel border border-glass-border rounded-xl shadow-2xl overflow-hidden flex flex-col"
                     style={{ height: '600px', maxHeight: '90vh' }}
                     onClick={(e) => e.stopPropagation()}
                 >
                     {/* Header: Input ONLY (No Search Icon, No Border) + Close */}
-                    <div className="flex items-center px-4 py-4 gap-3">
+                    <div className="flex items-center px-4 py-4 gap-3 bg-canvas-surface/30">
                         <input
                             ref={searchInputRef}
                             type="text"
@@ -163,25 +163,25 @@ const AdvancedSearch: React.FC<AdvancedSearchProps> = ({ isOpen, onClose }) => {
                             onKeyDown={handleKeyDown}
                             placeholder="Search messages..."
                             // STRICT: No border, no outline, transparent bg, remove shadow, remove ring
-                            className="flex-1 bg-transparent text-gray-200 placeholder-gray-500 appearance-none outline-none border-none focus:outline-none focus:ring-0 focus:border-none shadow-none focus:shadow-none text-base font-normal p-0"
+                            className="flex-1 bg-transparent text-type-primary placeholder-type-muted appearance-none outline-none border-none focus:outline-none focus:ring-0 focus:border-none shadow-none focus:shadow-none text-base font-normal p-0"
                             style={{ outline: 'none', boxShadow: 'none', border: 'none' }}
                             autoFocus
                         />
                         <button
                             onClick={onClose}
-                            className="p-1 hover:bg-white/10 rounded text-gray-400 hover:text-white transition-colors"
+                            className="p-1 hover:bg-glass-shimmer rounded text-type-muted hover:text-type-primary transition-colors"
                         >
                             <X size={20} />
                         </button>
                     </div>
 
                     {/* Divider - Subtle */}
-                    <div className="h-px bg-[#27272a] w-full" />
+                    <div className="h-px bg-line-base w-full" />
 
                     {/* Content Area */}
                     <div className={`p-2 flex-1 flex flex-col relative pb-20 ${(isSearching || isDebouncing)
-                            ? 'overflow-hidden'
-                            : 'overflow-y-auto custom-scrollbar'
+                        ? 'overflow-hidden'
+                        : 'overflow-y-auto custom-scrollbar'
                         }`}>
 
                         {/* 1. Loading State (Skeleton) - Increased Count & Better Fill */}
@@ -189,9 +189,9 @@ const AdvancedSearch: React.FC<AdvancedSearchProps> = ({ isOpen, onClose }) => {
                             <div className="space-y-4 p-2 w-full">
                                 {Array.from({ length: 8 }).map((_, i) => (
                                     <div key={i} className="flex flex-col gap-2 animate-pulse">
-                                        <div className="h-4 bg-white/5 rounded w-3/4"></div>
-                                        <div className="h-3 bg-white/5 rounded w-full"></div>
-                                        <div className="h-3 bg-white/5 rounded w-1/2"></div>
+                                        <div className="h-4 bg-glass-shimmer rounded w-3/4"></div>
+                                        <div className="h-3 bg-glass-shimmer rounded w-full"></div>
+                                        <div className="h-3 bg-glass-shimmer rounded w-1/2"></div>
                                     </div>
                                 ))}
                             </div>
@@ -203,12 +203,12 @@ const AdvancedSearch: React.FC<AdvancedSearchProps> = ({ isOpen, onClose }) => {
                                 {/* Static New Chat Row */}
                                 <button
                                     onClick={handleNewChat}
-                                    className="w-full flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-white/5 group transition-colors text-left"
+                                    className="w-full flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-glass-shimmer group transition-colors text-left"
                                 >
-                                    <div className="p-2 bg-white/10 rounded-lg text-white group-hover:bg-white/20 transition-colors">
+                                    <div className="p-2 bg-canvas-surface rounded-lg text-type-primary group-hover:bg-glass-shimmer transition-colors">
                                         <SquarePen size={18} />
                                     </div>
-                                    <span className="text-sm font-medium text-gray-200">New chat</span>
+                                    <span className="text-sm font-medium text-type-primary">New chat</span>
                                 </button>
 
                                 {/* Date Grouped Conversations */}
@@ -218,18 +218,18 @@ const AdvancedSearch: React.FC<AdvancedSearchProps> = ({ isOpen, onClose }) => {
 
                                     return (
                                         <div key={group} className="space-y-1">
-                                            <div className="px-3 py-1 text-[10px] font-bold text-gray-500 uppercase tracking-wider">
+                                            <div className="px-3 py-1 text-[10px] font-bold text-type-secondary uppercase tracking-wider">
                                                 {group}
                                             </div>
                                             {groupItems.map(conv => (
                                                 <button
                                                     key={conv.conversationId}
                                                     onClick={() => handleSelectConversation(conv.conversationId)}
-                                                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/5 group transition-colors text-left"
+                                                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-glass-shimmer group transition-colors text-left"
                                                 >
-                                                    <MessageSquare size={16} className="text-gray-500 group-hover:text-gray-300 transition-colors shrink-0" />
+                                                    <MessageSquare size={16} className="text-type-muted group-hover:text-type-secondary transition-colors shrink-0" />
                                                     <div className="flex-1 overflow-hidden">
-                                                        <div className="text-sm text-gray-300 truncate group-hover:text-white transition-colors">
+                                                        <div className="text-sm text-type-secondary truncate group-hover:text-type-primary transition-colors">
                                                             {conv.title || 'New Conversation'}
                                                         </div>
                                                     </div>
@@ -248,20 +248,20 @@ const AdvancedSearch: React.FC<AdvancedSearchProps> = ({ isOpen, onClose }) => {
                                     <div
                                         key={result.conversationId}
                                         onClick={() => handleSelectConversation(result.conversationId)}
-                                        className="group flex flex-col gap-1 px-3 py-3 rounded-lg hover:bg-white/5 cursor-pointer transition-colors"
+                                        className="group flex flex-col gap-1 px-3 py-3 rounded-lg hover:bg-glass-shimmer cursor-pointer transition-colors"
                                     >
                                         <div className="flex items-center justify-between gap-2">
                                             <div className="flex items-center gap-2 overflow-hidden">
-                                                <MessageSquare size={14} className="text-gray-500 shrink-0" />
-                                                <span className="text-sm font-medium text-gray-200 group-hover:text-cyan-400 transition-colors truncate">
+                                                <MessageSquare size={14} className="text-type-muted shrink-0" />
+                                                <span className="text-sm font-medium text-type-secondary group-hover:text-gnani-primary transition-colors truncate">
                                                     <SearchHighlight text={result.title} searchTerm={query} />
                                                 </span>
                                             </div>
-                                            <span className="text-[10px] text-gray-600 shrink-0">
+                                            <span className="text-[10px] text-type-muted shrink-0">
                                                 {new Date(result.createdAt).toLocaleDateString()}
                                             </span>
                                         </div>
-                                        <p className="text-xs text-gray-500 line-clamp-1 pl-6">
+                                        <p className="text-xs text-type-muted line-clamp-1 pl-6">
                                             <SearchHighlight text={result.snippet} searchTerm={query} />
                                         </p>
                                     </div>
@@ -272,11 +272,11 @@ const AdvancedSearch: React.FC<AdvancedSearchProps> = ({ isOpen, onClose }) => {
                         {/* 4. Rich Empty State - Centered */}
                         {query && !isSearching && !isDebouncing && results.length === 0 && (
                             <div className="flex-1 flex flex-col items-center justify-center py-8 text-center select-none h-full">
-                                <div className="p-4 rounded-full bg-white/5 mb-4 shadow-[0_0_20px_-5px_rgba(0,0,0,0.3)]">
-                                    <SearchIcon size={32} className="text-gray-600" />
+                                <div className="p-4 rounded-full bg-canvas-surface mb-4 shadow-sm">
+                                    <SearchIcon size={32} className="text-type-muted" />
                                 </div>
-                                <h3 className="text-base font-medium text-gray-300 mb-1">No results found</h3>
-                                <p className="text-sm text-gray-600 max-w-[200px]">
+                                <h3 className="text-base font-medium text-type-primary mb-1">No results found</h3>
+                                <p className="text-sm text-type-secondary max-w-[200px]">
                                     We couldn't find any messages that match "{query}"
                                 </p>
                             </div>

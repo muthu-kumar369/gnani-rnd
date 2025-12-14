@@ -122,7 +122,7 @@ const GlassDatePicker: React.FC<GlassDatePickerProps> = ({
 
         // Header
         const headers = DAYS.map(d => (
-            <div key={d} className="text-center text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">
+            <div key={d} className="text-center text-[10px] font-bold text-type-muted uppercase tracking-wider mb-2">
                 {d}
             </div>
         ));
@@ -149,10 +149,10 @@ const GlassDatePicker: React.FC<GlassDatePickerProps> = ({
                     onClick={(e) => { e.stopPropagation(); handleDaySelect(day); }}
                     className={`h-8 w-8 rounded-full text-xs font-medium flex items-center justify-center transition-all
                         ${isSelected
-                            ? 'bg-cyan-500 text-white shadow-[0_0_10px_rgba(6,182,212,0.4)]'
-                            : 'text-slate-300 hover:bg-white/10 hover:text-white'
+                            ? 'bg-gnani-primary text-type-inverse shadow-glass'
+                            : 'text-type-secondary hover:bg-glass-hover hover:text-type-primary'
                         }
-                        ${!isSelected && isToday ? 'border border-cyan-500/50 text-cyan-400' : ''}
+                        ${!isSelected && isToday ? 'border border-gnani-primary/50 text-gnani-primary' : ''}
                     `}
                 >
                     {day}
@@ -177,8 +177,8 @@ const GlassDatePicker: React.FC<GlassDatePickerProps> = ({
                     <button
                         key={m}
                         onClick={(e) => { e.stopPropagation(); handleMonthSelect(i); }}
-                        className={`text-xs font-medium rounded-lg hover:bg-white/5 transition-colors
-                            ${viewDate.getMonth() === i ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30' : 'text-slate-300'}
+                        className={`text-xs font-medium rounded-lg hover:bg-glass-hover transition-colors
+                            ${viewDate.getMonth() === i ? 'bg-gnani-primary/20 text-gnani-primary border border-gnani-primary/30' : 'text-type-secondary'}
                         `}
                     >
                         {m.substring(0, 3)}
@@ -196,8 +196,8 @@ const GlassDatePicker: React.FC<GlassDatePickerProps> = ({
                     <button
                         key={y}
                         onClick={(e) => { e.stopPropagation(); handleYearSelect(y); }}
-                        className={`text-xs font-medium rounded-lg hover:bg-white/5 transition-colors
-                            ${viewDate.getFullYear() === y ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30' : 'text-slate-300'}
+                        className={`text-xs font-medium rounded-lg hover:bg-glass-hover transition-colors
+                            ${viewDate.getFullYear() === y ? 'bg-gnani-primary/20 text-gnani-primary border border-gnani-primary/30' : 'text-type-secondary'}
                         `}
                     >
                         {y}
@@ -221,15 +221,15 @@ const GlassDatePicker: React.FC<GlassDatePickerProps> = ({
                 ref={triggerRef}
                 onClick={() => setIsOpen(!isOpen)}
                 className={`
-                    w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 
+                    w-full bg-canvas-surface border border-line-base rounded-xl px-4 py-3 
                     text-sm flex items-center justify-between cursor-pointer 
-                    transition-all hover:border-white/20 hover:bg-black/50
-                    ${isOpen ? 'border-cyan-500/50 ring-1 ring-cyan-500/50' : ''}
+                    transition-all hover:border-glass-border hover:bg-canvas-surface/80
+                    ${isOpen ? 'border-gnani-primary/50 ring-1 ring-gnani-primary/50' : ''}
                 `}
             >
                 <div className="flex items-center gap-3 overflow-hidden">
-                    <CalendarIcon size={16} className="text-slate-500" />
-                    <span className={`truncate ${selectedDate ? 'text-white' : 'text-slate-500'}`}>
+                    <CalendarIcon size={16} className="text-type-muted" />
+                    <span className={`truncate ${selectedDate ? 'text-type-primary' : 'text-type-muted'}`}>
                         {selectedDate ? selectedDate.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }) : placeholder}
                     </span>
                 </div>
@@ -240,7 +240,7 @@ const GlassDatePicker: React.FC<GlassDatePickerProps> = ({
                             onChange('');
                             setSelectedDate(null);
                         }}
-                        className="p-1 hover:bg-white/10 rounded-full text-slate-500 hover:text-white transition-colors"
+                        className="p-1 hover:bg-glass-hover rounded-full text-type-muted hover:text-type-primary transition-colors"
                     >
                         <X size={14} />
                     </button>
@@ -260,30 +260,30 @@ const GlassDatePicker: React.FC<GlassDatePickerProps> = ({
                     exit="exit"
                     variants={contentVariants}
                     transition={{ duration: 0.15, ease: 'easeOut' }}
-                    className="p-4 w-[280px] bg-[#0f0f1a]/95 border border-white/10 backdrop-blur-xl rounded-xl shadow-[0_0_50px_-10px_rgba(0,0,0,0.8)] ring-1 ring-white/5 overflow-hidden"
+                    className="p-4 w-[280px] bg-canvas-popover border border-glass-border backdrop-blur-xl rounded-xl shadow-[0_0_50px_-10px_rgba(0,0,0,0.8)] ring-1 ring-white/5 overflow-hidden"
                 >
                     {/* Header */}
                     <div className="flex items-center justify-between mb-4">
-                        <button onClick={() => handleHeaderNav(-1)} className="p-1 hover:bg-white/10 rounded-lg text-slate-400 hover:text-white">
+                        <button onClick={() => handleHeaderNav(-1)} className="p-1 hover:bg-glass-hover rounded-lg text-type-muted hover:text-type-primary">
                             <ChevronLeft size={18} />
                         </button>
 
                         <div className="flex gap-1">
                             <button
                                 onClick={() => toggleViewMode('month')}
-                                className={`px-2 py-1 rounded-md text-sm font-bold transition-colors ${viewMode === 'month' ? 'bg-white/10 text-white' : 'text-slate-200 hover:bg-white/5'}`}
+                                className={`px-2 py-1 rounded-md text-sm font-bold transition-colors ${viewMode === 'month' ? 'bg-glass-hover text-type-primary' : 'text-type-secondary hover:bg-glass-hover'}`}
                             >
                                 {MONTHS[viewDate.getMonth()]}
                             </button>
                             <button
                                 onClick={() => toggleViewMode('year')}
-                                className={`px-2 py-1 rounded-md text-sm font-bold transition-colors ${viewMode === 'year' ? 'bg-white/10 text-white' : 'text-slate-200 hover:bg-white/5'}`}
+                                className={`px-2 py-1 rounded-md text-sm font-bold transition-colors ${viewMode === 'year' ? 'bg-glass-hover text-type-primary' : 'text-type-secondary hover:bg-glass-hover'}`}
                             >
                                 {viewDate.getFullYear()}
                             </button>
                         </div>
 
-                        <button onClick={() => handleHeaderNav(1)} className="p-1 hover:bg-white/10 rounded-lg text-slate-400 hover:text-white">
+                        <button onClick={() => handleHeaderNav(1)} className="p-1 hover:bg-glass-hover rounded-lg text-type-secondary hover:text-type-primary">
                             <ChevronRight size={18} />
                         </button>
                     </div>

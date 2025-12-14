@@ -52,38 +52,38 @@ const GlassModal: React.FC<GlassModalProps> = ({
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         onClick={onClose}
-                        className="fixed inset-0 bg-black/70 backdrop-blur-md z-[100] flex items-center justify-center p-4 overflow-y-auto"
+                        className="fixed inset-0 bg-bg-overlay backdrop-blur-md z-[100] flex items-center justify-center p-4 overflow-y-auto"
                     >
                         <motion.div
                             initial={{ scale: 0.95, opacity: 0, y: 10 }}
                             animate={{ scale: 1, opacity: 1, y: 0 }}
                             exit={{ scale: 0.95, opacity: 0, y: 10 }}
                             onClick={(e) => e.stopPropagation()}
-                            className={`bg-[#0a0a0add] border border-white/10 rounded-xl shadow-2xl w-full ${maxWidth} overflow-hidden ${className}`}
+                            className={`bg-canvas-panel border border-glass-border rounded-xl shadow-2xl w-full ${maxWidth} overflow-hidden ${className}`}
                         >
                             {/* Header */}
-                            <div className="px-6 py-4 flex items-center justify-between border-b border-white/5">
+                            <div className="px-6 py-4 flex items-center justify-between border-b border-glass-border">
                                 {title ? (
-                                    <h3 className="text-lg font-semibold text-white tracking-wide">
+                                    <h3 className="text-lg font-semibold text-type-primary tracking-wide">
                                         {title}
                                     </h3>
                                 ) : <div />}
                                 <button
                                     onClick={onClose}
-                                    className="text-gray-400 hover:text-white transition-colors"
+                                    className="text-type-muted hover:text-type-primary transition-colors"
                                 >
                                     <X size={20} />
                                 </button>
                             </div>
 
                             {/* Content */}
-                            <div className="p-6 text-gray-300">
+                            <div className="p-6 text-type-secondary">
                                 {children}
                             </div>
 
                             {/* Footer */}
                             {footer && (
-                                <div className="px-6 py-4 bg-white/5 border-t border-white/5 flex items-center justify-end gap-3">
+                                <div className="px-6 py-4 bg-canvas-surface/20 border-t border-glass-border flex items-center justify-end gap-3">
                                     {footer}
                                 </div>
                             )}

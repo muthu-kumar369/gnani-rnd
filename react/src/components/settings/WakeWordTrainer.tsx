@@ -73,21 +73,21 @@ const WakeWordTrainer: React.FC<WakeWordTrainerProps> = ({ onComplete }) => {
     };
 
     return (
-        <div className="p-6 bg-black/40 border border-cyan-500/30 rounded">
-            <h3 className="text-xl font-semibold text-cyan-400 mb-2">Train Your Wake Word</h3>
-            <p className="text-cyan-500/60 mb-4">
+        <div className="p-6 bg-canvas-panel border border-gnani-primary/30 rounded">
+            <h3 className="text-xl font-semibold text-gnani-primary mb-2">Train Your Wake Word</h3>
+            <p className="text-gnani-primary/60 mb-4">
                 Record your wake word 5 times to create a custom model
             </p>
 
             {/* Progress */}
             <div className="mb-6">
                 <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm text-cyan-500/80">Progress</span>
-                    <span className="text-sm text-cyan-400 font-medium">{samples.length}/5 samples</span>
+                    <span className="text-sm text-gnani-primary/80">Progress</span>
+                    <span className="text-sm text-gnani-primary font-medium">{samples.length}/5 samples</span>
                 </div>
-                <div className="w-full bg-cyan-500/20 rounded-full h-2">
+                <div className="w-full bg-gnani-primary/20 rounded-full h-2">
                     <div
-                        className="bg-cyan-500 h-2 rounded-full transition-all"
+                        className="bg-gnani-primary h-2 rounded-full transition-all"
                         style={{ width: `${(samples.length / 5) * 100}%` }}
                     />
                 </div>
@@ -99,14 +99,14 @@ const WakeWordTrainer: React.FC<WakeWordTrainerProps> = ({ onComplete }) => {
                     <div
                         key={index}
                         className={`aspect-square rounded border-2 flex items-center justify-center ${index < samples.length
-                                ? 'border-green-500 bg-green-500/20'
-                                : 'border-cyan-500/30 bg-black/40'
+                            ? 'border-status-success bg-status-success/20'
+                            : 'border-gnani-primary/30 bg-canvas-panel'
                             }`}
                     >
                         {index < samples.length ? (
-                            <Check size={24} className="text-green-400" />
+                            <Check size={24} className="text-status-success" />
                         ) : (
-                            <span className="text-cyan-500/60 text-lg">{index + 1}</span>
+                            <span className="text-gnani-primary/60 text-lg">{index + 1}</span>
                         )}
                     </div>
                 ))}
@@ -114,7 +114,7 @@ const WakeWordTrainer: React.FC<WakeWordTrainerProps> = ({ onComplete }) => {
 
             {/* Error Message */}
             {error && (
-                <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded flex items-center gap-2 text-red-400">
+                <div className="mb-4 p-3 bg-status-error/10 border border-status-error/30 rounded flex items-center gap-2 text-status-error">
                     <AlertCircle size={16} />
                     <span className="text-sm">{error}</span>
                 </div>
@@ -126,7 +126,7 @@ const WakeWordTrainer: React.FC<WakeWordTrainerProps> = ({ onComplete }) => {
                     <button
                         onClick={recordSample}
                         disabled={isRecording}
-                        className="flex-1 px-4 py-3 bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 rounded hover:bg-cyan-500/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                        className="flex-1 px-4 py-3 bg-gnani-primary/20 text-gnani-primary border border-gnani-primary/30 rounded hover:bg-gnani-primary/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                     >
                         <Mic size={18} className={isRecording ? 'animate-pulse' : ''} />
                         {isRecording ? 'Recording...' : `Record Sample ${samples.length + 1}/5`}
@@ -136,14 +136,14 @@ const WakeWordTrainer: React.FC<WakeWordTrainerProps> = ({ onComplete }) => {
                         <button
                             onClick={trainWakeWord}
                             disabled={isTraining}
-                            className="flex-1 px-4 py-3 bg-green-500/20 text-green-400 border border-green-500/30 rounded hover:bg-green-500/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="flex-1 px-4 py-3 bg-status-success/20 text-status-success border border-status-success/30 rounded hover:bg-status-success/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             {isTraining ? 'Training Model...' : 'Train Model'}
                         </button>
                         <button
                             onClick={resetTraining}
                             disabled={isTraining}
-                            className="px-4 py-3 bg-red-500/20 text-red-400 border border-red-500/30 rounded hover:bg-red-500/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="px-4 py-3 bg-status-error/20 text-status-error border border-status-error/30 rounded hover:bg-status-error/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             Reset
                         </button>
@@ -152,8 +152,8 @@ const WakeWordTrainer: React.FC<WakeWordTrainerProps> = ({ onComplete }) => {
             </div>
 
             {/* Instructions */}
-            <div className="mt-4 p-3 bg-cyan-500/10 border border-cyan-500/20 rounded">
-                <p className="text-xs text-cyan-500/80">
+            <div className="mt-4 p-3 bg-gnani-primary/10 border border-gnani-primary/20 rounded">
+                <p className="text-xs text-gnani-primary/80">
                     <strong>Tips:</strong> Speak clearly and consistently. Record in a quiet environment.
                     Say your wake word the same way each time.
                 </p>

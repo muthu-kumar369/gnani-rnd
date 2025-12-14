@@ -59,7 +59,7 @@ const GlassDropdown: React.FC<GlassDropdownProps> = ({
                 onClick={() => !disabled && setIsOpen(!isOpen)}
                 disabled={disabled}
                 title={selectedOption ? selectedOption.label : placeholder}
-                className={`flex items-center justify-between gap-2 px-4 py-3 rounded-xl border border-white/10 bg-black/40 text-sm text-slate-300 hover:bg-white/5 hover:border-white/20 transition-all focus:outline-none focus:ring-1 focus:ring-cyan-500/50 hover:text-white ${disabled ? 'opacity-50 cursor-not-allowed hover:bg-black/40' : 'cursor-pointer'} ${className}`}
+                className={`flex items-center justify-between gap-2 px-4 py-3 rounded-xl border border-glass-border bg-canvas-surface/40 text-sm text-type-secondary hover:bg-glass-shimmer hover:border-gnani-primary/30 transition-all focus:outline-none focus:ring-1 focus:ring-gnani-primary/50 hover:text-type-primary ${disabled ? 'opacity-50 cursor-not-allowed hover:bg-canvas-surface/40' : 'cursor-pointer'} ${className}`}
             >
                 {triggerIcon ? (
                     <div className="flex items-center gap-2">
@@ -74,7 +74,7 @@ const GlassDropdown: React.FC<GlassDropdownProps> = ({
                         <span className="truncate font-medium">{selectedOption ? selectedOption.label : placeholder}</span>
                     </div>
                 )}
-                {showArrow && <ChevronDown size={16} className={`text-slate-500 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />}
+                {showArrow && <ChevronDown size={16} className={`text-type-muted transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />}
             </button>
 
             <DropdownPortal
@@ -88,7 +88,7 @@ const GlassDropdown: React.FC<GlassDropdownProps> = ({
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.95, y: -5 }}
                     transition={{ duration: 0.15, ease: 'easeOut' }}
-                    className={`min-w-[160px] max-h-[300px] overflow-y-auto custom-scrollbar rounded-xl border border-white/20 bg-[#05050a]/95 backdrop-blur-3xl shadow-[0_0_50px_-10px_rgba(0,0,0,0.8)] p-1.5 z-[100] ring-1 ring-white/5 ${menuClassName}`}
+                    className={`min-w-[160px] max-h-[300px] overflow-y-auto custom-scrollbar rounded-xl border border-glass-border bg-canvas-popover backdrop-blur-3xl shadow-2xl p-1.5 z-[100] ring-1 ring-glass-border ${menuClassName}`}
                     style={{ width: menuWidth ? `${menuWidth}px` : 'auto' }}
                 >
                     {options.map((option) => (
@@ -99,8 +99,8 @@ const GlassDropdown: React.FC<GlassDropdownProps> = ({
                                 setIsOpen(false);
                             }}
                             className={`w-full flex items-center justify-between px-3 py-2.5 text-sm rounded-lg transition-all mb-0.5 ${option.value === value
-                                ? 'bg-cyan-500/10 text-cyan-400 font-semibold'
-                                : 'text-slate-400 hover:bg-white/5 hover:text-white'
+                                ? 'bg-gnani-primary/10 text-gnani-primary font-semibold'
+                                : 'text-type-muted hover:bg-glass-shimmer hover:text-type-primary'
                                 } cursor-pointer`}
                         >
                             <div className="flex items-center gap-2 truncate">

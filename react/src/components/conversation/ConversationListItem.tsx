@@ -144,11 +144,11 @@ const ConversationListItem: React.FC<ConversationListItemProps> = ({
     return (
         <div
             className={`group relative p-3 rounded-lg mb-2 cursor-pointer transition-all duration-200 border ${isActive
-                ? 'bg-jarvis-blue/20 border-jarvis-cyan/50 shadow-[0_0_10px_rgba(0,240,255,0.2)]'
+                ? 'bg-gnani-primary/20 border-gnani-primary/50 shadow-[0_0_10px_rgba(0,240,255,0.2)]'
                 : conversation.isPinned
-                    ? 'bg-jarvis-purple/10 border-transparent hover:bg-jarvis-purple/15'
-                    : 'bg-black/40 border-transparent hover:bg-jarvis-blue/10 hover:border-jarvis-blue/30'
-                } ${isSelected ? 'bg-jarvis-blue/30 border-jarvis-cyan' : ''}`}
+                    ? 'bg-gnani-secondary/10 border-transparent hover:bg-gnani-secondary/15'
+                    : 'bg-canvas-surface/40 border-transparent hover:bg-gnani-primary/10 hover:border-gnani-primary/30'
+                } ${isSelected ? 'bg-gnani-primary/30 border-gnani-primary' : ''}`}
             onClick={handleItemClick}
             onMouseEnter={handleMouseEnter}
             draggable
@@ -159,9 +159,9 @@ const ConversationListItem: React.FC<ConversationListItemProps> = ({
                 {isSelectionMode && (
                     <div className="pt-1 cursor-pointer" onClick={(e) => { e.stopPropagation(); onToggleSelect && onToggleSelect(conversation.conversationId); }}>
                         {isSelected ? (
-                            <CheckSquare size={16} className="text-jarvis-cyan" aria-label="Deselect conversation" role="checkbox" aria-checked="true" />
+                            <CheckSquare size={16} className="text-gnani-primary" aria-label="Deselect conversation" role="checkbox" aria-checked="true" />
                         ) : (
-                            <Square size={16} className="text-gray-500 hover:text-jarvis-cyan/70" aria-label="Select conversation" role="checkbox" aria-checked="false" />
+                            <Square size={16} className="text-type-muted hover:text-gnani-primary/70" aria-label="Select conversation" role="checkbox" aria-checked="false" />
                         )}
                     </div>
                 )}
@@ -174,14 +174,14 @@ const ConversationListItem: React.FC<ConversationListItemProps> = ({
                                     type="text"
                                     value={editTitle}
                                     onChange={(e) => setEditTitle(e.target.value)}
-                                    className="w-full bg-black/50 border border-jarvis-cyan/30 rounded px-1 text-sm text-jarvis-cyan focus:outline-none focus:border-jarvis-cyan"
+                                    className="w-full bg-canvas-surface/50 border border-gnani-primary/30 rounded px-1 text-sm text-gnani-primary focus:outline-none focus:border-gnani-primary"
                                     autoFocus
                                     onBlur={() => setIsEditing(false)}
                                 />
                             </form>
                         ) : (
-                            <h3 className="text-sm font-medium text-jarvis-cyan truncate group-hover:text-white transition-colors flex-1 mr-2">
-                                {conversation.isPinned && <Pin size={12} className="inline mr-1 text-jarvis-purple rotate-45" fill="currentColor" />}
+                            <h3 className="text-sm font-medium text-gnani-primary truncate group-hover:text-type-primary transition-colors flex-1 mr-2">
+                                {conversation.isPinned && <Pin size={12} className="inline mr-1 text-gnani-secondary rotate-45" fill="currentColor" />}
                                 {highlightMatch(conversation.title, searchQuery)}
                             </h3>
                         )}
@@ -206,7 +206,7 @@ const ConversationListItem: React.FC<ConversationListItemProps> = ({
 
                 {/* Actions (Pin + Menu) */}
                 {!isSelectionMode && (
-                    <div className={`flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity absolute top-2 right-2 bg-black/80 rounded backdrop-blur-sm p-1 shadow-lg`}>
+                    <div className={`flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity absolute top-2 right-2 bg-canvas-popover rounded backdrop-blur-sm p-1 shadow-lg`}>
                         {onTogglePin && (
                             <button
                                 onClick={(e) => { e.stopPropagation(); onTogglePin(conversation.conversationId); }}
@@ -236,12 +236,12 @@ const ConversationListItem: React.FC<ConversationListItemProps> = ({
                     exit={{ opacity: 0, scale: 0.95, y: -5 }}
                     transition={{ duration: 0.15, ease: 'easeOut' }}
                     ref={menuRef}
-                    className="w-40 bg-[#0a0a0add] backdrop-blur-xl border border-white/10 rounded-lg shadow-2xl p-1 z-50 overflow-hidden"
+                    className="w-40 bg-canvas-surface rounded-xl shadow-xl p-1.5 z-50 overflow-hidden"
                     onClick={e => e.stopPropagation()}
                 >
                     <button
                         onClick={(e) => handleMenuAction(() => onResume(conversation.conversationId), e)}
-                        className="w-full px-3 py-2 text-left text-xs text-gray-300 hover:bg-white/10 hover:text-white transition-all rounded flex items-center gap-2 cursor-pointer"
+                        className="w-full px-3 py-2 text-left text-xs text-type-secondary hover:text-gnani-primary hover:bg-glass-shimmer transition-all rounded flex items-center gap-2 cursor-pointer"
                     >
                         <Play size={12} />
                         Resume
@@ -250,28 +250,28 @@ const ConversationListItem: React.FC<ConversationListItemProps> = ({
                     <div className="my-1 border-b border-white/10" />
                     <button
                         onClick={(e) => handleMenuAction(() => setIsEditing(true), e)}
-                        className="w-full px-3 py-2 text-left text-xs text-gray-300 hover:bg-white/10 hover:text-white transition-all rounded flex items-center gap-2 cursor-pointer"
+                        className="w-full px-3 py-2 text-left text-xs text-type-secondary hover:text-gnani-primary hover:bg-glass-shimmer transition-all rounded flex items-center gap-2 cursor-pointer"
                     >
                         <Edit2 size={12} />
                         Edit Title
                     </button>
                     <button
                         onClick={(e) => handleMenuAction(() => setShowFolderModal(true), e)}
-                        className="w-full px-3 py-2 text-left text-xs text-gray-300 hover:bg-white/10 hover:text-white transition-all rounded flex items-center gap-2 cursor-pointer"
+                        className="w-full px-3 py-2 text-left text-xs text-type-secondary hover:text-gnani-primary hover:bg-glass-shimmer transition-all rounded flex items-center gap-2 cursor-pointer"
                     >
                         <FolderInput size={12} />
                         Move to Folder
                     </button>
                     <button
                         onClick={(e) => handleMenuAction(() => setShowShareModal(true), e)}
-                        className="w-full px-3 py-2 text-left text-xs text-gray-300 hover:bg-white/10 hover:text-white transition-all rounded flex items-center gap-2 cursor-pointer"
+                        className="w-full px-3 py-2 text-left text-xs text-type-secondary hover:text-gnani-primary hover:bg-glass-shimmer transition-all rounded flex items-center gap-2 cursor-pointer"
                     >
                         <Share2 size={12} />
                         Share
                     </button>
                     <button
                         onClick={(e) => handleMenuAction(() => onDelete(conversation.conversationId), e)}
-                        className="w-full px-3 py-2 text-left text-xs text-red-400 hover:bg-red-500/10 transition-all rounded flex items-center gap-2 cursor-pointer"
+                        className="w-full px-3 py-2 text-left text-xs text-status-error hover:bg-status-error/10 transition-all rounded flex items-center gap-2 cursor-pointer"
                     >
                         <Trash2 size={12} />
                         Delete

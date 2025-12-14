@@ -13,7 +13,7 @@ const ListeningAnimation: React.FC<ListeningAnimationProps> = ({ audioLevel }) =
         <div className="relative w-64 h-64 flex items-center justify-center">
             {/* Active Glow Background */}
             <motion.div
-                className="absolute w-full h-full bg-cyan-500/5 rounded-full blur-3xl"
+                className="absolute w-full h-full bg-gnani-primary/5 rounded-full blur-3xl"
                 animate={{
                     opacity: [0.3, 0.5, 0.3],
                 }}
@@ -24,7 +24,7 @@ const ListeningAnimation: React.FC<ListeningAnimationProps> = ({ audioLevel }) =
             {[1, 2, 3].map((i) => (
                 <motion.div
                     key={i}
-                    className="absolute border border-cyan-500/40 rounded-full"
+                    className="absolute border border-gnani-primary/40 rounded-full"
                     initial={{ width: 40, height: 40, opacity: 0.8 }}
                     animate={{
                         width: 40 + (normalizedLevel * 200) + (i * 20),
@@ -42,10 +42,10 @@ const ListeningAnimation: React.FC<ListeningAnimationProps> = ({ audioLevel }) =
 
             {/* Core Reactive Element */}
             <motion.div
-                className="w-16 h-16 bg-cyan-500 rounded-full shadow-[0_0_30px_rgba(34,211,238,0.6)]"
+                className="w-16 h-16 bg-gnani-primary rounded-full shadow-[0_0_30px_rgba(var(--primary-rgb),0.6)]"
                 animate={{
                     scale: 1 + normalizedLevel,
-                    boxShadow: `0 0 ${20 + normalizedLevel * 40}px rgba(34,211,238,${0.6 + normalizedLevel * 0.4})`
+                    boxShadow: `0 0 ${20 + normalizedLevel * 40}px rgba(var(--primary-rgb),${0.6 + normalizedLevel * 0.4})`
                 }}
                 transition={{
                     type: "spring",
@@ -63,14 +63,14 @@ const ListeningAnimation: React.FC<ListeningAnimationProps> = ({ audioLevel }) =
                 animate={{ rotate: 360 }}
                 transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
             >
-                <div className="absolute top-0 left-1/2 w-2 h-2 bg-cyan-300 rounded-full shadow-[0_0_10px_rgba(34,211,238,1)]" />
+                <div className="absolute top-0 left-1/2 w-2 h-2 bg-gnani-secondary rounded-full shadow-[0_0_10px_rgba(var(--primary-rgb),1)]" />
             </motion.div>
             <motion.div
                 className="absolute w-40 h-40"
                 animate={{ rotate: -360 }}
                 transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
             >
-                <div className="absolute bottom-0 left-1/2 w-2 h-2 bg-cyan-300 rounded-full shadow-[0_0_10px_rgba(34,211,238,1)]" />
+                <div className="absolute bottom-0 left-1/2 w-2 h-2 bg-gnani-secondary rounded-full shadow-[0_0_10px_rgba(var(--primary-rgb),1)]" />
             </motion.div>
         </div>
     );

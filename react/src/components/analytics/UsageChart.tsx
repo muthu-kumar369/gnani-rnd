@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { useThemeColors } from '../../hooks/useThemeColors';
 import api from '../../api/client';
 
 interface UsageData {
@@ -9,17 +10,20 @@ interface UsageData {
     messages: number;
 }
 
+import { apiCircuitBreaker } from '../../utils/circuitBreaker';
+
 export const UsageChart: React.FC = () => {
     const [data, setData] = useState<UsageData[]>([]);
     const [timeRange, setTimeRange] = useState<'week' | 'month' | 'year'>('week');
+    const colors = useThemeColors();
 
     useEffect(() => {
         const fetchData = async () => {
             try {
                 const days = timeRange === 'week' ? 7 : timeRange === 'month' ? 30 : 365;
-                const response = await import('../../utils/circuitBreaker').then(m => m.apiCircuitBreaker.execute(() =>
+                const response = await apiCircuitBreaker.execute(() =>
                     api.get(`/analytics/usage?days=${days}`)
-                ));
+                );
                 setData(response.data);
             } catch (error) {
                 console.error('Failed to fetch usage data', error);
@@ -30,17 +34,17 @@ export const UsageChart: React.FC = () => {
     }, [timeRange]);
 
     return (
-        <div className="bg-black/20 rounded-lg p-4 border border-white/5">
+        <div className="bg-canvas-panel rounded-lg p-4 border border-line-base">
             <div className="flex justify-between items-center mb-4">
-                <h3 className="text-sm font-medium text-white/90">Usage Trends</h3>
-                <div className="flex bg-black/30 rounded p-1">
+                <h3 className="text-sm font-medium text-type-primary">Usage Trends</h3>
+                <div className="flex bg-canvas-surface/50 rounded p-1">
                     {(['week', 'month', 'year'] as const).map((range) => (
                         <button
                             key={range}
                             onClick={() => setTimeRange(range)}
                             className={`px-3 py-1 text-xs rounded transition-colors ${timeRange === range
-                                ? 'bg-blue-500/20 text-blue-300'
-                                : 'text-white/50 hover:text-white/70'
+                                ? 'bg-gnani-info/20 text-gnani-info'
+                                : 'text-type-muted hover:text-type-secondary'
                                 }`}
                         >
                             {range.charAt(0).toUpperCase() + range.slice(1)}
@@ -52,35 +56,35 @@ export const UsageChart: React.FC = () => {
             <div className="h-[300px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={data}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" />
+                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(var(--line-base), 0.5)" />
                         <XAxis
                             dataKey="date"
-                            stroke="#ffffff50"
+                            stroke="rgb(var(--type-muted))"
                             fontSize={12}
                             tickFormatter={(value) => value.split('-').slice(1).join('/')}
                         />
                         <YAxis
                             yAxisId="left"
-                            stroke="#8884d8"
+                            stroke={colors.primary}
                             fontSize={12}
                         />
                         <YAxis
                             yAxisId="right"
                             orientation="right"
-                            stroke="#82ca9d"
+                            stroke={colors.secondary}
                             fontSize={12}
                             tickFormatter={(value) => `$${value}`}
                         />
                         <Tooltip
-                            contentStyle={{ backgroundColor: '#1a1a1a', borderColor: '#333' }}
-                            itemStyle={{ fontSize: '12px' }}
+                            contentStyle={{ backgroundColor: 'rgb(var(--canvas-popover))', borderColor: 'rgb(var(--glass-border))' }}
+                            itemStyle={{ fontSize: '12px', color: 'rgb(var(--type-primary))' }}
                         />
                         <Legend />
                         <Line
                             yAxisId="left"
                             type="monotone"
                             dataKey="tokens"
-                            stroke="#8884d8"
+                            stroke={colors.primary}
                             name="Tokens"
                             dot={false}
                         />
@@ -88,7 +92,7 @@ export const UsageChart: React.FC = () => {
                             yAxisId="right"
                             type="monotone"
                             dataKey="cost"
-                            stroke="#82ca9d"
+                            stroke={colors.secondary}
                             name="Cost ($)"
                             dot={false}
                         />

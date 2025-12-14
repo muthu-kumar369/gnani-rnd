@@ -56,29 +56,29 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({ isOpen, onClose, initia
                         initial={{ scale: 0.95, opacity: 0, y: 20 }}
                         animate={{ scale: 1, opacity: 1, y: 0 }}
                         exit={{ scale: 0.95, opacity: 0, y: 20 }}
-                        className="relative w-full max-w-6xl h-full max-h-[90vh] bg-[#050510] border border-cyan-500/20 rounded-xl shadow-2xl flex overflow-hidden ring-1 ring-cyan-400/10"
+                        className="relative w-full max-w-6xl h-full max-h-[90vh] bg-canvas-panel border border-glass-border rounded-xl shadow-2xl flex overflow-hidden ring-1 ring-glass-border"
                     >
                         {/* Sidebar */}
                         <WorkspaceSidebar activeTab={activeTab} onTabChange={setActiveTab} />
 
                         {/* Main Content Area */}
-                        <div className="flex-1 flex flex-col min-w-0 bg-black/40 relative">
+                        <div className="flex-1 flex flex-col min-w-0 bg-canvas-surface/40 relative">
                             {/* Fixed Header */}
                             {/* Fixed Header */}
-                            <div className="flex-none flex items-center justify-between px-6 py-4 border-b border-white/5 bg-[#050510]/50 backdrop-blur-xl z-20">
+                            <div className="flex-none flex items-center justify-between px-6 py-4 border-b border-glass-border bg-canvas-panel/50 backdrop-blur-xl z-20">
                                 <div>
-                                    <h2 className="text-lg font-bold text-white tracking-tight">
+                                    <h2 className="text-lg font-bold text-type-primary tracking-tight">
                                         {activeTab === 'templates' && 'Conversation Templates'}
                                         {activeTab === 'tools' && 'Tool Marketplace'}
                                     </h2>
-                                    <p className="text-xs text-cyan-400/60 mt-0.5">
+                                    <p className="text-xs text-type-muted mt-0.5">
                                         {activeTab === 'templates' && 'Create and manage conversation presets'}
                                         {activeTab === 'tools' && 'Discover and install powerful capabilities'}
                                     </p>
                                 </div>
                                 <button
                                     onClick={onClose}
-                                    className="p-1.5 text-cyan-400/50 hover:text-cyan-400 hover:bg-cyan-500/10 rounded-lg transition-all duration-200"
+                                    className="p-1.5 text-type-muted hover:text-gnani-primary hover:bg-gnani-primary/10 rounded-lg transition-all duration-200"
                                 >
                                     <X size={20} />
                                 </button>

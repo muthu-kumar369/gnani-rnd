@@ -99,16 +99,16 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ selectedModel, onModelCha
                                 <div className="flex items-center justify-between gap-2">
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center gap-1.5">
-                                            <span className="text-xs font-medium text-cyan-100 truncate">
+                                            <span className="text-xs font-medium text-type-primary truncate">
                                                 {model.displayName}
                                             </span>
-                                            <span className="text-[9px] px-1 py-0.5 bg-cyan-500/10 border border-cyan-500/20 rounded text-cyan-400">
+                                            <span className="text-[9px] px-1 py-0.5 bg-gnani-primary/10 border border-gnani-primary/20 rounded text-gnani-primary">
                                                 {model.provider}
                                             </span>
                                         </div>
                                     </div>
                                     {model.id === selectedModel && (
-                                        <Check size={12} className="text-cyan-400 flex-shrink-0" />
+                                        <Check size={12} className="text-gnani-primary flex-shrink-0" />
                                     )}
                                 </div>
                             </button>

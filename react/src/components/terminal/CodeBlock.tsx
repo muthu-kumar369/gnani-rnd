@@ -52,8 +52,8 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
                     <pre className="code-loading" style={{
                         padding: '1rem',
                         margin: 0,
-                        background: '#0a0a0a',
-                        color: '#e0e0e0',
+                        background: 'rgb(var(--canvas-app))',
+                        color: 'rgb(var(--type-primary))',
                         fontSize: '13px',
                         lineHeight: '1.6',
                         overflow: 'auto'
@@ -69,12 +69,12 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
                         customStyle={{
                             margin: 0,
                             padding: '1rem',
-                            background: '#0a0a0a',
+                            background: 'rgb(var(--canvas-app))',
                             fontSize: '13px',
                             lineHeight: '1.6',
                         }}
                         lineNumberStyle={{
-                            color: '#4a5568',
+                            color: 'rgb(var(--type-muted))',
                             minWidth: '2.5em',
                             paddingRight: '1em',
                             textAlign: 'right',

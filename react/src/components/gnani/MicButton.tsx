@@ -98,14 +98,14 @@ const MicButton: React.FC<MicButtonProps> = ({
 
   const getCoreOrbColors = (currentStatus: GnaniAppStatus) => {
     switch (currentStatus) {
-      case 'error': return "from-jarvis-alert/80 to-red-700/70";
+      case 'error': return "from-status-error/80 to-red-700/70";
       case 'wake-word-listening': return "from-orange-400/80 to-orange-600/70";
       case 'thinking': return "from-purple-400/80 to-purple-600/70";
-      case 'responding': return "from-jarvis-success/80 to-green-600/70";
+      case 'responding': return "from-status-success/80 to-green-600/70";
       case 'mic-recording':
       case 'streaming':
-      case 'receiving-stt': return "from-jarvis-cyan/80 to-jarvis-blue/70";
-      default: return "from-jarvis-blue/20 to-jarvis-bg/70 border-2 border-jarvis-blue/30 shadow-jarvis-glow"; // Default idle color
+      case 'receiving-stt': return "from-gnani-primary/80 to-gnani-secondary/70";
+      default: return "from-gnani-secondary/20 to-canvas/70 border-2 border-glass-border shadow-lg drop-shadow-glow"; // Default idle color
     }
   }
 

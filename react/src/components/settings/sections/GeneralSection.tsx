@@ -95,35 +95,35 @@ const GeneralSection: React.FC = () => {
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="grid gap-6">
                 {/* Voice & Audio */}
-                <div className="bg-[#0f0f1a]/60 border border-white/5 rounded-xl p-5 backdrop-blur-sm">
+                <div className="bg-canvas-surface/20 border border-glass-border rounded-xl p-5 backdrop-blur-sm">
                     <div className="flex items-center gap-3 mb-5">
-                        <div className="p-2 bg-cyan-500/10 rounded-lg text-cyan-400">
+                        <div className="p-2 bg-gnani-primary/10 rounded-lg text-gnani-primary">
                             <Volume2 size={18} />
                         </div>
                         <div>
-                            <h3 className="text-sm font-bold text-white uppercase tracking-wider">Voice & Audio</h3>
-                            <p className="text-xs text-slate-500">Configure interactions and output volume</p>
+                            <h3 className="text-sm font-bold text-type-primary uppercase tracking-wider">Voice & Audio</h3>
+                            <p className="text-xs text-type-muted">Configure interactions and output volume</p>
                         </div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
                         <div className="flex flex-col gap-4 h-full">
                             <div className="h-full">
-                                <label className="text-xs font-medium text-gray-400 mb-2 pl-1 flex items-center gap-2">
+                                <label className="text-xs font-medium text-type-muted mb-2 pl-1 flex items-center gap-2">
                                     Wake Word
-                                    <span className="text-[10px] bg-cyan-500/10 text-cyan-400 px-1.5 py-0.5 rounded uppercase tracking-wider font-bold">Coming Soon</span>
+                                    <span className="text-[10px] bg-gnani-primary/10 text-gnani-primary px-1.5 py-0.5 rounded uppercase tracking-wider font-bold">Coming Soon</span>
                                 </label>
                                 <input
                                     type="text"
                                     value="Gnani"
                                     disabled
-                                    className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-gray-500 focus:outline-none cursor-not-allowed"
+                                    className="w-full bg-canvas-surface border border-glass-border rounded-xl px-4 py-3 text-sm text-type-muted focus:outline-none cursor-not-allowed"
                                 />
                             </div>
                         </div>
 
                         <div className="flex flex-col gap-4 h-full">
-                            <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest pl-1">Preferred Voice</label>
+                            <label className="text-[11px] font-bold text-type-secondary uppercase tracking-widest pl-1">Preferred Voice</label>
                             <GlassDropdown
                                 value={settings.preferredVoice || 'jarvis'}
                                 onChange={(val) => setSettings(prev => ({ ...prev, preferredVoice: val }))}
@@ -134,8 +134,8 @@ const GeneralSection: React.FC = () => {
 
                         <div className="flex flex-col gap-4 col-span-1 md:col-span-2 pt-1">
                             <div className="flex justify-between items-end pl-1">
-                                <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">System Volume</label>
-                                <span className="text-sm font-bold text-cyan-400">{settings.volume}%</span>
+                                <label className="text-[11px] font-bold text-type-muted uppercase tracking-widest">System Volume</label>
+                                <span className="text-sm font-bold text-gnani-primary">{settings.volume}%</span>
                             </div>
                             <input
                                 type="range"
@@ -144,27 +144,27 @@ const GeneralSection: React.FC = () => {
                                 max="100"
                                 value={settings.volume || 80}
                                 onChange={handleSettingsChange}
-                                className="w-full h-1 bg-white/10 rounded-full appearance-none cursor-pointer accent-cyan-400 hover:accent-cyan-300 transition-all"
+                                className="w-full h-1 bg-glass-border rounded-full appearance-none cursor-pointer accent-gnani-primary hover:accent-gnani-primary/80 transition-all"
                             />
                         </div>
                     </div>
                 </div>
 
                 {/* System Intelligence */}
-                <div className="bg-[#0f0f1a]/60 border border-white/5 rounded-xl p-5 backdrop-blur-sm">
+                <div className="bg-canvas-surface/20 border border-glass-border rounded-xl p-5 backdrop-blur-sm">
                     <div className="flex items-center gap-3 mb-5">
                         <div className="p-2 bg-purple-500/10 rounded-lg text-purple-400">
                             <Globe size={18} />
                         </div>
                         <div>
-                            <h3 className="text-sm font-bold text-white uppercase tracking-wider">System Intelligence</h3>
-                            <p className="text-xs text-slate-500">AI Model and Language Preferences</p>
+                            <h3 className="text-sm font-bold text-type-primary uppercase tracking-wider">System Intelligence</h3>
+                            <p className="text-xs text-type-muted">AI Model and Language Preferences</p>
                         </div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
                         <div className="flex flex-col gap-4">
-                            <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest pl-1">Preferred Model</label>
+                            <label className="text-[11px] font-bold text-type-secondary uppercase tracking-widest pl-1">Preferred Model</label>
                             <GlassDropdown
                                 value={settings.preferredModel || 'llama3'}
                                 onChange={(val) => setSettings(prev => ({ ...prev, preferredModel: val }))}
@@ -172,7 +172,7 @@ const GeneralSection: React.FC = () => {
                                 className="w-full text-sm py-2"
                             />
                             {settings.preferredModel && models.length > 0 && (
-                                <p className="text-[10px] text-slate-500 mt-1.5 flex items-center gap-1 pl-1">
+                                <p className="text-[10px] text-type-muted mt-1.5 flex items-center gap-1 pl-1">
                                     <Info size={10} />
                                     {models.find(m => m.id === settings.preferredModel)?.description || 'Selected model'}
                                 </p>
@@ -182,9 +182,9 @@ const GeneralSection: React.FC = () => {
                         <div className="flex flex-col gap-4">
                             {/* Language - Disabled */}
                             <div>
-                                <label className="text-xs font-medium text-gray-400 mb-2 pl-1 flex items-center gap-2">
+                                <label className="text-xs font-medium text-type-muted mb-2 pl-1 flex items-center gap-2">
                                     Language
-                                    <span className="text-[10px] bg-cyan-500/10 text-cyan-400 px-1.5 py-0.5 rounded uppercase tracking-wider font-bold">Coming Soon</span>
+                                    <span className="text-[10px] bg-gnani-primary/10 text-gnani-primary px-1.5 py-0.5 rounded uppercase tracking-wider font-bold">Coming Soon</span>
                                 </label>
                                 <div className="relative">
                                     <GlassDropdown
@@ -205,20 +205,20 @@ const GeneralSection: React.FC = () => {
                 </div>
 
                 {/* Appearance */}
-                <div className="bg-[#0f0f1a]/60 border border-white/5 rounded-xl p-5 backdrop-blur-sm">
+                <div className="bg-canvas-surface/20 border border-glass-border rounded-xl p-5 backdrop-blur-sm">
                     <div className="flex items-center gap-3 mb-5">
                         <div className="p-2 bg-pink-500/10 rounded-lg text-pink-400">
                             <Monitor size={18} />
                         </div>
                         <div>
-                            <h3 className="text-sm font-bold text-white uppercase tracking-wider">Appearance</h3>
-                            <p className="text-xs text-slate-500">Customize UI and feedback</p>
+                            <h3 className="text-sm font-bold text-type-primary uppercase tracking-wider">Appearance</h3>
+                            <p className="text-xs text-type-muted">Customize UI and feedback</p>
                         </div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
                         <div className="flex flex-col gap-4 h-full">
-                            <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest pl-1">Theme</label>
+                            <label className="text-[11px] font-bold text-type-secondary uppercase tracking-widest pl-1">Theme</label>
                             <GlassDropdown
                                 value={settings.theme || 'jarvis'}
                                 onChange={(val) => setSettings(prev => ({ ...prev, theme: val as any }))}
@@ -232,11 +232,11 @@ const GeneralSection: React.FC = () => {
                         </div>
 
                         <div className="flex flex-col gap-4 h-full">
-                            <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest pl-1">Features</label>
-                            <div className="bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 min-h-[46px] flex items-center justify-between h-full">
+                            <label className="text-[11px] font-bold text-type-muted uppercase tracking-widest pl-1">Features</label>
+                            <div className="bg-canvas-surface border border-glass-border rounded-xl px-4 py-2.5 min-h-[46px] flex items-center justify-between h-full">
                                 <div className="space-y-0.5">
-                                    <span className="text-sm font-medium text-white block">Timestamps</span>
-                                    <span className="text-[10px] text-slate-500">Show time on messages</span>
+                                    <span className="text-sm font-medium text-type-primary block">Timestamps</span>
+                                    <span className="text-[10px] text-type-muted">Show time on messages</span>
                                 </div>
                                 <label className="relative inline-flex items-center cursor-pointer">
                                     <input
@@ -245,7 +245,7 @@ const GeneralSection: React.FC = () => {
                                         checked={settings.showTimestamps !== false}
                                         onChange={(e) => setSettings(prev => ({ ...prev, showTimestamps: e.target.checked }))}
                                     />
-                                    <div className="w-9 h-5 bg-slate-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-cyan-500/50 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-cyan-500"></div>
+                                    <div className="w-9 h-5 bg-glass-shimmer peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-gnani-primary/50 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-gnani-primary"></div>
                                 </label>
                             </div>
                         </div>
@@ -258,7 +258,7 @@ const GeneralSection: React.FC = () => {
                         <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-500/20 to-purple-500/20 flex items-center justify-center border border-white/10">
                             <Heart size={14} className="text-cyan-400" />
                         </div>
-                        <div className="text-xs text-slate-600 font-mono">
+                        <div className="text-xs text-type-muted font-mono">
                             GNANI Core v2.0.0
                         </div>
                     </div>
@@ -267,7 +267,7 @@ const GeneralSection: React.FC = () => {
                         onClick={handleSave}
                         disabled={isSaving || !hasChanges}
                         isLoading={isSaving}
-                        className={`bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 px-6 py-2.5 rounded-xl font-bold uppercase tracking-wider transition-all shadow-[0_0_15px_-3px_rgba(6,182,212,0.1)] hover:shadow-[0_0_20px_-3px_rgba(6,182,212,0.2)] ${!hasChanges ? 'opacity-50 cursor-not-allowed hover:bg-cyan-500/10 hover:shadow-none' : ''}`}
+                        className={`bg-gnani-primary/10 hover:bg-gnani-primary/20 text-gnani-primary border border-gnani-primary/30 px-6 py-2.5 rounded-xl font-bold uppercase tracking-wider transition-all shadow-[0_0_15px_-3px_rgba(var(--primary-rgb),0.1)] hover:shadow-[0_0_20px_-3px_rgba(var(--primary-rgb),0.2)] ${!hasChanges ? 'opacity-50 cursor-not-allowed hover:bg-gnani-primary/10 hover:shadow-none' : ''}`}
                         leftIcon={<Save size={18} />}
                     >
                         Save All Changes

@@ -75,14 +75,14 @@ const BranchTree: React.FC<BranchTreeProps> = ({ className = '' }) => {
                 <div
                     className={`
                         flex items-center gap-2 py-1 px-2 rounded text-xs
-                        ${isActive ? 'bg-cyan-500/20 text-cyan-300' : 'text-cyan-500/60'}
+                        ${isActive ? 'bg-gnani-primary/20 text-gnani-primary' : 'text-type-muted'}
                         ${hasSiblings ? 'font-semibold' : ''}
                     `}
                     style={{ marginLeft: `${node.depth * 20}px` }}
                 >
                     {/* Branch indicator */}
                     {hasSiblings && (
-                        <span className="text-cyan-400">⎇</span>
+                        <span className="text-gnani-secondary">⎇</span>
                     )}
 
                     {/* Message type */}
@@ -98,7 +98,7 @@ const BranchTree: React.FC<BranchTreeProps> = ({ className = '' }) => {
 
                     {/* Branch count */}
                     {hasSiblings && (
-                        <span className="text-cyan-500/60 text-[10px]">
+                        <span className="text-type-muted text-[10px]">
                             ({node.children.length} branches)
                         </span>
                     )}
@@ -110,7 +110,7 @@ const BranchTree: React.FC<BranchTreeProps> = ({ className = '' }) => {
                         {/* Vertical line */}
                         {node.children.length > 1 && (
                             <div
-                                className="absolute left-0 top-0 bottom-0 w-px bg-cyan-500/30"
+                                className="absolute left-0 top-0 bottom-0 w-px bg-line-base"
                                 style={{ marginLeft: `${(node.depth + 1) * 20 - 10}px` }}
                             />
                         )}
@@ -125,7 +125,7 @@ const BranchTree: React.FC<BranchTreeProps> = ({ className = '' }) => {
 
     if (!tree) {
         return (
-            <div className={`text-xs text-cyan-500/60 p-4 ${className}`}>
+            <div className={`text-xs text-type-muted p-4 ${className}`}>
                 No conversation tree available
             </div>
         );
@@ -133,7 +133,7 @@ const BranchTree: React.FC<BranchTreeProps> = ({ className = '' }) => {
 
     return (
         <div className={`branch-tree overflow-auto ${className}`}>
-            <div className="text-xs font-semibold text-cyan-400 mb-2 px-2">
+            <div className="text-xs font-semibold text-gnani-primary mb-2 px-2">
                 Conversation Tree
             </div>
             {renderNode(tree)}

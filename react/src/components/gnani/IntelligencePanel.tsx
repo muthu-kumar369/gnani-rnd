@@ -19,16 +19,16 @@ const IntelligencePanel: React.FC<IntelligencePanelProps> = ({ isVisible }) => {
 
   const getStatusColor = (status: GnaniAppStatus) => {
     switch (status) {
-      case 'idle': return 'text-gray-400';
-      case 'initializing': return 'text-yellow-400';
-      case 'wake-word-listening': return 'text-orange-400';
-      case 'mic-recording': return 'text-cyan-400';
-      case 'streaming': return 'text-blue-400';
-      case 'receiving-stt': return 'text-indigo-400';
-      case 'thinking': return 'text-purple-400';
-      case 'responding': return 'text-green-400';
-      case 'error': return 'text-red-500';
-      default: return 'text-gray-400';
+      case 'idle': return 'text-type-muted';
+      case 'initializing': return 'text-status-warning';
+      case 'wake-word-listening': return 'text-status-warning';
+      case 'mic-recording': return 'text-gnani-primary';
+      case 'streaming': return 'text-gnani-primary';
+      case 'receiving-stt': return 'text-gnani-secondary';
+      case 'thinking': return 'text-gnani-primary';
+      case 'responding': return 'text-status-success';
+      case 'error': return 'text-status-error';
+      default: return 'text-type-muted';
     }
   };
 
@@ -36,13 +36,13 @@ const IntelligencePanel: React.FC<IntelligencePanelProps> = ({ isVisible }) => {
     <AnimatePresence>
       {isVisible && (
         <motion.div
-          className="absolute top-4 right-4 z-50 w-80 bg-black bg-opacity-70 backdrop-blur-sm border border-cyan-700 rounded-lg p-4 font-mono text-sm shadow-lg"
+          className="absolute top-4 right-4 z-50 w-80 bg-canvas-panel bg-opacity-95 backdrop-blur-sm border border-gnani-primary/50 rounded-lg p-4 font-mono text-sm shadow-lg"
           initial="hidden"
           animate="visible"
           exit="hidden"
           variants={panelVariants}
         >
-          <h3 className="text-lg font-bold text-cyan-300 mb-3 border-b border-cyan-700 pb-2">
+          <h3 className="text-lg font-bold text-gnani-primary mb-3 border-b border-gnani-primary/50 pb-2">
             GNANI Intelligence
           </h3>
           <div className="space-y-2">
@@ -65,7 +65,7 @@ const IntelligencePanel: React.FC<IntelligencePanelProps> = ({ isVisible }) => {
               </span>
             </p>
             <p>
-              Audio Level: <span className="text-cyan-300">{(audioLevel * 100).toFixed(1)}%</span>
+              Audio Level: <span className="text-gnani-primary">{(audioLevel * 100).toFixed(1)}%</span>
             </p>
             <p>
               Stream Connected:{' '}
@@ -81,18 +81,18 @@ const IntelligencePanel: React.FC<IntelligencePanelProps> = ({ isVisible }) => {
             )}
 
             {/* Simulation Controls for Verification */}
-            <div className="mt-4 pt-4 border-t border-cyan-700/50">
-              <h4 className="text-xs font-bold text-cyan-500 mb-2 uppercase">Simulation Controls</h4>
+            <div className="mt-4 pt-4 border-t border-gnani-primary/30">
+              <h4 className="text-xs font-bold text-gnani-secondary mb-2 uppercase">Simulation Controls</h4>
               <div className="grid grid-cols-2 gap-2">
                 <button
                   onClick={() => window.dispatchEvent(new CustomEvent('test:wake'))}
-                  className="px-2 py-1 bg-cyan-900/40 hover:bg-cyan-800/60 border border-cyan-600/30 rounded text-xs text-cyan-300 transition-colors"
+                  className="px-2 py-1 bg-gnani-primary/10 hover:bg-gnani-primary/20 border border-gnani-primary/30 rounded text-xs text-gnani-primary transition-colors"
                 >
                   Simulate Wake
                 </button>
                 <button
                   onClick={() => window.dispatchEvent(new CustomEvent('test:stt', { detail: { text: "Hello Gnani" } }))}
-                  className="px-2 py-1 bg-cyan-900/40 hover:bg-cyan-800/60 border border-cyan-600/30 rounded text-xs text-cyan-300 transition-colors"
+                  className="px-2 py-1 bg-gnani-primary/10 hover:bg-gnani-primary/20 border border-gnani-primary/30 rounded text-xs text-gnani-primary transition-colors"
                 >
                   Simulate STT
                 </button>

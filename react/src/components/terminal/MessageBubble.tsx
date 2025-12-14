@@ -53,31 +53,31 @@ const MessageBubble: React.FC<MessageBubbleProps> = memo(({ message, isLatest, s
 
     const getIcon = () => {
         switch (message.type) {
-            case 'user': return <User size={14} className="text-cyan-300" />;
-            case 'gnani': return <Bot size={14} className="text-cyan-300" />;
-            case 'tts': return <Volume2 size={14} className="text-cyan-300" />;
-            case 'action': return <Activity size={14} className="text-cyan-300" />;
-            default: return <Terminal size={14} className="text-cyan-300" />;
+            case 'user': return <User size={14} className="text-gnani-primary" />;
+            case 'gnani': return <Bot size={14} className="text-gnani-primary" />;
+            case 'tts': return <Volume2 size={14} className="text-gnani-primary" />;
+            case 'action': return <Activity size={14} className="text-gnani-primary" />;
+            default: return <Terminal size={14} className="text-gnani-primary" />;
         }
     };
 
     const getBorderColor = () => {
         switch (message.type) {
-            case 'user': return 'border-cyan-500/30';
-            case 'gnani': return 'border-cyan-400/50';
-            case 'tts': return 'border-cyan-300/60';
-            case 'action': return 'border-yellow-500/30';
-            default: return 'border-gray-600/30';
+            case 'user': return 'border-gnani-primary/30';
+            case 'gnani': return 'border-gnani-primary/50';
+            case 'tts': return 'border-gnani-primary/60';
+            case 'action': return 'border-status-warning/30';
+            default: return 'border-line-base';
         }
     };
 
     const getBgColor = () => {
         switch (message.type) {
-            case 'user': return 'bg-cyan-950/20';
-            case 'gnani': return 'bg-cyan-900/20';
-            case 'tts': return 'bg-cyan-800/20';
-            case 'action': return 'bg-yellow-900/10';
-            default: return 'bg-gray-900/20';
+            case 'user': return 'bg-canvas-surface/40';
+            case 'gnani': return 'bg-gnani-primary/5'; // Subtle tint for assistant
+            case 'tts': return 'bg-gnani-primary/10';
+            case 'action': return 'bg-status-warning/10';
+            default: return 'bg-canvas-surface/20';
         }
     };
 
@@ -137,17 +137,17 @@ const MessageBubble: React.FC<MessageBubbleProps> = memo(({ message, isLatest, s
             >
                 {/* Holographic scanline effect for active/latest messages */}
                 {isLatest && (
-                    <div className="absolute inset-0 pointer-events-none opacity-10 bg-gradient-to-b from-transparent via-cyan-400 to-transparent animate-scanline rounded-lg" />
+                    <div className="absolute inset-0 pointer-events-none opacity-10 bg-gradient-to-b from-transparent via-gnani-primary to-transparent animate-scanline rounded-lg" />
                 )}
 
                 {/* Inline Edit Button (only for user messages, not in edit mode) */}
                 {isUser && !isInlineEditing && !isSystem && (
                     <button
                         onClick={handleStartInlineEdit}
-                        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 hover:bg-cyan-500/20 rounded cursor-pointer"
+                        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 hover:bg-glass-shimmer rounded cursor-pointer"
                         title="Edit message (inline)"
                     >
-                        <Edit2 size={14} className="text-cyan-400" />
+                        <Edit2 size={14} className="text-gnani-primary" />
                     </button>
                 )}
 
@@ -178,7 +178,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = memo(({ message, isLatest, s
 
                 <div className="flex items-start gap-3">
                     {/* Avatar/Icon Box */}
-                    <div className="shrink-0 w-6 h-6 rounded border border-cyan-500/30 flex items-center justify-center bg-black/40 shadow-[0_0_10px_rgba(6,182,212,0.1)]">
+                    <div className="shrink-0 w-6 h-6 rounded border border-gnani-primary/30 flex items-center justify-center bg-canvas-surface/40 shadow-[0_0_10px_rgba(var(--primary-rgb),0.1)]">
                         {getIcon()}
                     </div>
 
@@ -186,35 +186,35 @@ const MessageBubble: React.FC<MessageBubbleProps> = memo(({ message, isLatest, s
                     <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between mb-1">
                             <div className="flex items-center gap-2">
-                                <span className="text-[10px] font-bold uppercase tracking-wider text-cyan-500">
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-gnani-primary">
                                     {message.type}
                                 </span>
                                 {showTimestamp && <MessageTimestamp timestamp={message.timestamp} />}
 
                                 {/* Edited Indicator */}
                                 {message.metadata?.edited && (
-                                    <span className="text-xs text-cyan-500/60">(edited)</span>
+                                    <span className="text-xs text-type-muted">(edited)</span>
                                 )}
 
                                 {/* STAGE 23: Model Indicator */}
                                 {message.metadata?.model && (
-                                    <span className="text-xs text-cyan-500/60">
+                                    <span className="text-xs text-type-muted">
                                         via {message.metadata.model}
                                     </span>
                                 )}
 
                                 {/* Branch Info */}
                                 {(message.children && message.children.length > 1) && (
-                                    <span className="text-[10px] text-cyan-600 font-mono flex items-center gap-1 select-none">
+                                    <span className="text-[10px] text-gnani-secondary font-mono flex items-center gap-1 select-none">
                                         <ChevronLeft
                                             size={10}
-                                            className="cursor-pointer hover:text-cyan-400"
+                                            className="cursor-pointer hover:text-gnani-primary"
                                             onClick={() => navigateToBranch(message.id, 'prev')}
                                         />
                                         {(message.branchIndex || 0) + 1}/{message.children.length}
                                         <ChevronRight
                                             size={10}
-                                            className="cursor-pointer hover:text-cyan-400"
+                                            className="cursor-pointer hover:text-gnani-primary"
                                             onClick={() => navigateToBranch(message.id, 'next')}
                                         />
                                     </span>
@@ -256,7 +256,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = memo(({ message, isLatest, s
                                             isStreaming={true}
                                             className=""
                                         />
-                                        <p className="text-xs text-cyan-500/60 mt-1">Streaming response...</p>
+                                        <p className="text-xs text-gnani-primary/60 mt-1">Streaming response...</p>
                                     </div>
                                 )}
                             </>
@@ -281,14 +281,14 @@ const MessageBubble: React.FC<MessageBubbleProps> = memo(({ message, isLatest, s
 
                         {/* Regenerate Button - Prominent below latest assistant message */}
                         {isGnani && isLatest && !isInlineEditing && (
-                            <div className="mt-3 flex items-center justify-between border-t border-cyan-500/20 pt-3">
+                            <div className="mt-3 flex items-center justify-between border-t border-glass-border pt-3">
                                 {/* Variant Counter (only if multiple generations) */}
                                 {totalGenerations > 1 && (
-                                    <div className="flex items-center gap-2 text-xs text-cyan-500/60">
+                                    <div className="flex items-center gap-2 text-xs text-type-muted">
                                         <button
                                             onClick={() => navigateToGeneration(message.id, 'prev')}
                                             disabled={currentIndex === 0}
-                                            className="p-1 hover:bg-cyan-500/20 rounded disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                                            className="p-1 hover:bg-glass-shimmer rounded disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
                                             title="Previous variant"
                                         >
                                             <ChevronLeft size={14} />
@@ -297,7 +297,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = memo(({ message, isLatest, s
                                         <button
                                             onClick={() => navigateToGeneration(message.id, 'next')}
                                             disabled={currentIndex === totalGenerations - 1}
-                                            className="p-1 hover:bg-cyan-500/20 rounded disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                                            className="p-1 hover:bg-glass-shimmer rounded disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
                                             title="Next variant"
                                         >
                                             <ChevronRight size={14} />
@@ -309,7 +309,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = memo(({ message, isLatest, s
                                 <button
                                     onClick={() => actions.regenerateMessage(message.id)}
                                     disabled={actions.isLoading}
-                                    className="flex items-center gap-2 px-3 py-1.5 text-xs bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed ml-auto cursor-pointer"
+                                    className="flex items-center gap-2 px-3 py-1.5 text-xs bg-gnani-primary/10 hover:bg-gnani-primary/20 border border-gnani-primary/30 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed ml-auto cursor-pointer"
                                     title="Regenerate response"
                                 >
                                     <RotateCw size={14} className={actions.isLoading ? 'animate-spin' : ''} />
@@ -321,10 +321,10 @@ const MessageBubble: React.FC<MessageBubbleProps> = memo(({ message, isLatest, s
                 </div>
 
                 {/* Corner Accents */}
-                <div className="absolute top-0 left-0 w-2 h-2 border-t border-l border-cyan-500/50 rounded-tl-lg" />
-                <div className="absolute top-0 right-0 w-2 h-2 border-t border-r border-cyan-500/50 rounded-tr-lg" />
-                <div className="absolute bottom-0 left-0 w-2 h-2 border-b border-l border-cyan-500/50 rounded-bl-lg" />
-                <div className="absolute bottom-0 right-0 w-2 h-2 border-b border-r border-cyan-500/50 rounded-br-lg" />
+                <div className="absolute top-0 left-0 w-2 h-2 border-t border-l border-gnani-primary/50 rounded-tl-lg" />
+                <div className="absolute top-0 right-0 w-2 h-2 border-t border-r border-gnani-primary/50 rounded-tr-lg" />
+                <div className="absolute bottom-0 left-0 w-2 h-2 border-b border-l border-gnani-primary/50 rounded-bl-lg" />
+                <div className="absolute bottom-0 right-0 w-2 h-2 border-b border-r border-gnani-primary/50 rounded-br-lg" />
             </motion.div >
 
             {/* Modals */}

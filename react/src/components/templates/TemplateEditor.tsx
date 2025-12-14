@@ -51,44 +51,44 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({ template, onSave, onCan
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-bg-overlay backdrop-blur-sm p-4">
             <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
-                className="bg-jarvis-panel border border-jarvis-border rounded-lg shadow-jarvis-glow w-full max-w-2xl overflow-hidden"
+                className="bg-canvas-panel border border-glass-border rounded-lg shadow-xl drop-shadow-glow w-full max-w-2xl overflow-hidden"
             >
-                <div className="flex items-center justify-between p-4 border-b border-jarvis-border bg-jarvis-bg/50">
-                    <h2 className="text-lg font-semibold text-jarvis-blue">
+                <div className="flex items-center justify-between p-4 border-b border-glass-border bg-canvas/50">
+                    <h2 className="text-lg font-semibold text-gnani-primary">
                         {template ? 'Edit Template' : 'Create New Template'}
                     </h2>
-                    <button onClick={onCancel} className="text-jarvis-text hover:text-jarvis-blue transition-colors">
+                    <button onClick={onCancel} className="text-type-primary hover:text-gnani-primary transition-colors">
                         <X size={20} />
                     </button>
                 </div>
 
                 <form onSubmit={handleSubmit} className="p-6 space-y-4">
                     {error && (
-                        <div className="p-3 bg-red-500/10 border border-red-500/50 text-red-400 rounded text-sm">
+                        <div className="p-3 bg-status-error/10 border border-status-error/50 text-status-error rounded text-sm">
                             {error}
                         </div>
                     )}
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-2">
-                            <label className="text-xs font-mono text-jarvis-cyan/70 uppercase">Name</label>
+                            <label className="text-xs font-mono text-type-muted uppercase">Name</label>
                             <input
                                 type="text"
                                 value={name}
                                 onChange={(e) => setName(e.target.value)}
-                                className="w-full bg-jarvis-bg border border-jarvis-border rounded p-2 text-jarvis-text focus:border-jarvis-blue focus:outline-none transition-colors"
+                                className="w-full bg-canvas-surface border border-glass-border rounded p-2 text-type-primary focus:border-gnani-primary focus:outline-none transition-colors"
                                 placeholder="e.g., Python Expert"
                                 required
                             />
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-xs font-mono text-jarvis-cyan/70 uppercase">Icon</label>
+                            <label className="text-xs font-mono text-type-muted uppercase">Icon</label>
                             <div className="flex gap-2 flex-wrap">
                                 {ICONS.map((item) => {
                                     const IconComponent = item.icon;
@@ -98,8 +98,8 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({ template, onSave, onCan
                                             type="button"
                                             onClick={() => setIcon(item.name)}
                                             className={`p-2 rounded border transition-all ${icon === item.name
-                                                ? 'bg-jarvis-blue/20 border-jarvis-blue text-jarvis-blue'
-                                                : 'bg-jarvis-bg border-jarvis-border text-jarvis-text hover:border-jarvis-cyan/50'
+                                                ? 'bg-gnani-primary/20 border-gnani-primary text-gnani-primary'
+                                                : 'bg-canvas-surface border-glass-border text-type-primary hover:border-gnani-primary/50'
                                                 }`}
                                         >
                                             <IconComponent size={18} />
@@ -111,23 +111,23 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({ template, onSave, onCan
                     </div>
 
                     <div className="space-y-2">
-                        <label className="text-xs font-mono text-jarvis-cyan/70 uppercase">Description</label>
+                        <label className="text-xs font-mono text-type-muted uppercase">Description</label>
                         <input
                             type="text"
                             value={description}
                             onChange={(e) => setDescription(e.target.value)}
-                            className="w-full bg-jarvis-bg border border-jarvis-border rounded p-2 text-jarvis-text focus:border-jarvis-blue focus:outline-none transition-colors"
+                            className="w-full bg-canvas-surface border border-glass-border rounded p-2 text-type-primary focus:border-gnani-primary focus:outline-none transition-colors"
                             placeholder="Brief description of what this assistant does..."
                             required
                         />
                     </div>
 
                     <div className="space-y-2">
-                        <label className="text-xs font-mono text-jarvis-cyan/70 uppercase">System Prompt</label>
+                        <label className="text-xs font-mono text-type-muted uppercase">System Prompt</label>
                         <textarea
                             value={systemPrompt}
                             onChange={(e) => setSystemPrompt(e.target.value)}
-                            className="w-full h-40 bg-jarvis-bg border border-jarvis-border rounded p-2 text-jarvis-text focus:border-jarvis-blue focus:outline-none transition-colors font-mono text-sm resize-none"
+                            className="w-full h-40 bg-canvas-surface border border-glass-border rounded p-2 text-type-primary focus:border-gnani-primary focus:outline-none transition-colors font-mono text-sm resize-none"
                             placeholder="You are a helpful AI assistant..."
                             required
                         />
@@ -137,14 +137,14 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({ template, onSave, onCan
                         <button
                             type="button"
                             onClick={onCancel}
-                            className="px-4 py-2 text-sm text-jarvis-text hover:text-white transition-colors"
+                            className="px-4 py-2 text-sm text-type-primary hover:text-type-secondary transition-colors"
                         >
                             Cancel
                         </button>
                         <button
                             type="submit"
                             disabled={isSubmitting}
-                            className="px-4 py-2 bg-jarvis-blue/20 border border-jarvis-blue text-jarvis-blue hover:bg-jarvis-blue/30 rounded flex items-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="px-4 py-2 bg-gnani-primary/20 border border-gnani-primary text-gnani-primary hover:bg-gnani-primary/30 rounded flex items-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             <Save size={16} />
                             {isSubmitting ? 'Saving...' : 'Save Template'}

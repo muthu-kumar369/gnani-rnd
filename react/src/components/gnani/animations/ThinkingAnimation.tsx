@@ -6,14 +6,14 @@ const ThinkingAnimation: React.FC = () => {
         <div className="relative w-64 h-64 flex items-center justify-center">
             {/* Fast Inner Spin */}
             <motion.div
-                className="absolute w-24 h-24 border-t-4 border-b-4 border-cyan-400 rounded-full"
+                className="absolute w-24 h-24 border-t-4 border-b-4 border-gnani-primary rounded-full"
                 animate={{ rotate: 360 }}
                 transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
             />
 
             {/* Middle Ring with Gaps */}
             <motion.div
-                className="absolute w-40 h-40 border-2 border-dashed border-cyan-500/40 rounded-full"
+                className="absolute w-40 h-40 border-2 border-dashed border-gnani-primary/40 rounded-full"
                 animate={{ rotate: -360 }}
                 transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
             />
@@ -24,7 +24,7 @@ const ThinkingAnimation: React.FC = () => {
                     cx="50"
                     cy="50"
                     r="48"
-                    stroke="rgba(6,182,212,0.3)"
+                    stroke="rgba(var(--primary-rgb),0.3)"
                     strokeWidth="1"
                     fill="none"
                     strokeDasharray="10 5"
@@ -35,7 +35,7 @@ const ThinkingAnimation: React.FC = () => {
 
             {/* Pulsing Core */}
             <motion.div
-                className="w-12 h-12 bg-cyan-600/80 rounded-full blur-md"
+                className="w-12 h-12 bg-gnani-primary/80 rounded-full blur-md"
                 animate={{
                     scale: [0.8, 1.2, 0.8],
                     opacity: [0.5, 0.8, 0.5],
@@ -48,7 +48,7 @@ const ThinkingAnimation: React.FC = () => {
                 {[0, 45, 90, 135, 180, 225, 270, 315].map((deg, i) => (
                     <motion.div
                         key={i}
-                        className="absolute w-1 h-1 bg-cyan-200 rounded-full"
+                        className="absolute w-1 h-1 bg-gnani-secondary rounded-full"
                         style={{ transformOrigin: "center center" }}
                         animate={{
                             transform: [`rotate(${deg}deg) translateX(30px)`, `rotate(${deg}deg) translateX(60px)`],

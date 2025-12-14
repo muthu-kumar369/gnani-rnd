@@ -167,14 +167,14 @@ const PersonalizationSection: React.FC = () => {
             <div className="grid gap-6">
 
                 {/* Profile Identity Card */}
-                <div className="bg-[#0f0f1a]/60 border border-white/5 rounded-xl p-5 backdrop-blur-sm">
+                <div className="bg-canvas-surface/20 border border-glass-border rounded-xl p-5 backdrop-blur-sm">
                     <div className="flex items-center gap-3 mb-5">
                         <div className="p-2 bg-blue-500/10 rounded-lg text-blue-400">
                             <User size={18} />
                         </div>
                         <div>
-                            <h3 className="text-sm font-bold text-white uppercase tracking-wider">Identity</h3>
-                            <p className="text-xs text-slate-500">Manage your personal profile details</p>
+                            <h3 className="text-sm font-bold text-type-primary uppercase tracking-wider">Identity</h3>
+                            <p className="text-xs text-type-muted">Manage your personal profile details</p>
                         </div>
                     </div>
 
@@ -184,7 +184,7 @@ const PersonalizationSection: React.FC = () => {
                             <div className="relative group">
                                 <div
                                     onClick={handlePhotoClick}
-                                    className={`w-24 h-24 rounded-2xl overflow-hidden border border-white/10 shadow-lg bg-[#0a0a15] flex items-center justify-center relative cursor-pointer hover:border-cyan-500/50 transition-colors ${isUploadingPhoto ? 'opacity-50 pointer-events-none' : ''}`}
+                                    className={`w-24 h-24 rounded-2xl overflow-hidden border border-glass-border shadow-lg bg-canvas-surface flex items-center justify-center relative cursor-pointer hover:border-gnani-primary/50 transition-colors ${isUploadingPhoto ? 'opacity-50 pointer-events-none' : ''}`}
                                 >
                                     {profileImageUrl ? (
                                         <img
@@ -197,12 +197,12 @@ const PersonalizationSection: React.FC = () => {
                                             }}
                                         />
                                     ) : (
-                                        <div className="w-full h-full flex items-center justify-center bg-cyan-500/5 text-cyan-400 text-2xl font-bold font-mono">
+                                        <div className="w-full h-full flex items-center justify-center bg-gnani-primary/5 text-gnani-primary text-2xl font-bold font-mono">
                                             {getInitials()}
                                         </div>
                                     )}
                                     {/* Fallback duplicated for robustness if img fails */}
-                                    <div className="hidden fallback-active:flex w-full h-full absolute inset-0 items-center justify-center bg-cyan-500/5 text-cyan-400 text-2xl font-bold font-mono">
+                                    <div className="hidden fallback-active:flex w-full h-full absolute inset-0 items-center justify-center bg-gnani-primary/5 text-gnani-primary text-2xl font-bold font-mono">
                                         {getInitials()}
                                     </div>
 
@@ -234,7 +234,7 @@ const PersonalizationSection: React.FC = () => {
                                 />
 
                                 <div className="flex items-center justify-center mt-3">
-                                    <p className="text-[10px] text-slate-500 font-medium uppercase tracking-wider">Profile Photo</p>
+                                    <p className="text-[10px] text-type-muted font-medium uppercase tracking-wider">Profile Photo</p>
                                 </div>
                             </div>
                         </div>
@@ -243,29 +243,29 @@ const PersonalizationSection: React.FC = () => {
                         <div className="flex-1 space-y-5">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
                                 <div className="flex flex-col gap-4">
-                                    <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest pl-1">First Name</label>
+                                    <label className="text-[11px] font-bold text-type-muted uppercase tracking-widest pl-1">First Name</label>
                                     <Input
                                         name="firstName"
                                         value={profileData.firstName || ''}
                                         onChange={handleProfileChange}
                                         placeholder="Enter first name"
-                                        className="!bg-black/40 !border-white/10 !rounded-xl !px-4 !py-3 text-sm text-white placeholder:text-slate-600 focus:!border-cyan-500/30"
+                                        className="!bg-canvas-surface !border-glass-border !rounded-xl !px-4 !py-3 text-sm text-type-primary placeholder:text-type-muted/60 focus:!border-gnani-primary/30"
                                     />
                                 </div>
                                 <div className="flex flex-col gap-4">
-                                    <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest pl-1">Last Name</label>
+                                    <label className="text-[11px] font-bold text-type-muted uppercase tracking-widest pl-1">Last Name</label>
                                     <Input
                                         name="lastName"
                                         value={profileData.lastName || ''}
                                         onChange={handleProfileChange}
                                         placeholder="Enter last name"
-                                        className="!bg-black/40 !border-white/10 !rounded-xl !px-4 !py-3 text-sm text-white placeholder:text-slate-600 focus:!border-cyan-500/30"
+                                        className="!bg-canvas-surface !border-glass-border !rounded-xl !px-4 !py-3 text-sm text-type-primary placeholder:text-type-muted/60 focus:!border-gnani-primary/30"
                                     />
                                 </div>
                             </div>
 
                             <div className="flex flex-col gap-4 max-w-[50%]">
-                                <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest pl-1">Date of Birth</label>
+                                <label className="text-[11px] font-bold text-type-muted uppercase tracking-widest pl-1">Date of Birth</label>
                                 <GlassDatePicker
                                     value={profileData.dob}
                                     onChange={handleDateChange}
@@ -278,7 +278,7 @@ const PersonalizationSection: React.FC = () => {
                                     onClick={handleSaveProfile}
                                     disabled={isSavingProfile || !hasProfileChanges}
                                     isLoading={isSavingProfile}
-                                    className={`bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 px-6 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all shadow-[0_0_15px_-3px_rgba(6,182,212,0.1)] hover:shadow-[0_0_20px_-3px_rgba(6,182,212,0.2)] ${!hasProfileChanges ? 'opacity-50 cursor-not-allowed hover:bg-cyan-500/10 hover:shadow-none' : ''}`}
+                                    className={`bg-gnani-primary/10 hover:bg-gnani-primary/20 text-gnani-primary border border-gnani-primary/30 px-6 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all shadow-[0_0_15px_-3px_rgba(var(--primary-rgb),0.1)] hover:shadow-[0_0_20px_-3px_rgba(var(--primary-rgb),0.2)] ${!hasProfileChanges ? 'opacity-50 cursor-not-allowed hover:bg-gnani-primary/10 hover:shadow-none' : ''}`}
                                     leftIcon={<Save size={16} />}
                                 >
                                     Save Profile
@@ -289,14 +289,14 @@ const PersonalizationSection: React.FC = () => {
                 </div>
 
                 {/* Personal Notes (Memory) */}
-                <div className="bg-[#0f0f1a]/60 border border-white/5 rounded-xl p-5 backdrop-blur-sm">
+                <div className="bg-canvas-surface/20 border border-glass-border rounded-xl p-5 backdrop-blur-sm">
                     <div className="flex items-center gap-3 mb-5">
                         <div className="p-2 bg-purple-500/10 rounded-lg text-purple-400">
                             <StickyNote size={18} />
                         </div>
                         <div>
-                            <h3 className="text-sm font-bold text-white uppercase tracking-wider">Personal Memory</h3>
-                            <p className="text-xs text-slate-500">Facts about you that Gnani should remember</p>
+                            <h3 className="text-sm font-bold text-type-primary uppercase tracking-wider">Personal Memory</h3>
+                            <p className="text-xs text-type-muted">Facts about you that Gnani should remember</p>
                         </div>
                     </div>
 
@@ -309,7 +309,7 @@ const PersonalizationSection: React.FC = () => {
                                     onChange={(e) => setNewNote(e.target.value)}
                                     onKeyPress={(e) => e.key === 'Enter' && handleAddNote()}
                                     placeholder="E.g. I am a vegan, I work as a developer..."
-                                    className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/50 transition-all"
+                                    className="w-full bg-canvas-surface border border-glass-border rounded-xl px-4 py-3 text-sm text-type-primary placeholder:text-type-muted/60 focus:outline-none focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/50 transition-all"
                                 />
                             </div>
                             <Button
@@ -324,12 +324,12 @@ const PersonalizationSection: React.FC = () => {
 
                         <div className="space-y-2.5 pt-2">
                             {user.notes.map((note: string, index: number) => (
-                                <div key={index} className="group flex items-center justify-between p-3.5 bg-black/20 hover:bg-black/40 border border-white/5 hover:border-white/10 rounded-xl transition-all duration-200">
-                                    <span className="text-sm text-slate-300 pl-1">{note}</span>
+                                <div key={index} className="group flex items-center justify-between p-3.5 bg-canvas-surface/50 hover:bg-canvas-surface border border-glass-border hover:border-glass-border/80 rounded-xl transition-all duration-200">
+                                    <span className="text-sm text-type-primary pl-1">{note}</span>
                                     <button
                                         onClick={() => handleDeleteNote(index)}
                                         disabled={deletingNoteIndex === index}
-                                        className="opacity-0 group-hover:opacity-100 p-2 text-slate-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all"
+                                        className="opacity-0 group-hover:opacity-100 p-2 text-type-muted hover:text-status-error hover:bg-status-error/10 rounded-lg transition-all"
                                         title="Delete memory"
                                     >
                                         <Trash2 size={16} />
@@ -338,14 +338,14 @@ const PersonalizationSection: React.FC = () => {
                             ))}
 
                             {user.notes.length === 0 && (
-                                <div className="text-center py-8 border border-dashed border-white/5 rounded-xl">
-                                    <p className="text-slate-600 text-xs">No memories added yet.</p>
+                                <div className="text-center py-8 border border-dashed border-glass-border/50 rounded-xl">
+                                    <p className="text-type-muted text-xs">No memories added yet.</p>
                                 </div>
                             )}
                         </div>
                     </div>
                 </div>
-                </div>
+            </div>
 
             <ConfirmationModal
                 isOpen={isDeletePhotoModalOpen}

@@ -98,7 +98,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({ selectedTemplate, o
                             }}
                         >
                             {templates.length === 0 ? (
-                                <div className="p-3 text-center text-cyan-500/60 text-xs">
+                                <div className="p-3 text-center text-gnani-primary/60 text-xs">
                                     No templates available
                                 </div>
                             ) : (
@@ -113,11 +113,11 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({ selectedTemplate, o
                                     >
                                         <div className="flex items-start justify-between gap-2">
                                             <div className="flex-1 min-w-0">
-                                                <div className="text-xs font-medium text-cyan-100 truncate">
+                                                <div className="text-xs font-medium text-type-primary truncate">
                                                     {template.name}
                                                 </div>
                                                 {template.description && (
-                                                    <div className="text-[10px] text-cyan-500/60 mt-0.5 line-clamp-1">
+                                                    <div className="text-[10px] text-gnani-primary/60 mt-0.5 line-clamp-1">
                                                         {template.description}
                                                     </div>
                                                 )}
@@ -126,7 +126,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({ selectedTemplate, o
                                                         {template.tags.slice(0, 2).map((tag, idx) => (
                                                             <span
                                                                 key={idx}
-                                                                className="text-[9px] px-1 py-0.5 bg-cyan-500/10 border border-cyan-500/20 rounded text-cyan-400"
+                                                                className="text-[9px] px-1 py-0.5 bg-gnani-primary/10 border border-gnani-primary/20 rounded text-gnani-primary"
                                                             >
                                                                 {tag}
                                                             </span>
@@ -135,7 +135,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({ selectedTemplate, o
                                                 )}
                                             </div>
                                             {template._id === selectedTemplate && (
-                                                <Check size={12} className="text-cyan-400 flex-shrink-0" />
+                                                <Check size={12} className="text-gnani-primary flex-shrink-0" />
                                             )}
                                         </div>
                                     </button>
@@ -144,13 +144,13 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({ selectedTemplate, o
                         </div>
 
                         {/* Fixed Manage Templates button at bottom */}
-                        <div className="border-t border-cyan-500/20">
+                        <div className="border-t border-gnani-primary/20">
                             <button
                                 onClick={handleManageTemplates}
-                                className="w-full px-3 py-2 text-left hover:bg-cyan-500/10 transition-colors flex items-center gap-2"
+                                className="w-full px-3 py-2 text-left hover:bg-gnani-primary/10 transition-colors flex items-center gap-2"
                             >
-                                <Settings size={12} className="text-cyan-400" />
-                                <span className="text-[11px] text-cyan-400 font-medium">Manage Templates</span>
+                                <Settings size={12} className="text-gnani-primary" />
+                                <span className="text-[11px] text-gnani-primary font-medium">Manage Templates</span>
                             </button>
                         </div>
                     </motion.div>

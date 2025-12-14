@@ -28,25 +28,25 @@ const UsageStats: React.FC = () => {
             icon: MessageSquare,
             label: 'Messages',
             value: formatNumber(stats.totalMessages),
-            color: 'text-cyan-400',
+            color: 'text-gnani-primary',
         },
         {
             icon: BarChart3,
             label: 'Conversations',
             value: formatNumber(stats.totalConversations),
-            color: 'text-blue-400',
+            color: 'text-gnani-secondary',
         },
         {
             icon: Hash,
             label: 'Tokens',
             value: formatNumber(stats.totalTokens),
-            color: 'text-purple-400',
+            color: 'text-type-primary',
         },
         {
             icon: Clock,
             label: 'Last Active',
             value: formatLastActive(stats.lastActive),
-            color: 'text-green-400',
+            color: 'text-status-success',
         },
     ];
 
@@ -55,14 +55,14 @@ const UsageStats: React.FC = () => {
             {statItems.map((item) => (
                 <div
                     key={item.label}
-                    className="flex items-center gap-2 px-3 py-2 rounded-lg bg-black/40 border border-cyan-500/20 backdrop-blur-sm"
+                    className="flex items-center gap-2 px-3 py-2 rounded-lg bg-canvas-panel border border-line-base backdrop-blur-sm"
                 >
                     <item.icon size={16} className={item.color} />
                     <div className="flex-1">
                         <div className={`text-sm font-semibold ${item.color}`}>
                             {item.value}
                         </div>
-                        <div className="text-xs text-cyan-500/60">{item.label}</div>
+                        <div className="text-xs text-type-muted">{item.label}</div>
                     </div>
                 </div>
             ))}

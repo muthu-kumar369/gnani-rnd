@@ -88,24 +88,24 @@ const SecuritySection: React.FC = () => {
         >
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* MFA Card */}
-                <motion.div variants={itemVariants} className="bg-[#0f0f1a]/40 border border-white/5 rounded-2xl p-6 backdrop-blur-md relative overflow-hidden">
-                    <span className="absolute top-6 right-6 text-[10px] bg-cyan-500/10 text-cyan-400 px-1.5 py-0.5 rounded uppercase tracking-wider font-bold">
+                <motion.div variants={itemVariants} className="bg-canvas-surface/20 border border-glass-border rounded-2xl p-6 backdrop-blur-md relative overflow-hidden">
+                    <span className="absolute top-6 right-6 text-[10px] bg-gnani-primary/10 text-gnani-primary px-1.5 py-0.5 rounded uppercase tracking-wider font-bold">
                         Coming Soon
                     </span>
                     <div className="flex items-start justify-between mb-4">
                         <div className="flex items-center gap-3">
-                            <div className="p-2.5 rounded-xl bg-slate-500/10 text-slate-400">
+                            <div className="p-2.5 rounded-xl bg-glass-shimmer text-type-muted">
                                 <Shield size={20} />
                             </div>
                             <div>
-                                <h4 className="text-sm font-bold text-white">Two-Factor Authentication</h4>
-                                <p className="text-xs text-slate-400 mt-0.5">Secure your account with 2FA</p>
+                                <h4 className="text-sm font-bold text-type-primary">Two-Factor Authentication</h4>
+                                <p className="text-xs text-type-muted mt-0.5">Secure your account with 2FA</p>
                             </div>
                         </div>
                     </div>
 
-                    <div className="mt-4 pt-4 border-t border-white/5 opacity-50">
-                        <div className="flex items-center gap-2 text-xs text-slate-500 bg-slate-500/10 px-3 py-2 rounded-lg border border-slate-500/20">
+                    <div className="mt-4 pt-4 border-t border-glass-border opacity-50">
+                        <div className="flex items-center gap-2 text-xs text-type-muted bg-glass-shimmer px-3 py-2 rounded-lg border border-glass-border">
                             <Shield size={12} />
                             <span className="font-bold">Protection Disabled</span>
                         </div>
@@ -113,23 +113,23 @@ const SecuritySection: React.FC = () => {
                 </motion.div>
 
                 {/* Recovery Email Card */}
-                <motion.div variants={itemVariants} className="bg-[#0f0f1a]/40 border border-white/5 rounded-2xl p-6 backdrop-blur-md relative overflow-hidden">
-                    <span className="absolute top-6 right-6 text-[10px] bg-cyan-500/10 text-cyan-400 px-1.5 py-0.5 rounded uppercase tracking-wider font-bold">
+                <motion.div variants={itemVariants} className="bg-canvas-surface/20 border border-glass-border rounded-2xl p-6 backdrop-blur-md relative overflow-hidden">
+                    <span className="absolute top-6 right-6 text-[10px] bg-gnani-primary/10 text-gnani-primary px-1.5 py-0.5 rounded uppercase tracking-wider font-bold">
                         Coming Soon
                     </span>
                     <div className="flex items-center gap-3 mb-4">
-                        <div className="p-2.5 rounded-xl bg-slate-500/10 text-slate-400">
+                        <div className="p-2.5 rounded-xl bg-glass-shimmer text-type-muted">
                             <Lock size={20} />
                         </div>
                         <div>
-                            <h4 className="text-sm font-bold text-white">Recovery Methods</h4>
-                            <p className="text-xs text-slate-400 mt-0.5">Backup access to your account</p>
+                            <h4 className="text-sm font-bold text-type-primary">Recovery Methods</h4>
+                            <p className="text-xs text-type-muted mt-0.5">Backup access to your account</p>
                         </div>
                     </div>
 
                     <div className="space-y-3 opacity-60 pointer-events-none grayscale">
                         <div className="space-y-1.5">
-                            <label className="text-[10px] uppercase font-bold text-slate-500 tracking-wider ml-1">Recovery Email</label>
+                            <label className="text-[10px] uppercase font-bold text-type-secondary tracking-wider ml-1">Recovery Email</label>
                             <div className="flex gap-2">
                                 <div className="flex-1">
                                     <Input
@@ -137,7 +137,7 @@ const SecuritySection: React.FC = () => {
                                         value={recoveryEmail}
                                         onChange={(e) => setRecoveryEmail(e.target.value)}
                                         placeholder="backup@example.com"
-                                        className="h-10 text-sm bg-black/20"
+                                        className="h-10 text-sm bg-canvas-surface"
                                         disabled
                                     />
                                 </div>
@@ -157,43 +157,43 @@ const SecuritySection: React.FC = () => {
             </div>
 
             {/* Login History / Active Sessions */}
-            <motion.div variants={itemVariants} className="bg-[#0f0f1a]/40 border border-white/5 rounded-2xl p-6 backdrop-blur-md">
+            <motion.div variants={itemVariants} className="bg-canvas-surface/20 border border-glass-border rounded-2xl p-6 backdrop-blur-md">
                 <div className="flex items-center justify-between mb-6">
                     <div className="flex items-center gap-3">
                         <div className="p-2.5 rounded-xl bg-blue-500/20 text-blue-400">
                             <Key size={20} />
                         </div>
                         <div>
-                            <h4 className="text-sm font-bold text-white">Session Activity</h4>
-                            <p className="text-xs text-slate-400 mt-0.5">Monitor your account usage</p>
+                            <h4 className="text-sm font-bold text-type-primary">Session Activity</h4>
+                            <p className="text-xs text-type-muted mt-0.5">Monitor your account usage</p>
                         </div>
                     </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {/* Stat Card 1 */}
-                    <div className="p-4 rounded-xl bg-black/20 border border-white/5 flex flex-col gap-1">
-                        <div className="text-slate-400 text-xs font-medium">Active Sessions</div>
-                        <div className="text-2xl font-bold text-white font-mono flex items-center gap-2">
+                    <div className="p-4 rounded-xl bg-canvas-surface border border-glass-border flex flex-col gap-1">
+                        <div className="text-type-muted text-xs font-medium">Active Sessions</div>
+                        <div className="text-2xl font-bold text-type-primary font-mono flex items-center gap-2">
                             {user.security.activeSessions}
-                            <span className="text-[10px] py-0.5 px-2 bg-green-500/20 text-green-400 rounded-full border border-green-500/20 font-sans tracking-wide">
+                            <span className="text-[10px] py-0.5 px-2 bg-status-success/20 text-status-success rounded-full border border-status-success/20 font-sans tracking-wide">
                                 ONLINE
                             </span>
                         </div>
                     </div>
 
                     {/* Stat Card 2 */}
-                    <div className="p-4 rounded-xl bg-black/20 border border-white/5 flex flex-col gap-1">
-                        <div className="text-slate-400 text-xs font-medium">Failed Attempts (24h)</div>
-                        <div className={`text-2xl font-bold font-mono ${user.security.failedLoginAttempts > 0 ? 'text-red-400' : 'text-white'}`}>
+                    <div className="p-4 rounded-xl bg-canvas-surface border border-glass-border flex flex-col gap-1">
+                        <div className="text-type-muted text-xs font-medium">Failed Attempts (24h)</div>
+                        <div className={`text-2xl font-bold font-mono ${user.security.failedLoginAttempts > 0 ? 'text-status-error' : 'text-type-primary'}`}>
                             {user.security.failedLoginAttempts}
                         </div>
                     </div>
 
                     {/* Stat Card 3 */}
-                    <div className="p-4 rounded-xl bg-black/20 border border-white/5 flex flex-col gap-1 overflow-hidden">
-                        <div className="text-slate-400 text-xs font-medium">Last Failed Login</div>
-                        <div className="text-sm font-bold text-white truncate leading-8">
+                    <div className="p-4 rounded-xl bg-canvas-surface border border-glass-border flex flex-col gap-1 overflow-hidden">
+                        <div className="text-type-muted text-xs font-medium">Last Failed Login</div>
+                        <div className="text-sm font-bold text-type-primary truncate leading-8">
                             {user.security.lastFailedLogin ? new Date(user.security.lastFailedLogin).toLocaleString() : 'None'}
                         </div>
                     </div>
@@ -201,17 +201,17 @@ const SecuritySection: React.FC = () => {
             </motion.div>
 
             {/* Danger Zone */}
-            <motion.div variants={itemVariants} className="group relative overflow-hidden rounded-2xl border border-red-500/20 bg-red-500/5 p-6 transition-all hover:bg-red-500/10">
-                <div className="absolute -right-12 -top-12 h-40 w-40 rounded-full bg-red-500/10 blur-3xl transition-all group-hover:bg-red-500/20" />
+            <motion.div variants={itemVariants} className="group relative overflow-hidden rounded-2xl border border-status-error/20 bg-status-error/5 p-6 transition-all hover:bg-status-error/10">
+                <div className="absolute -right-12 -top-12 h-40 w-40 rounded-full bg-status-error/10 blur-3xl transition-all group-hover:bg-status-error/20" />
 
                 <div className="relative flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <div className="flex items-center gap-4">
-                        <div className="rounded-full bg-red-500/10 p-3 text-red-400 ring-1 ring-red-500/20">
+                        <div className="rounded-full bg-status-error/10 p-3 text-status-error ring-1 ring-status-error/20">
                             <AlertTriangle size={20} />
                         </div>
                         <div>
-                            <h4 className="text-sm font-bold text-white">Emergency Session Termination</h4>
-                            <p className="text-xs text-red-200/60 mt-0.5 max-w-md">
+                            <h4 className="text-sm font-bold text-type-primary">Emergency Session Termination</h4>
+                            <p className="text-xs text-status-error/60 mt-0.5 max-w-md">
                                 Suspect unauthorized access? This will verify your identity and immediately invalidate all other active sessions and tokens.
                             </p>
                         </div>

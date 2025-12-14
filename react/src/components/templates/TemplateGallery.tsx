@@ -85,29 +85,29 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({ onSelect, onClose }) 
     };
 
     return (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-bg-overlay/60 backdrop-blur-sm p-4">
             <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
-                className="bg-jarvis-panel border border-jarvis-border rounded-lg shadow-jarvis-glow w-full max-w-4xl h-[80vh] flex flex-col overflow-hidden"
+                className="bg-canvas-panel border border-glass-border rounded-lg shadow-2xl w-full max-w-4xl h-[80vh] flex flex-col overflow-hidden"
             >
-                <div className="flex items-center justify-between p-6 border-b border-jarvis-border bg-jarvis-bg/50">
+                <div className="flex items-center justify-between p-6 border-b border-glass-border bg-canvas-surface/50">
                     <div>
-                        <h2 className="text-xl font-bold text-jarvis-blue tracking-wide">Select Assistant</h2>
-                        <p className="text-sm text-jarvis-cyan/60">Choose a template to start a new conversation</p>
+                        <h2 className="text-xl font-bold text-gnani-primary tracking-wide">Select Assistant</h2>
+                        <p className="text-sm text-type-secondary">Choose a template to start a new conversation</p>
                     </div>
                     <div className="flex gap-3">
                         <button
                             onClick={handleCreate}
-                            className="px-4 py-2 bg-jarvis-blue/10 border border-jarvis-blue/50 hover:bg-jarvis-blue/20 hover:border-jarvis-blue text-jarvis-blue rounded flex items-center gap-2 transition-all"
+                            className="px-4 py-2 bg-gnani-primary/10 border border-gnani-primary/50 hover:bg-gnani-primary/20 hover:border-gnani-primary text-gnani-primary rounded flex items-center gap-2 transition-all"
                         >
                             <Plus size={16} />
                             New Template
                         </button>
                         <button
                             onClick={onClose}
-                            className="px-4 py-2 text-jarvis-text hover:text-white transition-colors"
+                            className="px-4 py-2 text-type-primary hover:text-type-secondary transition-colors"
                         >
                             Cancel
                         </button>
@@ -116,7 +116,7 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({ onSelect, onClose }) 
 
                 <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
                     {isLoading ? (
-                        <div className="flex items-center justify-center h-full text-jarvis-cyan/50">
+                        <div className="flex items-center justify-center h-full text-type-muted">
                             Loading templates...
                         </div>
                     ) : (
@@ -128,40 +128,40 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({ onSelect, onClose }) 
                                 return (
                                     <motion.div
                                         key={template._id}
-                                        whileHover={{ scale: 1.02, borderColor: 'rgba(0, 240, 255, 0.5)' }}
+                                        whileHover={{ scale: 1.02 }}
                                         onClick={() => onSelect(template)}
-                                        className="group relative bg-jarvis-bg border border-jarvis-border rounded-lg p-5 cursor-pointer hover:shadow-jarvis-border-glow transition-all"
+                                        className="group relative bg-canvas-surface border border-glass-border rounded-lg p-5 cursor-pointer hover:shadow-lg hover:border-gnani-primary/30 transition-all"
                                     >
                                         <div className="flex items-start justify-between mb-3">
-                                            <div className="p-2 bg-jarvis-blue/10 rounded-md text-jarvis-blue">
+                                            <div className="p-2 bg-gnani-primary/10 rounded-md text-gnani-primary">
                                                 <Icon size={24} />
                                             </div>
                                             {isOwner && (
                                                 <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                                     <button
                                                         onClick={(e) => handleEdit(e, template)}
-                                                        className="p-1.5 hover:bg-jarvis-blue/20 rounded text-jarvis-cyan/70 hover:text-jarvis-blue"
+                                                        className="p-1.5 hover:bg-gnani-primary/20 rounded text-gnani-primary/70 hover:text-gnani-primary"
                                                     >
                                                         <Edit2 size={14} />
                                                     </button>
                                                     <button
                                                         onClick={(e) => handleDelete(e, template._id)}
-                                                        className="p-1.5 hover:bg-red-500/20 rounded text-jarvis-cyan/70 hover:text-red-400"
+                                                        className="p-1.5 hover:bg-status-error/20 rounded text-status-error/70 hover:text-status-error"
                                                     >
                                                         <Trash2 size={14} />
                                                     </button>
                                                 </div>
                                             )}
                                         </div>
-                                        <h3 className="font-semibold text-jarvis-text mb-1 group-hover:text-jarvis-blue transition-colors">
+                                        <h3 className="font-semibold text-type-primary mb-1 group-hover:text-gnani-primary transition-colors">
                                             {template.name}
                                         </h3>
-                                        <p className="text-sm text-jarvis-cyan/60 line-clamp-2">
+                                        <p className="text-sm text-type-secondary line-clamp-2">
                                             {template.description}
                                         </p>
                                         <div className="mt-3 flex flex-wrap gap-1">
                                             {template.tags.map(tag => (
-                                                <span key={tag} className="text-[10px] px-2 py-0.5 bg-jarvis-border/30 rounded-full text-jarvis-cyan/50 uppercase tracking-wider">
+                                                <span key={tag} className="text-[10px] px-2 py-0.5 bg-glass-shimmer rounded-full text-type-muted uppercase tracking-wider">
                                                     {tag}
                                                 </span>
                                             ))}

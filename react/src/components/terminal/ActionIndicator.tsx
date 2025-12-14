@@ -21,12 +21,12 @@ const ActionIndicator: React.FC<ActionIndicatorProps> = ({ message }) => {
         <motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
-            className="flex items-center gap-2 my-2 ml-4 p-2 rounded border-l-2 border-yellow-500/50 bg-yellow-900/10 max-w-[80%]"
+            className="flex items-center gap-2 my-2 ml-4 p-2 rounded border-l-2 border-status-warning/50 bg-status-warning/10 max-w-[80%]"
         >
-            <div className="text-yellow-500">
+            <div className="text-status-warning">
                 {getIcon()}
             </div>
-            <span className="text-xs font-mono text-yellow-200/80">
+            <span className="text-xs font-mono text-status-warning/80">
                 {message.message}
             </span>
         </motion.div>

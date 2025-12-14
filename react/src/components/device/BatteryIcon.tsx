@@ -12,17 +12,17 @@ const BatteryIcon: React.FC<BatteryIconProps> = ({ level, isCharging, size = 24,
     // Determine color based on level (Critical < 20, Low < 50, Normal > 50)
     // For charging, we always use the premium Cyan/Blue theme unless critically low
     const getFillColor = () => {
-        if (isCharging) return "bg-cyan-400"; // Always cyan when charging for that "energy" look
-        if (level <= 20) return "bg-red-500";
-        if (level <= 50) return "bg-yellow-400";
-        return "bg-cyan-400";
+        if (isCharging) return "bg-gnani-primary"; // Always cyan when charging for that "energy" look
+        if (level <= 20) return "bg-status-error";
+        if (level <= 50) return "bg-status-warning";
+        return "bg-gnani-primary";
     };
 
     const getGlowColor = () => {
-        if (isCharging) return "shadow-[0_0_10px_#22d3ee]";
-        if (level <= 20) return "shadow-[0_0_10px_#ef4444]";
-        if (level <= 50) return "shadow-[0_0_10px_#facc15]";
-        return "shadow-[0_0_10px_#22d3ee]";
+        if (isCharging) return "shadow-[0_0_10px_rgba(var(--primary-rgb),1)]";
+        if (level <= 20) return "shadow-[0_0_10px_rgba(239,68,68,1)]";
+        if (level <= 50) return "shadow-[0_0_10px_rgba(250,204,21,1)]";
+        return "shadow-[0_0_10px_rgba(var(--primary-rgb),1)]";
     };
 
     return (
@@ -43,15 +43,15 @@ const BatteryIcon: React.FC<BatteryIconProps> = ({ level, isCharging, size = 24,
                     width="20"
                     height="10"
                     rx="2"
-                    stroke={isCharging ? "#22d3ee" : "#555"}
+                    stroke={isCharging ? "rgba(var(--primary-rgb), 1)" : "currentColor"}
                     strokeWidth="1.5"
                     strokeOpacity={isCharging ? 0.8 : 0.5}
-                    fill="rgba(0,0,0,0.6)"
+                    fill="rgba(0,0,0,0.4)"
                 />
                 {/* Terminal */}
                 <path
                     d="M22 4C22.5523 4 23 4.44772 23 5V7C23 7.55228 22.5523 8 22 8V4Z"
-                    fill={isCharging ? "#22d3ee" : "#555"}
+                    fill={isCharging ? "rgba(var(--primary-rgb), 1)" : "currentColor"}
                     fillOpacity={isCharging ? 0.8 : 0.5}
                 />
             </svg>

@@ -497,8 +497,7 @@ const GnaniCore: React.FC<GnaniCoreProps> = ({ isOverlayMode = false, onOverlayC
             <div className="text-left relative group cursor-default">
               <div className="absolute -inset-2 bg-jarvis-blue/20 blur-xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
               <h1
-                className="relative text-3xl font-bold uppercase text-jarvis-blue tracking-[0.2em]"
-                style={{ textShadow: "0 0 10px rgba(0, 240, 255, 0.8)" }}
+                className="relative text-3xl font-bold uppercase text-gnani-info tracking-[0.2em] drop-shadow-[0_0_10px_rgb(var(--gnani-primary))]"
               >
                 GNANI
               </h1>
