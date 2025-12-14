@@ -281,7 +281,7 @@ async function main() {
       callback({
         responseHeaders: {
           ...details.responseHeaders,
-          'Content-Security-Policy': ["default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: ws: http://localhost:3000 https://fonts.googleapis.com https://fonts.gstatic.com; img-src 'self' data: blob: https:; media-src 'self' data: blob:;"]
+          'Content-Security-Policy': ["default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: ws: http://localhost:3000 https://fonts.googleapis.com https://fonts.gstatic.com; img-src 'self' data: blob: https: http://localhost:3000; media-src 'self' data: blob: http://localhost:3000;"]
         }
       });
     });

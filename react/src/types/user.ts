@@ -16,23 +16,10 @@ export interface IProfile {
     locale: string;
     language: string;
     profilePhoto?: string;
+    uploadedProfilePhotoId?: string;
 }
 
-export interface IDevice {
-    deviceId: string;
-    deviceName: string;
-    deviceType: 'desktop' | 'mobile' | 'web' | 'speaker';
-    lastActive: string; // ISO date string
-    isTrusted: boolean;
-}
 
-export interface IHistoryItem {
-    id: string;
-    query: string;
-    response: string;
-    timestamp: string; // ISO date string
-    deviceId?: string;
-}
 
 export interface ISecurity {
     failedLoginAttempts: number;
@@ -53,8 +40,7 @@ export interface User {
     email: string;
     profile: IProfile;
     settings: ISettings;
-    devices: IDevice[];
-    history: IHistoryItem[];
+
     security: ISecurity;
     oauthProviders: IOAuthProvider[];
     notes: string[];

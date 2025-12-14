@@ -1,6 +1,7 @@
 import React, { Suspense, useEffect, useState } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useUserStore } from './store/useUserStore';
+import { useThemeStore } from './store/themeStore';
 import { ToastProvider } from './context/ToastContext';
 import LoadingScreen from './components/common/LoadingScreen';
 import { ErrorBoundary } from './components/common/ErrorBoundary'; // STAGE 15
@@ -61,6 +62,18 @@ function App() {
   const { isAuthenticated, isInitialized, initialize } = useUserStore();
   const { isOnline, wasOffline } = useNetworkStatus(); // STAGE 16
   useKeyboardNav(); // STAGE 25: Enable keyboard shortcuts
+  const setTheme = useThemeStore((state) => state.setTheme);
+  const user = useUserStore((state) => state.user);
+
+  // Sync theme from user settings
+  useEffect(() => {
+    if (user?.settings?.theme) {
+      // Map extended theme options to the store's supported 'light' | 'dark' types
+      // TODO: Update themeStore to support 'system' and 'jarvis' natively
+      const themeToSet = user.settings.theme === 'light' ? 'light' : 'dark';
+      setTheme(themeToSet);
+    }
+  }, [user?.settings?.theme, setTheme]);
 
   // STAGE 1: Initialize user store on mount
   // STAGE 1: Initialize user store was moved to AppWrapper in main.tsx

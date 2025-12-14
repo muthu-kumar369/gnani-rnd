@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { eventManager } from '../../utils/eventManager';
 import errorLogger from '../../utils/errorLogger';
 import type { GnaniState } from '../../store/useGnaniStore';
 
@@ -67,20 +68,49 @@ export const StateManager: React.FC<StateManagerProps> = React.memo(({
     }, [latestFinalSTT, isListening, transition, setIsStreaming, addMessage]);
     // Note: lastProcessedFinalSTT.current assignment is valid in effect.
 
-    // TTS Start -> Speaking
+    // TTS Start -> Speaking (IPC or Frontend Event)
     useEffect(() => {
+        // Handle IPC-based start
         if (isTtsStarted && isThinking) {
-            errorLogger.info('TTS started, transitioning to speaking', { context: 'StateManager' });
+            errorLogger.info('TTS started (IPC), transitioning to speaking', { context: 'StateManager' });
             transition('tts-start');
         }
-    }, [isTtsStarted, isThinking, transition]);
 
-    // TTS End -> Idle (or TTS Complete)
+        // Handle Frontend StreamingTTS start
+        const handleTtsStarted = () => {
+            if (isThinking) { // Only transition if we are thinking. If already speaking or listening, ignore?
+                errorLogger.info('TTS started (DOM), transitioning to speaking', { context: 'StateManager' });
+                transition('tts-start');
+            } else {
+                // Force transition if appropriate, e.g. from idle?
+                errorLogger.warn('TTS started (DOM) but state is not thinking', { context: 'StateManager', currentState: state });
+                // If we are idle, maybe we should switch?
+                if (state === 'idle') transition('tts-start');
+            }
+        };
+
+        const cleanup = eventManager.addEventListener('tts:started', handleTtsStarted as EventListener, undefined, 'StateManager');
+        return cleanup;
+    }, [isTtsStarted, isThinking, transition, state]);
+
+    // TTS End -> Idle (IPC or Frontend Event)
     useEffect(() => {
+        // Handle IPC-based end
         if (isTtsEnded && isSpeaking) {
-            errorLogger.info('TTS ended, transitioning to idle', { context: 'StateManager' });
+            errorLogger.info('TTS ended (IPC), transitioning to idle', { context: 'StateManager' });
             transition('tts-complete');
         }
+
+        // Handle Frontend StreamingTTS end
+        const handleTtsEnded = () => {
+            if (isSpeaking) {
+                errorLogger.info('TTS ended (DOM), transitioning to idle', { context: 'StateManager' });
+                transition('tts-complete');
+            }
+        };
+
+        const cleanup = eventManager.addEventListener('tts:ended', handleTtsEnded as EventListener, undefined, 'StateManager');
+        return cleanup;
     }, [isTtsEnded, isSpeaking, transition]);
 
     // --- Timeouts ---

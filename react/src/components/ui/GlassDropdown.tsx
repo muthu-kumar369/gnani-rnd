@@ -18,6 +18,7 @@ interface GlassDropdownProps {
     className?: string; // For the trigger button
     menuClassName?: string;
     placement?: 'bottom-start' | 'bottom-end' | 'top-start' | 'top-end' | 'right-start' | 'right-end';
+    disabled?: boolean;
 }
 
 const GlassDropdown: React.FC<GlassDropdownProps> = ({
@@ -27,13 +28,18 @@ const GlassDropdown: React.FC<GlassDropdownProps> = ({
     placeholder = 'Select...',
     className = '',
     menuClassName = '',
-    placement = 'bottom-start'
+    placement = 'bottom-start',
+    disabled = false
 }) => {
     const [isOpen, setIsOpen] = useState(false);
+    const [menuWidth, setMenuWidth] = useState<number | undefined>(undefined);
     const buttonRef = useRef<HTMLButtonElement>(null);
 
     useEffect(() => {
         if (!isOpen) return;
+        if (buttonRef.current) {
+            setMenuWidth(buttonRef.current.offsetWidth);
+        }
         const cleanup = eventManager.addEventListener('keyboard:escape', () => setIsOpen(false), undefined, 'GlassDropdown');
         return cleanup;
     }, [isOpen]);
@@ -44,8 +50,9 @@ const GlassDropdown: React.FC<GlassDropdownProps> = ({
         <>
             <button
                 ref={buttonRef}
-                onClick={() => setIsOpen(!isOpen)}
-                className={`flex items-center justify-between gap-2 px-4 py-3 rounded-xl border border-white/10 bg-black/40 text-sm text-slate-300 hover:bg-white/5 hover:border-white/20 transition-all focus:outline-none focus:ring-1 focus:ring-cyan-500/50 hover:text-white ${className}`}
+                onClick={() => !disabled && setIsOpen(!isOpen)}
+                disabled={disabled}
+                className={`flex items-center justify-between gap-2 px-4 py-3 rounded-xl border border-white/10 bg-black/40 text-sm text-slate-300 hover:bg-white/5 hover:border-white/20 transition-all focus:outline-none focus:ring-1 focus:ring-cyan-500/50 hover:text-white ${disabled ? 'opacity-50 cursor-not-allowed hover:bg-black/40' : ''} ${className}`}
             >
                 <div className="flex items-center gap-2 truncate">
                     {selectedOption?.icon && <span className="opacity-70">{selectedOption.icon}</span>}
@@ -65,7 +72,8 @@ const GlassDropdown: React.FC<GlassDropdownProps> = ({
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.95, y: -5 }}
                     transition={{ duration: 0.15, ease: 'easeOut' }}
-                    className={`min-w-[160px] max-h-[300px] overflow-y-auto rounded-xl border border-white/10 bg-[#0a0a15] backdrop-blur-xl shadow-2xl p-1.5 z-[100] ${menuClassName}`}
+                    className={`min-w-[160px] max-h-[300px] overflow-y-auto custom-scrollbar rounded-xl border border-white/20 bg-[#05050a]/95 backdrop-blur-3xl shadow-[0_0_50px_-10px_rgba(0,0,0,0.8)] p-1.5 z-[100] ring-1 ring-white/5 ${menuClassName}`}
+                    style={{ width: menuWidth ? `${menuWidth}px` : 'auto' }}
                 >
                     {options.map((option) => (
                         <button

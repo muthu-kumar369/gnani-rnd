@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { eventManager } from '../../utils/eventManager';
 import errorLogger from '../../utils/errorLogger';
+import { useGnaniStore } from '../../store/useGnaniStore';
 import type { GnaniState } from '../../store/useGnaniStore';
 import type { BargeInConfig } from '../../hooks/useBargeIn';
 
@@ -37,6 +38,7 @@ export const AudioManager: React.FC<AudioManagerProps> = React.memo(({
     isThinking,
     isMicActive,
     startMic,
+    stopMic,
     isTtsEnded,
     bargeIn,
     handleBargeIn
@@ -89,32 +91,27 @@ export const AudioManager: React.FC<AudioManagerProps> = React.memo(({
         }
 
         if (isSpeaking) {
-            bargeIn.updateConfig({ vadThreshold: 20 });
+            // CRITICAL: Stop mic while speaking to prevent self-hearing (barge-in loop)
+            errorLogger.info('[AudioManager] Agent speaking, stopping microphone', { context: 'AudioManager' });
+            stopMic();
+            // Also increase VAD threshold just in case, though mic is stopped
+            bargeIn.updateConfig({ vadThreshold: 50 });
         } else {
             // Auto-restart mic logic when not speaking (e.g. finished TTS)
-            // Wait a bit differently than GnaniCore? GnaniCore had:
-            /*
-            setTimeout(() => {
-                if (!isMicActive) {
-                  startMic();
-                }
-              }, 200);
-            */
-            // But this runs on EVERY change of isTtsEnded/isSpeaking/MicActive?
-            // GnaniCore deps: [isTtsEnded, isSpeaking, isMicActive, startMic, bargeIn]
-
-            // To be safe, replicate exact logic:
-            setTimeout(() => {
-                if (!isMicActive) {
-                    // Ensure stream is started before mic
-                    if (window.gnani?.stream?.startStream) {
-                        window.gnani.stream.startStream();
+            if (!isMicActive && !isThinking) {
+                setTimeout(() => {
+                    // Double check we are still not speaking and explicitly not mic active
+                    if (!useGnaniStore.getState().isSpeaking && !isMicActive) {
+                        // Ensure stream is started before mic
+                        if (window.gnani?.stream?.startStream) {
+                            window.gnani.stream.startStream();
+                        }
+                        startMic();
                     }
-                    startMic();
-                }
-            }, 200);
+                }, 300); // Increased delay slightly to ensure audio echo dies down
+            }
         }
-    }, [isTtsEnded, isSpeaking, isMicActive, startMic, bargeIn]);
+    }, [isSpeaking, isMicActive, isThinking, startMic, stopMic, bargeIn]);
 
     // Idle State Mic Management (Wake Word)
     useEffect(() => {

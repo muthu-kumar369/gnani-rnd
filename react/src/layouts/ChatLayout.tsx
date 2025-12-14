@@ -89,14 +89,21 @@ const ChatLayout: React.FC = () => {
             useModalStore.getState().openSettings(detail?.tab);
         };
 
+        const handleOpenWorkspace = (e: Event) => {
+            const detail = (e as CustomEvent).detail;
+            useModalStore.getState().openWorkspace(detail?.tab);
+        };
+
         const cleanupSearch = eventManager.addEventListener('open-advanced-search', handleOpenSearch, undefined, 'ChatLayout');
         const cleanupSidebar = eventManager.addEventListener('keyboard:toggle-sidebar', handleToggleSidebar, undefined, 'ChatLayout');
         const cleanupSettings = eventManager.addEventListener('keyboard:open-settings', handleOpenSettings, undefined, 'ChatLayout');
+        const cleanupWorkspace = eventManager.addEventListener('keyboard:open-workspace', handleOpenWorkspace, undefined, 'ChatLayout');
 
         return () => {
             cleanupSearch();
             cleanupSidebar();
             cleanupSettings();
+            cleanupWorkspace();
         };
     }, [navigate]);
 

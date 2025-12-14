@@ -46,7 +46,13 @@ export const useKeyboardNav = () => {
             // Ctrl+,: Open Settings
             if (e.ctrlKey && e.key === ',') {
                 e.preventDefault();
-                window.dispatchEvent(new CustomEvent('keyboard:open-settings', { detail: { tab: 'profile' } }));
+                window.dispatchEvent(new CustomEvent('keyboard:open-settings', { detail: { tab: 'general' } }));
+            }
+
+            // Alt+W: Open Workspace
+            if (e.altKey && (e.key === 'w' || e.key === 'W')) {
+                e.preventDefault();
+                window.dispatchEvent(new CustomEvent('keyboard:open-workspace', { detail: { tab: 'templates' } }));
             }
 
             // Shift+Esc: Focus Input

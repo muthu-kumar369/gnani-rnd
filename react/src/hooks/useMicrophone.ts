@@ -30,7 +30,7 @@ const useMicrophone = () => {
 
     try {
       const audioContext = getAudioContext();
-      
+
       // Ensure AudioContext is running
       if (audioContext.state === "suspended") {
         errorLogger.info('AudioContext is suspended, resuming...', { context: 'useMicrophone' });
@@ -51,6 +51,14 @@ const useMicrophone = () => {
       });
 
       const stream = await navigator.mediaDevices.getUserMedia({ audio: audioConstraints });
+
+      // CRITICAL CHECK: If stopMic was called while we were awaiting, abort immediately
+      if (micStateRef.current !== 'starting') {
+        errorLogger.warn('startMic aborted because state changed during initialization', { context: 'useMicrophone', currentState: micStateRef.current });
+        stream.getTracks().forEach(t => t.stop());
+        return;
+      }
+
       mediaStreamRef.current = stream;
 
       // Log actual applied settings
@@ -73,6 +81,16 @@ const useMicrophone = () => {
       source.connect(analyser);
 
       await audioContext.audioWorklet.addModule('/audio-processor.js');
+
+      // Double check state again after second await
+      if (micStateRef.current !== 'starting') {
+        errorLogger.warn('startMic aborted after audioWorklet loading', { context: 'useMicrophone' });
+        source.disconnect();
+        analyser.disconnect();
+        stream.getTracks().forEach(t => t.stop());
+        return;
+      }
+
       const audioWorkletNode = new AudioWorkletNode(audioContext, 'audio-processor');
       audioWorkletNodeRef.current = audioWorkletNode;
 

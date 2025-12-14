@@ -26,8 +26,37 @@ class StreamingTTS {
     // Configuration
     private readonly BUFFERING_TIMEOUT_MS = 200; // 200ms for real-time speech like Google Assistant
 
+    private voices: SpeechSynthesisVoice[] = [];
+
     constructor() {
         errorLogger.info('StreamingTTS initialized', { context: 'StreamingTTS' });
+        this.initVoices();
+    }
+
+    private initVoices(): void {
+        const updateVoices = () => {
+            const available = window.speechSynthesis.getVoices();
+            if (available.length > 0) {
+                this.voices = available;
+                errorLogger.info(`Voices loaded: ${available.length}`, { context: 'StreamingTTS' });
+                this.logVoiceMappings();
+            }
+        };
+
+        updateVoices();
+
+        if (window.speechSynthesis.onvoiceschanged !== undefined) {
+            window.speechSynthesis.onvoiceschanged = updateVoices;
+        }
+    }
+
+    private logVoiceMappings(): void {
+        const personas = ['jarvis', 'friday', 'edith', 'atlas', 'luna', 'orion', 'nova', 'echo'];
+        const mappings = personas.map(id => {
+            const voice = this.getVoiceForPersona(id);
+            return `${id}: ${voice ? voice.name : 'DEFAULT'}`;
+        });
+        errorLogger.info(`Startup Voice Mappings: ${mappings.join(', ')}`, { context: 'StreamingTTS' });
     }
 
     public setStreamActive(active: boolean): void {
@@ -135,11 +164,11 @@ class StreamingTTS {
         }
     }
 
-    private preferredGender: 'male' | 'female' = 'female';
+    private preferredVoiceId: string = 'jarvis';
 
-    public setVoiceGender(gender: 'male' | 'female'): void {
-        this.preferredGender = gender;
-        errorLogger.info(`Voice gender set to: ${gender}`, { context: 'StreamingTTS' });
+    public setPreferredVoice(voiceId: string): void {
+        this.preferredVoiceId = voiceId;
+        errorLogger.info(`Voice persona set to: ${voiceId}`, { context: 'StreamingTTS' });
     }
 
     /**
@@ -156,35 +185,13 @@ class StreamingTTS {
 
         const utterance = new SpeechSynthesisUtterance(text);
 
-        // Configure utterance - reduced rate for more natural speech
+        // Configure utterance default
         utterance.rate = 0.9; // Slightly slower than default (1.0)
         utterance.pitch = 1.0;
         utterance.volume = 1.0;
 
-        // Select Voice based on preferred gender
-        const voices = window.speechSynthesis.getVoices();
-        let selectedVoice: SpeechSynthesisVoice | undefined;
-
-        if (this.preferredGender === 'male') {
-            selectedVoice = voices.find(v =>
-                v.name.includes('Google US English Male') ||
-                v.name.includes('David') ||
-                v.name.includes('Male')
-            );
-        } else {
-            selectedVoice = voices.find(v =>
-                v.name.includes('Google US English Female') ||
-                v.name.includes('Zira') ||
-                v.name.includes('Female')
-            );
-        }
-
-        if (selectedVoice) {
-            utterance.voice = selectedVoice;
-            errorLogger.debug(`Selected voice: ${selectedVoice.name} (${this.preferredGender})`, { context: 'StreamingTTS' });
-        } else {
-            errorLogger.warn(`No ${this.preferredGender} voice found, using default`, { context: 'StreamingTTS' });
-        }
+        // LOGIC FOR VOICE SELECTION MOVED TO playNextUtterance to happen at runtime
+        // This allows voices to load asynchronously if they are not ready yet.
 
         // Set up event handlers
         utterance.onstart = () => {
@@ -255,72 +262,159 @@ class StreamingTTS {
         }
     }
 
+    private getVoiceForPersona(personaId: string, availableVoices?: SpeechSynthesisVoice[]): SpeechSynthesisVoice | undefined {
+        const voices = availableVoices || (this.voices.length > 0 ? this.voices : window.speechSynthesis.getVoices());
+
+        // Helper to find voice by fuzzy name match
+        const findVoice = (keywords: string[]) => {
+            const match = voices.find(v => keywords.some(k => v.name.toLowerCase().includes(k.toLowerCase())));
+            if (match) return match;
+            const idMatch = voices.find(v => v.name.toLowerCase().includes(personaId.toLowerCase()));
+            if (idMatch) return idMatch;
+            return undefined;
+        };
+
+        switch (personaId) {
+            case 'jarvis':
+                let v = findVoice(['Google UK English Male', 'Daniel', 'George', 'English United Kingdom', 'UK English Male']);
+                if (!v) v = findVoice(['David', 'Mark', 'Male']);
+                return v;
+            case 'friday':
+                let f = findVoice(['Google US English Female', 'Samantha', 'Zira', 'English United States', 'US English Female']);
+                if (!f) f = findVoice(['Female']);
+                return f;
+            case 'edith':
+                return findVoice(['Google US English Male', 'Alex', 'David', 'Male']);
+            case 'atlas':
+                let a = findVoice(['Google UK English Male', 'Daniel', 'George', 'Human', 'UK English Male']);
+                if (!a) a = findVoice(['David', 'Mark', 'Male']);
+                return a;
+            case 'luna':
+                let l = findVoice(['Google UK English Female', 'Victoria', 'Hazel', 'Susan', 'UK English Female']);
+                if (!l) l = findVoice(['Zira', 'Samantha', 'Female']);
+                return l;
+            case 'orion':
+                return findVoice(['Google US English Male', 'David', 'Alex', 'Male']);
+            case 'nova':
+                return findVoice(['Google US English Female', 'Zira', 'Samantha', 'Female']);
+            case 'echo':
+                return findVoice(['Google US English Female', 'Samantha', 'Zira', 'Female']);
+            default:
+                return findVoice(['Google US English Female', 'Zira', 'Samantha', 'Female']);
+        }
+    }
+
+    /**
+     * Apply voice selection to an utterance immediately before speaking
+     */
+    private applyVoiceSelection(utterance: SpeechSynthesisUtterance): void {
+        let voices = this.voices.length > 0 ? this.voices : window.speechSynthesis.getVoices();
+
+        if (voices.length === 0) {
+            errorLogger.warn('Voices list is still empty in applyVoiceSelection', { context: 'StreamingTTS' });
+            voices = window.speechSynthesis.getVoices();
+        }
+
+        const selectedVoice = this.getVoiceForPersona(this.preferredVoiceId, voices);
+
+        // Apply pitch/rate adjustments
+        if (selectedVoice) {
+            utterance.voice = selectedVoice;
+            switch (this.preferredVoiceId) {
+                case 'jarvis': utterance.pitch = 0.9; utterance.rate = 0.95; break;
+                case 'edith': utterance.pitch = 1.0; utterance.rate = 1.05; break;
+                case 'atlas': utterance.pitch = 0.8; utterance.rate = 0.9; break;
+                case 'luna': utterance.pitch = 1.1; utterance.rate = 0.85; break;
+                case 'orion': utterance.rate = 1.2; break;
+                case 'nova': utterance.pitch = 1.2; utterance.rate = 1.1; break;
+                case 'echo': utterance.rate = 0.8; break;
+            }
+            errorLogger.info(`Voice Selection SUCCESS: Used "${selectedVoice.name}" for persona "${this.preferredVoiceId}"`, { context: 'StreamingTTS' });
+        } else {
+            errorLogger.warn(`Voice Selection FAILED: No suitable voice found for "${this.preferredVoiceId}"`, { context: 'StreamingTTS' });
+        }
+    }
+
     /**
      * Play the next utterance in the queue
      */
     private playNextUtterance(): void {
-        if (this.isStopped) {
-            errorLogger.debug('StreamingTTS is stopped, not playing next utterance', { context: 'StreamingTTS' });
-            return;
-        }
+        const attemptPlay = async (retries = 3) => {
+            if (this.isStopped) return;
+            if (this.utteranceQueue.length === 0) {
+                this.isPlaying = false;
+                errorLogger.debug('Utterance queue empty, playback finished', { context: 'StreamingTTS' });
+                return;
+            }
 
+            // Ensure voices are loaded before adhering
+            if (this.voices.length === 0 && retries > 0) {
+                const available = window.speechSynthesis.getVoices();
+                if (available.length > 0) {
+                    this.voices = available;
+                } else {
+                    errorLogger.warn(`Voices not ready yet in playNext, retrying... (${retries} left)`, { context: 'StreamingTTS' });
+                    await new Promise(r => setTimeout(r, 100));
+                    return attemptPlay(retries - 1);
+                }
+            }
+
+            const utterance = this.utteranceQueue.shift();
+            if (!utterance) return;
+
+            // Apply voice selection NOW, just before speaking
+            this.applyVoiceSelection(utterance);
+
+            // ... rest of the logic ...
+            this.executePlayback(utterance);
+        };
+
+        attemptPlay();
+    }
+
+    // Extracted actual playback execution from loop
+    private executePlayback(utterance: SpeechSynthesisUtterance) {
         // Clear existing watchdog
         if (this.watchdogTimer) {
             clearTimeout(this.watchdogTimer);
             this.watchdogTimer = null;
         }
 
-        if (this.utteranceQueue.length === 0) {
-            this.isPlaying = false;
-            errorLogger.debug('Utterance queue empty, playback finished', { context: 'StreamingTTS' });
+        const wasPlaying = this.isPlaying;
+        this.isPlaying = true;
+
+        if (!wasPlaying) {
+            errorLogger.info('Starting TTS playback, dispatching tts:started event', { context: 'StreamingTTS' });
+            window.dispatchEvent(new CustomEvent('tts:started'));
+        }
+
+        if (!window.speechSynthesis) {
+            errorLogger.error('Web Speech API not supported', null, { context: 'StreamingTTS' });
             return;
         }
 
-        const utterance = this.utteranceQueue.shift();
-        if (utterance) {
-            // Send tts:started only when transitioning from idle to playing
-            const wasPlaying = this.isPlaying;
-            this.isPlaying = true;
+        const wordCount = utterance.text.split(/\s+/).length;
+        const estimatedDurationMs = Math.max(3000, (wordCount * 300) + 3000);
 
-            if (!wasPlaying) {
-                errorLogger.info('Starting TTS playback, dispatching tts:started event', { context: 'StreamingTTS' });
-                window.dispatchEvent(new CustomEvent('tts:started'));
+        this.watchdogTimer = setTimeout(() => {
+            errorLogger.warn(`TTS Watchdog triggered for: "${utterance.text.substring(0, 20)}..."`, { context: 'StreamingTTS' });
+            window.speechSynthesis.cancel();
+            if (utterance.onend) {
+                // @ts-ignore
+                utterance.onend(new Event('end'));
             }
+        }, estimatedDurationMs);
 
-            // Check if speech synthesis is available
-            if (!window.speechSynthesis) {
-                errorLogger.error('Web Speech API not supported', null, { context: 'StreamingTTS' });
-                return;
-            }
-
-            // Set watchdog: Estimate duration based on word count (approx 300ms per word) + 3s buffer
-            // Minimum 3s
-            const wordCount = utterance.text.split(/\s+/).length;
-            const estimatedDurationMs = Math.max(3000, (wordCount * 300) + 3000);
-
-            this.watchdogTimer = setTimeout(() => {
-                errorLogger.warn(`TTS Watchdog triggered for: "${utterance.text.substring(0, 20)}..."`, { context: 'StreamingTTS' });
-                window.speechSynthesis.cancel(); // Force cancel current
-                // Manually trigger onend logic
-                if (utterance.onend) {
-                    // @ts-ignore - Constructing a fake event for fallback
-                    utterance.onend(new Event('end'));
+        if (!wasPlaying) {
+            setTimeout(() => {
+                if (!this.isStopped) {
+                    window.speechSynthesis.speak(utterance);
+                    errorLogger.debug(`Playing first utterance (delayed).`, { context: 'StreamingTTS' });
                 }
-            }, estimatedDurationMs);
-
-            // Speak the utterance
-            // If starting from silence, add a small delay to allow VAD threshold to update (prevent self-interruption)
-            if (!wasPlaying) {
-                setTimeout(() => {
-                    if (!this.isStopped) {
-                        window.speechSynthesis.speak(utterance);
-                        errorLogger.debug(`Playing first utterance (delayed). Remaining in queue: ${this.utteranceQueue.length}`, { context: 'StreamingTTS' });
-                    }
-                }, 200);
-            } else {
-                window.speechSynthesis.speak(utterance);
-                errorLogger.debug(`Playing utterance. Remaining in queue: ${this.utteranceQueue.length}`, { context: 'StreamingTTS' });
-            }
+            }, 200);
+        } else {
+            window.speechSynthesis.speak(utterance);
+            errorLogger.debug(`Playing utterance.`, { context: 'StreamingTTS' });
         }
     }
 

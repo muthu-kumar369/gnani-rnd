@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { API_BASE_URL } from '../../api/apiClient';
 import { User, Sparkles, Copy, RefreshCw, Edit2, Check, X, ThumbsUp, GitBranch } from 'lucide-react';
 import gnaniLogo from '../../assets/logo.svg';
 import ReactMarkdown from 'react-markdown';
@@ -21,8 +22,11 @@ interface MessageItemProps {
 
 const MessageItem: React.FC<MessageItemProps> = ({ message, isLast }) => {
     const {
-        accessToken
+        accessToken,
+        user
     } = useUserStore();
+
+    const showTimestamp = user?.settings?.showTimestamps !== false; // Default true if undefined
 
     const {
         allMessages,
@@ -92,13 +96,34 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, isLast }) => {
                 : 'bg-black border border-cyan-500/50 shadow-[0_0_10px_rgba(6,182,212,0.2)]'
                 }`}>
                 {isUser ? (
-                    <User className="w-4 h-4" />
+                    (user?.profile?.uploadedProfilePhotoId || user?.profile?.profilePhoto) ? (
+                        <img
+                            src={user.profile.uploadedProfilePhotoId
+                                ? `${API_BASE_URL}/files/${user.profile.uploadedProfilePhotoId}/download?token=${accessToken}`
+                                : user.profile.profilePhoto
+                            }
+                            alt="User"
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                                e.currentTarget.style.display = 'none';
+                                e.currentTarget.parentElement?.classList.add('fallback-active');
+                            }}
+                        />
+                    ) : (
+                        <User className="w-4 h-4" />
+                    )
                 ) : (
                     <img
                         src={gnaniLogo}
                         alt="Gnani"
                         className="w-full h-full object-contain"
                     />
+                )}
+                {/* Fallback for user avatar if image load fails or no image */}
+                {isUser && (
+                    <div className="hidden fallback-active:flex w-full h-full absolute inset-0 items-center justify-center bg-gray-800 text-gray-400">
+                        <User className="w-4 h-4" />
+                    </div>
                 )}
             </div>
 
@@ -109,6 +134,11 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, isLast }) => {
                     <span className={`text-xs font-bold tracking-wide uppercase ${isUser ? 'text-gray-400' : 'text-jarvis-cyan'}`}>
                         {isUser ? 'You' : 'Gnani'}
                     </span>
+                    {showTimestamp && (
+                        <span className="text-[10px] text-slate-500">
+                            {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                    )}
 
                     {hasSiblings && (
                         <GenerationNavigator

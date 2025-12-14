@@ -178,6 +178,10 @@ const GnaniCore: React.FC<GnaniCoreProps> = ({ isOverlayMode = false, onOverlayC
 
   useEffect(() => {
     streamingTTSRef.current = new StreamingTTS();
+    // Initialize with current preference
+    if (user?.settings?.preferredVoice) {
+      streamingTTSRef.current.setPreferredVoice(user.settings.preferredVoice);
+    }
     return () => {
       errorLogger.info('[GnaniCore] Unmounting - Cleaning up resources', { context: 'GnaniCore' });
       streamingTTSRef.current?.cleanup();
@@ -185,6 +189,13 @@ const GnaniCore: React.FC<GnaniCoreProps> = ({ isOverlayMode = false, onOverlayC
       transition('reset'); // Reset state machine to idle
     };
   }, []);
+
+  // Sync preferred voice when it changes
+  useEffect(() => {
+    if (streamingTTSRef.current && user?.settings?.preferredVoice) {
+      streamingTTSRef.current.setPreferredVoice(user.settings.preferredVoice);
+    }
+  }, [user?.settings?.preferredVoice]);
 
 
 

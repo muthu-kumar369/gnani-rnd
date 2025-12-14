@@ -18,7 +18,7 @@ interface ChatHeaderProps {
 
 const ChatHeader: React.FC<ChatHeaderProps> = ({ modelName, className = '', onOpenSearch, onToggleSidebar }) => {
     const { batteryStatus, connectivityStatus, systemStatus } = useDeviceAwareness();
-    const { models, fetchModels, selectedModel, setSelectedModel, conversationId, updateConversationModel } = useConversationStore();
+    const { models, fetchModels, selectedModel, setSelectedModel, conversationId, handleModelSelect } = useConversationStore();
     const { accessToken } = useUserStore();
     const { theme, toggleTheme } = useThemeStore(); // Use Theme Store
     const navigate = useNavigate();
@@ -59,23 +59,9 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ modelName, className = '', onOp
         };
     }, []);
 
-    const handleModelSelect = async (modelId: string) => {
-        setSelectedModel(modelId);
+    const onModelSelect = async (modelId: string) => {
         setIsModelOpen(false);
-
-        // Persist selection to user preferences
-        try {
-            // Update preferences directly as per backend requirement
-            await useUserStore.getState().updateSettings({
-                preferences: { lastUsedModel: modelId }
-            });
-        } catch (err) {
-            console.error('Failed to persist model selection:', err);
-        }
-
-        if (conversationId && accessToken) {
-            await updateConversationModel(conversationId, modelId, accessToken);
-        }
+        await handleModelSelect(modelId);
     };
 
     const selectedIdx = models.findIndex(m => m.id === selectedModel);
@@ -118,7 +104,7 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ modelName, className = '', onOp
                                     models.map((model) => (
                                         <button
                                             key={model.id}
-                                            onClick={() => handleModelSelect(model.id)}
+                                            onClick={() => onModelSelect(model.id)}
                                             className={`w-full text-left px-4 py-3 text-sm flex items-center justify-between hover:bg-white/5 transition-colors ${selectedModel === model.id ? 'bg-cyan-500/10 text-cyan-400' : 'text-gray-300'}`}
                                         >
                                             <div className="flex flex-col gap-0.5">

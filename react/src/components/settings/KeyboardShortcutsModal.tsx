@@ -96,6 +96,7 @@ const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = ({ isOpen,
                                     <ShortcutRow description="Search Chats" keys={['Ctrl', 'K']} />
                                     <ShortcutRow description="New Chat" keys={['Ctrl', 'N']} />
                                     <ShortcutRow description="Toggle Sidebar" keys={['Ctrl', 'B']} />
+                                    <ShortcutRow description="Open Workspace" keys={['Alt', 'W']} />
                                     <ShortcutRow description="Show Shortcuts" keys={['Ctrl', '/']} />
                                 </ShortcutGroup>
 

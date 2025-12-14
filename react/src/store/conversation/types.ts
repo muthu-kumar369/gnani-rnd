@@ -92,6 +92,7 @@ export interface ConversationSlice {
     fetchConversations: (accessToken: string) => Promise<void>;
     searchConversations: (query: string) => Promise<void>;
     refreshConversation: (accessToken: string) => Promise<void>;
+    handleModelSelect: (modelId: string) => Promise<void>;
 }
 
 export interface MessageSlice {

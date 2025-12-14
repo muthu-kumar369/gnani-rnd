@@ -32,13 +32,7 @@ interface UpdateSettingsResponse {
     settings: ISettings;
 }
 
-interface DeviceResponse {
-    deviceId: string;
-    deviceName: string;
-    deviceType: string;
-    lastActive: string;
-    isActive: boolean;
-}
+
 
 interface SecurityResponse {
     mfaEnabled: boolean;
@@ -61,28 +55,19 @@ interface OAuthProviderResponse {
     linkedAt: string;
 }
 
-interface HistoryResponse {
-    _id: string;
-    action: string;
-    timestamp: string;
-    details: Record<string, any>;
-}
+
 
 interface MessageResponse {
     message: string;
 }
 
-interface DevicesMessageResponse extends MessageResponse {
-    devices: DeviceResponse[];
-}
+
 
 interface OAuthMessageResponse extends MessageResponse {
     providers: OAuthProviderResponse[];
 }
 
-interface HistoryMessageResponse extends MessageResponse {
-    history?: HistoryResponse[];
-}
+
 
 interface NotesMessageResponse extends MessageResponse {
     notes: string[];
@@ -132,36 +117,7 @@ export const userService = {
         ));
     },
 
-    // Device Management
-    async getDevices(): Promise<DeviceResponse[]> {
-        try {
-            return await import('../utils/circuitBreaker').then(m => m.apiCircuitBreaker.execute(() =>
-                apiClient.get<DeviceResponse[]>('/user/devices')
-            ));
-        } catch (error) {
-            const { isCircuitOpenError } = await import('../utils/fallbacks');
-            if (isCircuitOpenError(error)) return [];
-            throw error;
-        }
-    },
 
-    async addDevice(deviceData: { deviceId: string; deviceName: string; deviceType: string }): Promise<DevicesMessageResponse> {
-        return import('../utils/circuitBreaker').then(m => m.apiCircuitBreaker.execute(() =>
-            apiClient.post<DevicesMessageResponse>('/user/devices', deviceData)
-        ));
-    },
-
-    async updateDevice(deviceId: string, deviceData: { deviceName?: string; deviceType?: string; isActive?: boolean }): Promise<DevicesMessageResponse> {
-        return import('../utils/circuitBreaker').then(m => m.apiCircuitBreaker.execute(() =>
-            apiClient.put<DevicesMessageResponse>(`/user/devices/${deviceId}`, deviceData)
-        ));
-    },
-
-    async removeDevice(deviceId: string): Promise<DevicesMessageResponse> {
-        return import('../utils/circuitBreaker').then(m => m.apiCircuitBreaker.execute(() =>
-            apiClient.delete<DevicesMessageResponse>(`/user/devices/${deviceId}`)
-        ));
-    },
 
     // Security Management
     async getSecurity(): Promise<SecurityResponse> {
@@ -189,30 +145,7 @@ export const userService = {
         ));
     },
 
-    // History Management
-    async getHistory(): Promise<HistoryResponse[]> {
-        try {
-            return await import('../utils/circuitBreaker').then(m => m.apiCircuitBreaker.execute(() =>
-                apiClient.get<HistoryResponse[]>('/user/history')
-            ));
-        } catch (error) {
-            const { isCircuitOpenError } = await import('../utils/fallbacks');
-            if (isCircuitOpenError(error)) return [];
-            throw error;
-        }
-    },
 
-    async deleteHistoryItem(id: string): Promise<HistoryMessageResponse> {
-        return import('../utils/circuitBreaker').then(m => m.apiCircuitBreaker.execute(() =>
-            apiClient.delete<HistoryMessageResponse>(`/user/history/${id}`)
-        ));
-    },
-
-    async clearHistory(): Promise<MessageResponse> {
-        return import('../utils/circuitBreaker').then(m => m.apiCircuitBreaker.execute(() =>
-            apiClient.delete<MessageResponse>('/user/history')
-        ));
-    },
 
     // Notes Management
     async getNotes(): Promise<string[]> {
@@ -236,6 +169,15 @@ export const userService = {
     async deleteNote(index: number): Promise<NotesMessageResponse> {
         return import('../utils/circuitBreaker').then(m => m.apiCircuitBreaker.execute(() =>
             apiClient.delete<NotesMessageResponse>(`/user/notes/${index}`)
+        ));
+    },
+
+    // File Management
+    async uploadFile(file: File): Promise<{ success: boolean; file: { id: string; url: string } }> {
+        const formData = new FormData();
+        formData.append('file', file);
+        return import('../utils/circuitBreaker').then(m => m.apiCircuitBreaker.execute(() =>
+            apiClient.post<{ success: boolean; file: { id: string; url: string } }>('/files/upload', formData)
         ));
     }
 };

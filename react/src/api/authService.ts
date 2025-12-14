@@ -92,3 +92,14 @@ export const logout = async (refreshToken?: string): Promise<void> => {
     errorLogger.error("Logout API error:", error, { context: "AuthService" });
   }
 };
+
+export const terminateSessions = async (): Promise<void> => {
+  try {
+    await import('../utils/circuitBreaker').then(m => m.apiCircuitBreaker.execute(() =>
+      apiClient.post('/auth/terminate-sessions')
+    ));
+  } catch (error) {
+    errorLogger.error("Terminate Sessions API error:", error, { context: "AuthService" });
+    throw error;
+  }
+};

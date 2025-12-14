@@ -26,20 +26,49 @@ const GeneralSection: React.FC = () => {
 
     if (loading || !user) return <div className="flex justify-center p-8"><Loader text="Loading settings..." /></div>;
 
+    const [voices, setVoices] = useState<any[]>([]);
+    const [loadingVoices, setLoadingVoices] = useState(true);
+
+
     React.useEffect(() => {
-        const fetchModels = async () => {
+        const fetchData = async () => {
             try {
-                const response = await axios.get('http://localhost:3000/api/v1/llm/models');
-                setModels(response.data.models || []);
+                const [modelsRes, voicesRes] = await Promise.all([
+                    axios.get('http://localhost:3000/api/v1/llm/models'),
+                    axios.get('http://localhost:3000/api/v1/user/voices', {
+                        headers: { 'x-auth-token': localStorage.getItem('accessToken') || '' }
+                    })
+                ]);
+                setModels(modelsRes.data.models || []);
+                setVoices(voicesRes.data.voices || []);
             } catch (error) {
-                console.error('Failed to fetch models:', error);
-                addToast('Failed to load available models', 'error');
+                console.error('Failed to fetch data:', error);
+                addToast('Failed to load options', 'error');
             } finally {
                 setLoadingModels(false);
+                setLoadingVoices(false);
             }
         };
-        fetchModels();
+        fetchData();
     }, [addToast]);
+
+    const hasChanges = React.useMemo(() => {
+        if (!user) return false;
+        const currentSettings = user.settings;
+
+        // Check strict equality for primitive values
+        const isSettingsChanged =
+            settings.wakeWord !== currentSettings.wakeWord ||
+            settings.preferredVoice !== currentSettings.preferredVoice ||
+            settings.volume !== currentSettings.volume ||
+            settings.preferredModel !== currentSettings.preferredModel ||
+            settings.theme !== currentSettings.theme ||
+            settings.showTimestamps !== currentSettings.showTimestamps;
+
+        const isLanguageChanged = language !== (user.profile?.language || 'en-US');
+
+        return isSettingsChanged || isLanguageChanged;
+    }, [settings, language, user]);
 
     const handleSettingsChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value, type } = e.target;
@@ -78,39 +107,33 @@ const GeneralSection: React.FC = () => {
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
-                        <div className="space-y-1.5">
-                            <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Wake Word</label>
-                            <div className="relative">
+                        <div className="flex flex-col gap-4 h-full">
+                            <div className="h-full">
+                                <label className="text-xs font-medium text-gray-400 mb-2 pl-1 flex items-center gap-2">
+                                    Wake Word
+                                    <span className="text-[10px] bg-cyan-500/10 text-cyan-400 px-1.5 py-0.5 rounded uppercase tracking-wider font-bold">Coming Soon</span>
+                                </label>
                                 <input
                                     type="text"
-                                    name="wakeWord"
-                                    value={settings.wakeWord || ''}
-                                    onChange={handleSettingsChange}
-                                    placeholder="e.g. Hey Gnani"
-                                    className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 transition-all"
+                                    value="Gnani"
+                                    disabled
+                                    className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-gray-500 focus:outline-none cursor-not-allowed"
                                 />
-                                <div className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-600 pointer-events-none">
-                                    <Mic size={14} />
-                                </div>
                             </div>
                         </div>
 
-                        <div className="space-y-1.5">
-                            <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Preferred Voice</label>
+                        <div className="flex flex-col gap-4 h-full">
+                            <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest pl-1">Preferred Voice</label>
                             <GlassDropdown
                                 value={settings.preferredVoice || 'jarvis'}
                                 onChange={(val) => setSettings(prev => ({ ...prev, preferredVoice: val }))}
-                                options={[
-                                    { value: 'jarvis', label: 'Jarvis (Male)' },
-                                    { value: 'friday', label: 'Friday (Female)' },
-                                    { value: 'edith', label: 'EDITH (Neutral)' }
-                                ]}
-                                className="w-full text-sm py-2"
+                                options={loadingVoices ? [{ value: '', label: 'Loading voices...' }] : (voices.length > 0 ? voices.map(v => ({ value: v.id, label: `${v.name} (${v.gender})` })) : [{ value: 'jarvis', label: 'Jarvis (Default)' }])}
+                                className="w-full text-sm py-2 h-full"
                             />
                         </div>
 
-                        <div className="space-y-3 col-span-1 md:col-span-2 pt-1">
-                            <div className="flex justify-between items-end">
+                        <div className="flex flex-col gap-4 col-span-1 md:col-span-2 pt-1">
+                            <div className="flex justify-between items-end pl-1">
                                 <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">System Volume</label>
                                 <span className="text-sm font-bold text-cyan-400">{settings.volume}%</span>
                             </div>
@@ -140,8 +163,8 @@ const GeneralSection: React.FC = () => {
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
-                        <div className="space-y-1.5">
-                            <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Preferred Model</label>
+                        <div className="flex flex-col gap-4">
+                            <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest pl-1">Preferred Model</label>
                             <GlassDropdown
                                 value={settings.preferredModel || 'llama3'}
                                 onChange={(val) => setSettings(prev => ({ ...prev, preferredModel: val }))}
@@ -149,28 +172,34 @@ const GeneralSection: React.FC = () => {
                                 className="w-full text-sm py-2"
                             />
                             {settings.preferredModel && models.length > 0 && (
-                                <p className="text-[10px] text-slate-500 mt-1.5 flex items-center gap-1">
+                                <p className="text-[10px] text-slate-500 mt-1.5 flex items-center gap-1 pl-1">
                                     <Info size={10} />
                                     {models.find(m => m.id === settings.preferredModel)?.description || 'Selected model'}
                                 </p>
                             )}
                         </div>
 
-                        <div className="space-y-1.5">
-                            <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Language</label>
-                            <GlassDropdown
-                                value={language}
-                                onChange={setLanguage}
-                                options={[
-                                    { value: 'en-US', label: 'English (US)' },
-                                    { value: 'en-GB', label: 'English (UK)' },
-                                    { value: 'es-ES', label: 'Spanish' },
-                                    { value: 'fr-FR', label: 'French' },
-                                    { value: 'de-DE', label: 'German' },
-                                    { value: 'hi-IN', label: 'Hindi' }
-                                ]}
-                                className="w-full text-sm py-2"
-                            />
+                        <div className="flex flex-col gap-4">
+                            {/* Language - Disabled */}
+                            <div>
+                                <label className="text-xs font-medium text-gray-400 mb-2 pl-1 flex items-center gap-2">
+                                    Language
+                                    <span className="text-[10px] bg-cyan-500/10 text-cyan-400 px-1.5 py-0.5 rounded uppercase tracking-wider font-bold">Coming Soon</span>
+                                </label>
+                                <div className="relative">
+                                    <GlassDropdown
+                                        options={[
+                                            { value: 'en', label: 'English' },
+                                            { value: 'es', label: 'Spanish' },
+                                            { value: 'fr', label: 'French' }
+                                        ]}
+                                        value="en"
+                                        onChange={() => { }}
+                                        disabled={true}
+                                        className="w-full"
+                                    />
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -188,32 +217,23 @@ const GeneralSection: React.FC = () => {
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
-                        <div className="space-y-1.5">
-                            <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Theme</label>
-                            <div className="grid grid-cols-2 gap-2">
-                                {[
-                                    { id: 'jarvis', label: 'Default', icon: Monitor },
-                                    { id: 'dark', label: 'Dark', icon: Moon },
-                                    { id: 'light', label: 'Light', icon: Sun },
-                                ].map(theme => (
-                                    <button
-                                        key={theme.id}
-                                        onClick={() => setSettings(prev => ({ ...prev, theme: theme.id as any }))}
-                                        className={`flex flex-col items-center justify-center p-2 rounded-lg border transition-all ${(settings.theme || 'jarvis') === theme.id
-                                                ? 'bg-cyan-500/10 border-cyan-500/50 text-cyan-400'
-                                                : 'bg-black/20 border-white/5 text-slate-400 hover:bg-white/5 hover:text-white'
-                                            }`}
-                                    >
-                                        <theme.icon size={16} className="mb-1.5" />
-                                        <span className="text-[10px] font-bold uppercase tracking-wide">{theme.label}</span>
-                                    </button>
-                                ))}
-                            </div>
+                        <div className="flex flex-col gap-4 h-full">
+                            <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest pl-1">Theme</label>
+                            <GlassDropdown
+                                value={settings.theme || 'jarvis'}
+                                onChange={(val) => setSettings(prev => ({ ...prev, theme: val as any }))}
+                                options={[
+                                    { value: 'jarvis', label: 'Default', icon: <Monitor size={14} /> },
+                                    { value: 'dark', label: 'Dark', icon: <Moon size={14} /> },
+                                    { value: 'light', label: 'Light', icon: <Sun size={14} /> }
+                                ]}
+                                className="w-full text-sm py-2 h-full"
+                            />
                         </div>
 
-                        <div className="space-y-1.5">
-                            <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Features</label>
-                            <div className="bg-black/20 border border-white/5 rounded-lg p-3 flex items-center justify-between">
+                        <div className="flex flex-col gap-4 h-full">
+                            <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest pl-1">Features</label>
+                            <div className="bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 min-h-[46px] flex items-center justify-between h-full">
                                 <div className="space-y-0.5">
                                     <span className="text-sm font-medium text-white block">Timestamps</span>
                                     <span className="text-[10px] text-slate-500">Show time on messages</span>
@@ -245,9 +265,9 @@ const GeneralSection: React.FC = () => {
 
                     <Button
                         onClick={handleSave}
-                        disabled={isSaving}
+                        disabled={isSaving || !hasChanges}
                         isLoading={isSaving}
-                        className="bg-cyan-500 hover:bg-cyan-400 text-black font-bold shadow-[0_0_20px_rgba(6,182,212,0.3)] hover:shadow-[0_0_30px_rgba(6,182,212,0.5)] border-none px-6 py-2.5 rounded-xl transition-all"
+                        className={`bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 px-6 py-2.5 rounded-xl font-bold uppercase tracking-wider transition-all shadow-[0_0_15px_-3px_rgba(6,182,212,0.1)] hover:shadow-[0_0_20px_-3px_rgba(6,182,212,0.2)] ${!hasChanges ? 'opacity-50 cursor-not-allowed hover:bg-cyan-500/10 hover:shadow-none' : ''}`}
                         leftIcon={<Save size={18} />}
                     >
                         Save All Changes

@@ -47,13 +47,25 @@ export const createConversationSlice: StateCreator<ConversationStore, [], [], Co
 
     createConversation: async (accessToken, systemPrompt) => {
         try {
-            const result = await conversationService.create(accessToken, systemPrompt);
+            // Priority:
+            // 1. Currently selected model (from Header dropdown in New Chat state)
+            // 2. User's preferred model (Settings)
+            // 3. First available model (Dynamic fallback)
+            const state = get();
+            const user = useUserStore.getState().user;
+            const preferred = user?.settings?.preferredModel || user?.preferences?.lastUsedModel;
+            const firstAvailable = state.models.length > 0 ? state.models[0].id : undefined;
+
+            const modelToUse = state.selectedModel || preferred || firstAvailable;
+
+            const result = await conversationService.create(accessToken, systemPrompt, modelToUse);
             set({
                 conversationId: result.conversationId,
                 messages: [],
                 allMessages: [],
                 currentLeafId: null,
-                title: result.title
+                title: result.title,
+                selectedModel: modelToUse // Ensure store reflects what we just used
             });
             return result.conversationId;
         } catch (error) {
@@ -141,23 +153,44 @@ export const createConversationSlice: StateCreator<ConversationStore, [], [], Co
             set({ models });
 
             // SMART DEFAULT LOGIC:
-            // Check if there is a saved preferred model in user preferences
+            // Priority:
+            // 1. User's specific preferred model from settings (Explicit user choice)
+            // 2. Last used model (History)
+            // 3. First available model (Fallback)
             const user = useUserStore.getState().user;
-            // The backend stores this in preferences.lastUsedModel
+            const preferredModelId = user?.settings?.preferredModel;
             const lastUsedModelId = user?.preferences?.lastUsedModel;
 
-            // If we have a last used model and it exists in the fetched list, select it
-            if (lastUsedModelId && models.some(m => m.id === lastUsedModelId)) {
-                set({ selectedModel: lastUsedModelId });
+            // Decision Tree
+            let modelToSelect = null;
+
+            if (preferredModelId && models.some(m => m.id === preferredModelId)) {
+                modelToSelect = preferredModelId;
+            } else if (lastUsedModelId && models.some(m => m.id === lastUsedModelId)) {
+                modelToSelect = lastUsedModelId;
+            } else if (models.length > 0) {
+                modelToSelect = models[0].id;
             }
-            // Otherwise, if no model is selected yet, default to the first one available
-            else if (!get().selectedModel && models.length > 0) {
-                set({ selectedModel: models[0].id });
+
+            if (modelToSelect) {
+                set({ selectedModel: modelToSelect });
             }
         } catch (error) {
             errorLogger.error('Error fetching models', error as Error, { context: 'useConversationStore' });
         } finally {
             set({ isLoadingModels: false });
+        }
+    },
+
+    handleModelSelect: async (modelId: string) => {
+        const { conversationId, updateConversationModel } = get();
+        const accessToken = useUserStore.getState().accessToken || '';
+
+        set({ selectedModel: modelId });
+
+        // If we have an active conversation, update it on the backend
+        if (conversationId && accessToken) {
+            await updateConversationModel(conversationId, modelId, accessToken);
         }
     },
 

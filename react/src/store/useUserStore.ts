@@ -25,14 +25,14 @@ interface UserStore {
   initialize: () => void;
   updateProfile: (data: Partial<IProfile>) => Promise<void>;
   updateSettings: (data: { settings?: Partial<ISettings>; preferences?: Record<string, any> } | Partial<ISettings>) => Promise<void>;
-  removeDevice: (deviceId: string) => Promise<void>;
   updateSecurity: (data: Partial<ISecurity>) => Promise<void>;
+  terminateSessions: () => Promise<void>;
   linkOAuthProvider: (provider: string) => Promise<void>;
   unlinkOAuthProvider: (provider: string) => Promise<void>;
-  clearHistory: () => Promise<void>;
-  deleteHistoryItem: (id: string) => Promise<void>;
+
   addNote: (note: string) => Promise<void>;
   deleteNote: (index: number) => Promise<void>;
+  uploadProfilePhoto: (file: File) => Promise<void>;
 }
 
 export const useUserStore = create<UserStore>((set, get) => ({
@@ -84,6 +84,7 @@ export const useUserStore = create<UserStore>((set, get) => ({
   logout: () => {
     // Clear token from localStorage
     localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
 
     set({
       user: null,
@@ -96,9 +97,23 @@ export const useUserStore = create<UserStore>((set, get) => ({
 
   loginStart: () => set({ loading: true, error: null }),
 
-  loginSuccess: (user, accessToken, _refreshToken) => {
-    // Note: Refresh token should ideally be handled by an HttpOnly cookie or secure storage mechanism
-    // For now we just update the store state
+  loginSuccess: (user, accessToken, refreshToken) => {
+    // Save tokens to localStorage
+    if (accessToken) {
+      localStorage.setItem('accessToken', accessToken);
+    }
+
+    // Save refresh token
+    if (refreshToken) {
+      const tokenString = typeof refreshToken === 'object' && 'token' in refreshToken
+        ? (refreshToken as any).token
+        : refreshToken;
+
+      if (typeof tokenString === 'string') {
+        localStorage.setItem('refreshToken', tokenString);
+      }
+    }
+
     set({
       isAuthenticated: true,
       user,
@@ -125,13 +140,12 @@ export const useUserStore = create<UserStore>((set, get) => ({
 
     set({ loading: true });
     try {
-      const [profileData, settingsData, devices, security, oauthProviders, history, notes] = await Promise.all([
+
+      const [profileData, settingsData, security, oauthProviders, notes] = await Promise.all([
         userService.getProfile(),
         userService.getSettings(),
-        userService.getDevices(),
         userService.getSecurity(),
         userService.getOAuthProviders(),
-        userService.getHistory(),
         userService.getNotes()
       ]);
 
@@ -140,13 +154,6 @@ export const useUserStore = create<UserStore>((set, get) => ({
         email: profileData.email,
         profile: profileData.profile,
         settings: settingsData.settings,
-        devices: devices.map(d => ({
-          deviceId: d.deviceId,
-          deviceName: d.deviceName,
-          deviceType: d.deviceType as 'desktop' | 'mobile' | 'web' | 'speaker',
-          lastActive: d.lastActive,
-          isTrusted: d.isActive
-        })),
         security: {
           failedLoginAttempts: 0,
           mfaEnabled: security.mfaEnabled,
@@ -157,12 +164,6 @@ export const useUserStore = create<UserStore>((set, get) => ({
           provider: o.provider,
           providerUserId: o.providerId,
           linkedAt: o.linkedAt
-        })),
-        history: history.map(h => ({
-          id: h._id,
-          query: h.action,
-          response: JSON.stringify(h.details),
-          timestamp: h.timestamp
         })),
         notes,
         roles: profileData.roles,
@@ -252,24 +253,7 @@ export const useUserStore = create<UserStore>((set, get) => ({
     }
   },
 
-  removeDevice: async (deviceId) => {
-    const { user } = get();
-    if (!user) return;
 
-    const previousDevices = user.devices;
-    set({
-      user: { ...user, devices: user.devices.filter(d => d.deviceId !== deviceId) }
-    });
-
-    try {
-      await userService.removeDevice(deviceId);
-      errorLogger.info('Device removed', { context: 'useUserStore', deviceId });
-    } catch (err) {
-      set({ user: { ...user, devices: previousDevices } });
-      errorLogger.error('Failed to remove device', err as Error, { context: 'useUserStore' });
-      throw err;
-    }
-  },
 
   updateSecurity: async (securityData) => {
     const { user } = get();
@@ -286,6 +270,16 @@ export const useUserStore = create<UserStore>((set, get) => ({
     } catch (err) {
       set({ user: { ...user, security: previousSecurity } });
       errorLogger.error('Failed to update security', err as Error, { context: 'useUserStore' });
+      throw err;
+    }
+  },
+
+  terminateSessions: async () => {
+    try {
+      await import('../api/authService').then(m => m.terminateSessions());
+      errorLogger.info('All other sessions terminated', { context: 'useUserStore' });
+    } catch (err) {
+      errorLogger.error('Failed to terminate sessions', err as Error, { context: 'useUserStore' });
       throw err;
     }
   },
@@ -321,43 +315,7 @@ export const useUserStore = create<UserStore>((set, get) => ({
     }
   },
 
-  clearHistory: async () => {
-    const { user } = get();
-    if (!user) return;
 
-    const previousHistory = user.history;
-    set({
-      user: { ...user, history: [] }
-    });
-
-    try {
-      await userService.clearHistory();
-      errorLogger.info('History cleared', { context: 'useUserStore' });
-    } catch (err) {
-      set({ user: { ...user, history: previousHistory } });
-      errorLogger.error('Failed to clear history', err as Error, { context: 'useUserStore' });
-      throw err;
-    }
-  },
-
-  deleteHistoryItem: async (id) => {
-    const { user } = get();
-    if (!user) return;
-
-    const previousHistory = user.history;
-    set({
-      user: { ...user, history: user.history.filter(h => h.id !== id) }
-    });
-
-    try {
-      await userService.deleteHistoryItem(id);
-      errorLogger.info('History item deleted', { context: 'useUserStore', id });
-    } catch (err) {
-      set({ user: { ...user, history: previousHistory } });
-      errorLogger.error('Failed to delete history item', err as Error, { context: 'useUserStore' });
-      throw err;
-    }
-  },
 
   addNote: async (note) => {
     const { user } = get();
@@ -393,6 +351,19 @@ export const useUserStore = create<UserStore>((set, get) => ({
     } catch (err) {
       set({ user: { ...user, notes: previousNotes } });
       errorLogger.error('Failed to delete note', err as Error, { context: 'useUserStore' });
+      throw err;
+    }
+  },
+
+  uploadProfilePhoto: async (file: File) => {
+    const { updateProfile } = get();
+    try {
+      const response = await userService.uploadFile(file);
+      if (response.success && response.file.id) {
+        await updateProfile({ uploadedProfilePhotoId: response.file.id });
+      }
+    } catch (err) {
+      errorLogger.error('Failed to upload profile photo', err as Error, { context: 'useUserStore' });
       throw err;
     }
   }

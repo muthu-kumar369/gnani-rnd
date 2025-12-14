@@ -95,11 +95,11 @@ class ConversationService {
     /**
      * Create a new conversation
      */
-    async create(accessToken: string, systemPrompt?: string): Promise<{ conversationId: string; title: string }> {
+    async create(accessToken: string, systemPrompt?: string, model?: string): Promise<{ conversationId: string; title: string }> {
         logger.debug('Creating new conversation', { context: 'ConversationService' });
         try {
             const response = await apiCircuitBreaker.execute(() =>
-                apiClient.post('/conversations', { systemPrompt })
+                apiClient.post('/conversations', { systemPrompt, model })
             );
 
             const data = response.data;
@@ -177,8 +177,8 @@ class ConversationService {
                 messages: finalMessages,
                 hasMoreMessages: data.hasMoreMessages || false,
                 currentLeafId,
-                modelId: data.modelId || null,
-                templateId: data.templateId || null
+                modelId: data.currentModel || data.modelId || null,
+                templateId: data.currentTemplate || data.templateId || null
             };
         } catch (error) {
             errorLogger.error('Error getting conversation', error as Error, { context: 'ConversationService' });

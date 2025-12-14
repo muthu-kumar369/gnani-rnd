@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { API_BASE_URL } from '../../api/apiClient';
 import { useNavigate } from 'react-router-dom';
 import { eventManager } from '../../utils/eventManager';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -380,7 +381,7 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
 
                     <button
                         onClick={() => eventManager.dispatchEvent('open-advanced-search')}
-                        className={`w-full flex items-center gap-3 px-2 py-2 text-sm text-gray-400 hover:text-white hover:bg-white/5 border border-transparent hover:border-white/10 rounded-lg transition-all group ${isCollapsed ? 'justify-center aspect-square px-2' : ''}`}
+                        className={`w-full flex items-center gap-3 px-2 py-2 text-sm text-gray-400 hover:text-white hover:bg-white/10 border border-transparent hover:border-white/10 rounded-lg transition-all group ${isCollapsed ? 'justify-center aspect-square px-2' : ''}`}
                         title="Search chats"
                     >
                         <Search size={16} className="group-hover:text-cyan-400 transition-colors" />
@@ -630,8 +631,26 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                         onClick={() => setIsProfileOpen(!isProfileOpen)}
                         className={`w-full flex items-center gap-3 px-3 py-2 hover:bg-white/5 rounded-lg transition-colors text-left ${isCollapsed ? 'justify-center p-2' : ''}`}
                     >
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-jarvis-blue to-purple-600 flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-jarvis-blue/20 flex-shrink-0">
-                            {user?.profile?.firstName?.[0]?.toUpperCase() || 'U'}
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-jarvis-blue to-purple-600 flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-jarvis-blue/20 flex-shrink-0 overflow-hidden relative">
+                            {(user?.profile?.uploadedProfilePhotoId || user?.profile?.profilePhoto) ? (
+                                <img
+                                    src={user.profile.uploadedProfilePhotoId
+                                        ? `${API_BASE_URL}/files/${user.profile.uploadedProfilePhotoId}/download?token=${accessToken}`
+                                        : user.profile.profilePhoto
+                                    }
+                                    alt="Profile"
+                                    className="w-full h-full object-cover z-10 relative"
+                                    onError={(e) => {
+                                        e.currentTarget.style.display = 'none';
+                                        e.currentTarget.parentElement?.classList.add('fallback-active');
+                                    }}
+                                />
+                            ) : null}
+                            <div className={`absolute inset-0 flex items-center justify-center bg-gradient-to-br from-jarvis-blue to-purple-600 z-0 ${(user?.profile?.uploadedProfilePhotoId || user?.profile?.profilePhoto) ? 'hidden fallback-active:flex' : 'flex'}`}>
+                                <span className="text-sm font-bold text-white">
+                                    {user?.profile?.firstName?.[0]?.toUpperCase() || 'U'}
+                                </span>
+                            </div>
                         </div>
                         {!isCollapsed && (
                             <>
