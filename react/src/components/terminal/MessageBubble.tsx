@@ -144,7 +144,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = memo(({ message, isLatest, s
                 {isUser && !isInlineEditing && !isSystem && (
                     <button
                         onClick={handleStartInlineEdit}
-                        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 hover:bg-cyan-500/20 rounded"
+                        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 hover:bg-cyan-500/20 rounded cursor-pointer"
                         title="Edit message (inline)"
                     >
                         <Edit2 size={14} className="text-cyan-400" />
@@ -288,7 +288,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = memo(({ message, isLatest, s
                                         <button
                                             onClick={() => navigateToGeneration(message.id, 'prev')}
                                             disabled={currentIndex === 0}
-                                            className="p-1 hover:bg-cyan-500/20 rounded disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                                            className="p-1 hover:bg-cyan-500/20 rounded disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
                                             title="Previous variant"
                                         >
                                             <ChevronLeft size={14} />
@@ -297,7 +297,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = memo(({ message, isLatest, s
                                         <button
                                             onClick={() => navigateToGeneration(message.id, 'next')}
                                             disabled={currentIndex === totalGenerations - 1}
-                                            className="p-1 hover:bg-cyan-500/20 rounded disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                                            className="p-1 hover:bg-cyan-500/20 rounded disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
                                             title="Next variant"
                                         >
                                             <ChevronRight size={14} />
@@ -309,7 +309,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = memo(({ message, isLatest, s
                                 <button
                                     onClick={() => actions.regenerateMessage(message.id)}
                                     disabled={actions.isLoading}
-                                    className="flex items-center gap-2 px-3 py-1.5 text-xs bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed ml-auto"
+                                    className="flex items-center gap-2 px-3 py-1.5 text-xs bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed ml-auto cursor-pointer"
                                     title="Regenerate response"
                                 >
                                     <RotateCw size={14} className={actions.isLoading ? 'animate-spin' : ''} />

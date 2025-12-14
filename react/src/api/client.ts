@@ -80,14 +80,64 @@ api.interceptors.response.use(
     async (error: AxiosError) => {
         // Handle deduplicated requests - REMOVED
 
-        const config = error.config as AxiosRequestConfig & { __retryCount?: number };
+        const config = error.config as AxiosRequestConfig & { __retryCount?: number; _retry?: boolean };
 
         // STAGE 19: Parse rate limit headers even on error
         if (error.response?.headers) {
             useRateLimitStore.getState().updateRateLimit(error.response.headers as any);
         }
 
-        // STAGE 1: Retry logic with exponential backoff
+        // Handle 401 Unauthorized with Refresh Token Logic
+        if (error.response?.status === 401 && !config._retry) {
+            config._retry = true;
+            const refreshToken = localStorage.getItem('refreshToken');
+
+            if (refreshToken) {
+                try {
+                    // STAGE 1: Direct axios call to avoid circular dependency with authService
+                    // and to bypass this interceptor (avoiding infinite loops)
+                    const response = await axios.post(`${config.baseURL || ''}/auth/refresh`, {
+                        refreshToken
+                    });
+
+                    const { accessToken, refreshToken: newRefreshToken } = response.data;
+
+                    // Update storage
+                    if (accessToken) localStorage.setItem('accessToken', accessToken);
+                    if (newRefreshToken) localStorage.setItem('refreshToken', newRefreshToken);
+
+                    // Update headers for the retry
+                    if (config.headers) {
+                        config.headers['x-auth-token'] = accessToken;
+                    }
+
+                    // Retry original request
+                    console.log('[API Client] Token refreshed successfully, retrying request');
+                    return api(config);
+
+                } catch (refreshError) {
+                    console.error('[API Client] Refresh token failed:', refreshError);
+                    // Refresh failed, proceed to logout
+                    localStorage.removeItem('accessToken');
+                    localStorage.removeItem('refreshToken');
+                    window.location.href = '/login';
+                    return Promise.reject(refreshError);
+                }
+            } else {
+                // No refresh token, direct logout
+                localStorage.removeItem('accessToken');
+                localStorage.removeItem('refreshToken');
+                window.location.href = '/login';
+                return Promise.reject(error);
+            }
+        } else if (error.response?.status === 401) {
+            // Already retried and failed, or 401 for other reasons
+            localStorage.removeItem('accessToken');
+            window.location.href = '/login';
+            return Promise.reject(error);
+        }
+
+        // STAGE 1: Retry logic with exponential backoff for other errors
         const retryCount = config.__retryCount || 0;
         const shouldRetry = defaultRetryConfig.retryCondition?.(error) && retryCount < defaultRetryConfig.retries;
 
@@ -125,13 +175,6 @@ api.interceptors.response.use(
                 parsedError,
                 retryCount
             });
-        }
-
-        // Handle specific error cases
-        if (error.response?.status === 401) {
-            // Redirect to login on unauthorized
-            localStorage.removeItem('accessToken');
-            window.location.href = '/login';
         }
 
         return Promise.reject(error);

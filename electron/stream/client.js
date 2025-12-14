@@ -468,8 +468,15 @@ class StreamingClient extends EventEmitter {
 
   async setConversationId(conversationId) {
     logger.info(`Setting conversation ID: ${conversationId}`, { context: 'StreamingClient' });
+    if (this.conversationId === conversationId) return;
+
     this.conversationId = conversationId;
-    // Don't disconnect - just update for next connection
+    
+    // Disconnect current session to ensure next connection uses new conversation ID
+    if (this.isConnected) {
+      logger.info('Disconnecting current session to switch conversation...', { context: 'StreamingClient' });
+      await this.handleDisconnect();
+    }
   }
 
   setEndpoint(cfg) {

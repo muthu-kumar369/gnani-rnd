@@ -26,7 +26,10 @@ const ChatLayout: React.FC = () => {
         createConversation,
         fetchConversations,
         loadConversation,
-        conversationId
+        conversationId,
+        setConversationId,
+        clearMessages,
+        setSelectedTemplate
     } = useConversationStore();
     const { accessToken } = useUserStore();
     const navigate = useNavigate();
@@ -52,6 +55,17 @@ const ChatLayout: React.FC = () => {
     const handleNewChat = async () => {
         if (!accessToken) return;
         try {
+            // Reset state for new conversation
+            setConversationId(null);
+            clearMessages();
+            setSelectedTemplate(null);
+
+            // Ensure we are on the chat page
+            const isChatPath = location.pathname.startsWith('/chat') || location.pathname === '/';
+            if (!isChatPath) {
+                navigate('/chat');
+            }
+
             await fetchConversations(accessToken);
             if (isMobile) setIsSidebarOpen(false);
         } catch (error) {

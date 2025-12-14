@@ -84,9 +84,10 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ modelName, className = '', onOp
                 <div className="relative" ref={dropdownRef}>
                     <button
                         onClick={() => setIsModelOpen(!isModelOpen)}
-                        className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 hover:bg-white/10 transition-all border border-white/5 hover:border-white/10 group"
+                        title={displayModel}
+                        className="w-[160px] flex items-center justify-between gap-2 px-3 py-1.5 rounded-full bg-white/5 hover:bg-white/10 transition-all border border-white/5 hover:border-white/10 group"
                     >
-                        <span className="text-sm font-medium text-gray-200 group-hover:text-white transition-colors truncate max-w-[120px] md:max-w-[200px]">
+                        <span className="text-sm font-medium text-gray-200 group-hover:text-white transition-colors truncate">
                             {displayModel}
                         </span>
                         <ChevronDown className={`w-3.5 h-3.5 text-gray-500 group-hover:text-gray-300 transition-transform duration-200 ${isModelOpen ? 'rotate-180' : ''}`} />

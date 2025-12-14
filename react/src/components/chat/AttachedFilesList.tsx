@@ -53,7 +53,7 @@ const AttachedFilesList: React.FC<AttachedFilesListProps> = ({ files, onRemove }
                         ) : (
                             <button
                                 onClick={() => onRemove(index)}
-                                className="p-1 hover:bg-red-500/10 text-gray-500 hover:text-red-400 rounded-md transition-colors"
+                                className="p-1 hover:bg-red-500/10 text-gray-500 hover:text-red-400 rounded-md transition-colors cursor-pointer"
                                 title="Remove file"
                             >
                                 <X size={14} />

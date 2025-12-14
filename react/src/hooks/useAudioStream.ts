@@ -7,6 +7,7 @@ export interface UseAudioStreamReturn {
   sessionId: string | null;
   sendText: (text: string) => void;
   setSessionId: (sessionId: string | null) => void;
+  setConversationId: (conversationId: string | null) => void;
   startStream: (options?: any) => void;
   stopStream: () => void;
 }
@@ -40,6 +41,15 @@ export const useAudioStream = (): UseAudioStreamReturn => {
     window.gnani.stream.setSessionId(id);
   }, []);
 
+  const setConversationId = useCallback((id: string | null) => {
+    if (!window.gnani?.stream?.setConversationId) {
+      // It's possible old Electron build doesn't expose it yet, warn but don't error hard
+      console.warn('IPC stream.setConversationId not available');
+      return;
+    }
+    window.gnani.stream.setConversationId(id);
+  }, []);
+
   const startStream = useCallback((options?: any) => {
     if (window.gnani?.stream?.startStream) {
       window.gnani.stream.startStream(options);
@@ -57,6 +67,7 @@ export const useAudioStream = (): UseAudioStreamReturn => {
     sessionId: ipcSessionId,
     sendText,
     setSessionId,
+    setConversationId,
     startStream,
     stopStream
   };

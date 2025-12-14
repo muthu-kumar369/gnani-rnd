@@ -57,9 +57,15 @@ export const useIPCConnection = () => {
         };
     }, []);
 
-    const setSessionId = (sessionId: string) => {
+    const setSessionId = (sessionId: string | null) => {
         if (window.gnani && window.gnani.stream) {
             window.gnani.stream.setSessionId(sessionId);
+        }
+    };
+
+    const setConversationId = (conversationId: string | null) => {
+        if (window.gnani && window.gnani.stream && window.gnani.stream.setConversationId) {
+            window.gnani.stream.setConversationId(conversationId);
         }
     };
 
@@ -68,6 +74,7 @@ export const useIPCConnection = () => {
         streamErrorMessage,
         latestSessionId,
         latestConversationId,
-        setSessionId
+        setSessionId,
+        setConversationId
     };
 };

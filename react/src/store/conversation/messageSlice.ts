@@ -175,7 +175,7 @@ export const createMessageSlice: StateCreator<ConversationStore, [], [], Message
             return;
         }
 
-        const { conversationId } = get();
+        const { conversationId, selectedModel, selectedTemplate } = get();
         useAnalyticsStore.getState().trackEvent('message_sent', { conversationId });
         useAnalyticsStore.getState().incrementMessages();
 
@@ -204,7 +204,13 @@ export const createMessageSlice: StateCreator<ConversationStore, [], [], Message
 
         try {
             await conversationService.sendMessage(
-                { text, conversationId: conversationId || '', attachments },
+                {
+                    text,
+                    conversationId: conversationId || '',
+                    attachments,
+                    model: selectedModel || undefined,
+                    template: selectedTemplate || undefined
+                },
                 accessToken,
                 {
                     onChunk: ({ content }) => {

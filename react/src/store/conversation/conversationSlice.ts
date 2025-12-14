@@ -13,7 +13,9 @@ export const createConversationSlice: StateCreator<ConversationStore, [], [], Co
     selectedModel: null,
     selectedTemplate: null,
     models: [],
+    templates: [],
     isLoadingModels: false,
+    isLoadingTemplates: false,
     isSearching: false,
 
     setConversationId: (id) => set({ conversationId: id }),
@@ -179,6 +181,19 @@ export const createConversationSlice: StateCreator<ConversationStore, [], [], Co
             errorLogger.error('Error fetching models', error as Error, { context: 'useConversationStore' });
         } finally {
             set({ isLoadingModels: false });
+        }
+    },
+
+    fetchTemplates: async () => {
+        set({ isLoadingTemplates: true });
+        try {
+            const { templateService } = await import('../../api/templateService');
+            const templates = await templateService.getAll();
+            set({ templates });
+        } catch (error) {
+            errorLogger.error('Error fetching templates', error as Error, { context: 'useConversationStore' });
+        } finally {
+            set({ isLoadingTemplates: false });
         }
     },
 

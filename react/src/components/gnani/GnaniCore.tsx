@@ -18,6 +18,7 @@ import { useDeviceAwareness } from "../../hooks/useDeviceAwareness";
 import { useAudioStream } from "../../hooks/useAudioStream";
 
 import HUDBackground from "./HUDBackground";
+import VoiceModeBackground from "../chat/VoiceModeBackground";
 import MicButton from "./MicButton";
 import IntelligencePanel from "./IntelligencePanel";
 import SpokenTextDisplay from "./SpokenTextDisplay";
@@ -480,7 +481,11 @@ const GnaniCore: React.FC<GnaniCoreProps> = ({ isOverlayMode = false, onOverlayC
           handleBargeIn={handleBargeIn}
         />
 
-        <HUDBackground status={currentUIStatus} />
+        {isOverlayMode ? (
+          <VoiceModeBackground status={state} />
+        ) : (
+          <HUDBackground status={currentUIStatus} />
+        )}
 
         <motion.div
           className="relative z-10 flex flex-col h-full p-4 md:p-8"
@@ -589,7 +594,9 @@ const GnaniCore: React.FC<GnaniCoreProps> = ({ isOverlayMode = false, onOverlayC
         )}
 
         <div className="absolute left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-4 bottom-32 md:bottom-auto md:top-[35%]">
-          <StatusDisplay status={animationState} subtext={uiState.streamErrorMessage || undefined} />
+          {!isOverlayMode && (
+            <StatusDisplay status={animationState} subtext={uiState.streamErrorMessage || undefined} />
+          )}
 
           <div className="relative flex items-center justify-center">
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
@@ -607,6 +614,13 @@ const GnaniCore: React.FC<GnaniCoreProps> = ({ isOverlayMode = false, onOverlayC
             </div>
           </div>
         </div>
+
+        {/* Status Display at Bottom for Overlay Mode */}
+        {isOverlayMode && (
+          <div className="absolute bottom-24 left-1/2 -translate-x-1/2 z-20">
+            <StatusDisplay status={animationState} subtext={uiState.streamErrorMessage || undefined} />
+          </div>
+        )}
 
         {!isOverlayMode && (
           <div className="absolute bottom-6 right-6 z-50">

@@ -335,7 +335,7 @@ class ConversationService {
      * Send a message and handle streaming response
      */
     async sendMessage(
-        params: { text: string; conversationId: string; attachments?: any[] },
+        params: { text: string; conversationId: string; attachments?: any[]; model?: string; template?: string | null },
         accessToken: string,
         callbacks: SendMessageCallbacks,
         abortSignal?: AbortSignal
@@ -344,7 +344,12 @@ class ConversationService {
             const response = await apiCircuitBreaker.execute(() =>
                 apiClient.post(
                     `/conversations/${params.conversationId}/messages`,
-                    { text: params.text, attachments: params.attachments },
+                    {
+                        text: params.text,
+                        attachments: params.attachments,
+                        model: params.model,
+                        template: params.template
+                    },
                     {
                         signal: abortSignal,
                         headers: {

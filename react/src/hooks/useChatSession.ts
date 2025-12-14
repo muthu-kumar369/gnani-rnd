@@ -5,17 +5,38 @@ import { useConversationStore } from '../store/useConversationStore';
 import { useUserStore } from '../store/useUserStore';
 
 export const useChatSession = () => {
-    const { sendText } = useAudioStream();
-    const { latestLLMChunk, latestFinalSTT } = useIPC();
+    const { sendText, setSessionId, setConversationId: setIPCConversationId } = useAudioStream();
+    const { latestLLMChunk, latestFinalSTT, latestConversationId } = useIPC();
     const {
         addMessage,
         updateLastMessageContent,
         updateMessageContent,
         setIsStreaming,
         refreshConversation,
-        sendMessage: storeSendMessage
+        sendMessage: storeSendMessage,
+        conversationId,
+        setConversationId
     } = useConversationStore();
     const { accessToken } = useUserStore();
+
+    // 1. Sync Store -> IPC (Fixes Sticky Session)
+    // When user switches conversation in UI, tell Backend/IPC to switch target and reset session
+    useEffect(() => {
+        if (setIPCConversationId) {
+            setIPCConversationId(conversationId);
+        }
+        // Also clear session ID if starting fresh or switching, to ensure no stale session reuse
+        // distinct from checking conversation ID
+        // Note: setConversationId in Electron now auto-disconnects if ID changes.
+    }, [conversationId, setIPCConversationId]);
+
+    // 2. Sync IPC -> Store (Fixes New Chat Flow)
+    // When Backend creates a new conversation (ID=null -> ID=new), update UI to match
+    useEffect(() => {
+        if (latestConversationId && !conversationId) {
+            setConversationId(latestConversationId);
+        }
+    }, [latestConversationId, conversationId, setConversationId]);
 
     const [isThinking, setIsThinking] = useState(false);
 

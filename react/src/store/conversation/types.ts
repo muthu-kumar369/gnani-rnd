@@ -1,5 +1,6 @@
 import type { GnaniState, StateTrigger } from '../../state/GnaniStateMachine';
 import type { ImageAttachment } from '../../types/vision.types';
+import type { Template } from '../../api/templateService';
 
 export interface ConversationMessage {
     id: string;
@@ -70,25 +71,28 @@ export interface ConversationSlice {
     // State
     conversations: ConversationSummary[];
     models: LlmModel[];
+    templates: Template[];
     conversationId: string | null;
     title: string | null;
     selectedModel: string | null;
     selectedTemplate: string | null;
     isLoadingConversations: boolean;
     isLoadingModels: boolean;
+    isLoadingTemplates: boolean;
     isSearching: boolean;
 
     // Actions
     setConversationId: (id: string | null) => void;
-    setSelectedModel: (modelId: string) => void;
-    setSelectedTemplate: (templateId: string) => void;
+    setSelectedModel: (modelId: string | null) => void;
+    setSelectedTemplate: (templateId: string | null) => void;
     createConversation: (accessToken: string, systemPrompt?: string) => Promise<string>;
     deleteConversation: (conversationId: string, accessToken: string) => Promise<void>;
     updateTitle: (conversationId: string, title: string, accessToken: string) => Promise<void>;
-    updateConversationTemplate: (conversationId: string, templateId: string, accessToken: string) => Promise<void>;
-    updateConversationModel: (conversationId: string, modelId: string, accessToken: string) => Promise<void>;
+    updateConversationTemplate: (conversationId: string, templateId: string | null, accessToken: string) => Promise<void>;
+    updateConversationModel: (conversationId: string, modelId: string | null, accessToken: string) => Promise<void>;
     loadConversation: (conversationId: string, accessToken: string) => Promise<void>;
     fetchModels: (accessToken: string) => Promise<void>;
+    fetchTemplates: () => Promise<void>;
     fetchConversations: (accessToken: string) => Promise<void>;
     searchConversations: (query: string) => Promise<void>;
     refreshConversation: (accessToken: string) => Promise<void>;

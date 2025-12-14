@@ -1,11 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Mic, Paperclip, X, File as FileIcon, Loader2, ArrowUp } from 'lucide-react';
+import { Send, Mic, Paperclip, X, File as FileIcon, Loader2, ArrowUp, LayoutTemplate } from 'lucide-react';
 import voiceModeIcon from '../../assets/voice-mode.png';
 import { useConversationStore } from '../../store/useConversationStore';
 import FileUploadZone from './FileUploadZone';
 import AttachedFilesList from './AttachedFilesList';
 import { useUserStore } from '../../store/useUserStore';
 import GlassTooltip from '../ui/GlassTooltip';
+import GlassDropdown from '../ui/GlassDropdown';
+import type { DropdownOption } from '../ui/GlassDropdown';
+import DynamicIcon from '../common/DynamicIcon';
 import { eventManager } from '../../utils/eventManager';
 
 interface ChatInputProps {
@@ -25,8 +28,45 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSend, onMicClick, disabled = fa
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    const { uploadFile } = useConversationStore();
+    const {
+        uploadFile,
+        templates,
+        selectedTemplate,
+        setSelectedTemplate,
+        fetchTemplates,
+        conversationId,
+        updateConversationTemplate
+    } = useConversationStore();
     const { accessToken } = useUserStore();
+
+    useEffect(() => {
+        if (templates.length === 0) {
+            fetchTemplates();
+        }
+    }, [templates.length, fetchTemplates]);
+
+    const templateOptions: DropdownOption[] = [
+        { value: 'default', label: 'No Template', icon: <LayoutTemplate size={14} /> },
+        ...templates.map(t => ({
+            value: t._id,
+            label: t.name,
+            icon: t.icon ? <DynamicIcon name={t.icon} size={14} /> : <LayoutTemplate size={14} />
+        }))
+    ];
+
+    const handleTemplateChange = async (val: string) => {
+        const newValue = val === 'default' ? '' : val; // Store uses string | null, but empty string can mean cleared too?
+        // Actually types said string | null. Let's send null if default.
+        const templateId = val === 'default' ? null : val;
+
+        if (conversationId && accessToken) {
+            // Update persistent conversation
+            await updateConversationTemplate(conversationId, templateId, accessToken);
+        } else {
+            // Just local state for new chat
+            setSelectedTemplate(templateId);
+        }
+    };
 
     const handleSend = () => {
         if (!input.trim() && attachments.length === 0) return;
@@ -137,12 +177,12 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSend, onMicClick, disabled = fa
                     onChange={handleFileSelect}
                 />
 
-                {/* Attachment Button */}
-                <div className={`pb-0.5 pl-1 ${isMultiLine ? 'order-2 col-start-1' : ''}`}>
+                {/* Bottom Toolbar: Attach + Template */}
+                <div className={`pb-0.5 pl-1 flex items-center gap-1 ${isMultiLine ? 'order-2 col-start-1' : ''}`}>
                     <button
                         onClick={() => fileInputRef.current?.click()}
                         disabled={disabled || isUploading}
-                        className="p-2 text-gray-400 hover:text-cyan-400 hover:bg-cyan-400/10 rounded-full transition-all duration-200 disabled:opacity-50 group/attach"
+                        className="p-2 text-gray-400 hover:text-cyan-400 hover:bg-cyan-400/10 rounded-full transition-all duration-200 disabled:opacity-50 group/attach cursor-pointer"
                         aria-label="Attach file"
                     >
                         {isUploading ? (
@@ -151,6 +191,17 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSend, onMicClick, disabled = fa
                             <Paperclip className="w-5 h-5 transition-transform group-hover/attach:rotate-45" />
                         )}
                     </button>
+
+                    <GlassDropdown
+                        options={templateOptions}
+                        value={selectedTemplate || 'default'}
+                        onChange={handleTemplateChange}
+                        placeholder="Template"
+                        className="!bg-white/5 !border-white/10 !py-1.5 !px-3 !text-xs !rounded-lg hover:!bg-white/10 !h-[32px] !w-[160px]"
+                        menuClassName="!w-[220px] !mb-2"
+                        placement="top-start"
+                        disabled={disabled || isStreaming}
+                    />
                 </div>
 
                 {/* Text Area */}
@@ -175,13 +226,13 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSend, onMicClick, disabled = fa
                             <button
                                 onClick={onMicClick}
                                 className={`h-10 w-10 flex items-center justify-center rounded-full transition-all duration-200 ${isStreaming
-                                    ? 'bg-red-500/20 text-red-500 shadow-[0_0_15px_rgba(239,68,68,0.4)] animate-pulse'
-                                    : 'bg-transparent text-gray-400'
+                                    ? 'bg-red-500/20 text-red-500 shadow-[0_0_15px_rgba(239,68,68,0.4)] animate-pulse cursor-pointer'
+                                    : 'bg-transparent text-gray-400 cursor-pointer'
                                     }`}
                                 aria-label={isStreaming ? "Stop voice mode" : "Start voice mode"}
                             >
                                 {isStreaming ? (
-                                    <div onClick={(e) => { e.stopPropagation(); onStop?.(); }} className="h-full w-full flex items-center justify-center relative">
+                                    <div onClick={(e) => { e.stopPropagation(); onStop?.(); }} className="h-full w-full flex items-center justify-center relative cursor-pointer">
                                         <div className="absolute inset-0 bg-red-500/20 rounded-full animate-ping" />
                                         <div className="w-3 h-3 bg-red-500 rounded-sm relative z-10" />
                                     </div>
@@ -205,7 +256,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSend, onMicClick, disabled = fa
                             onClick={handleSend}
                             disabled={disabled || isUploading || (!input.trim() && attachments.length === 0)}
                             className={`h-10 w-10 flex items-center justify-center rounded-full transition-all duration-200 ${input.trim() || attachments.length > 0
-                                ? 'bg-white text-black hover:bg-gray-200 shadow-lg transform hover:scale-105'
+                                ? 'bg-white text-black hover:bg-gray-200 shadow-lg transform hover:scale-105 cursor-pointer'
                                 : 'bg-transparent text-gray-400 cursor-not-allowed hidden'
                                 }`}
                             aria-label="Send message"
@@ -219,7 +270,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSend, onMicClick, disabled = fa
             <div className="text-center mt-3">
                 <p className="text-[10px] text-gray-500 font-medium tracking-wide opacity-60">Gnani can make mistakes. Consider checking important info.</p>
             </div>
-        </div>
+        </div >
     );
 };
 

@@ -9,7 +9,6 @@ import SecuritySection from './sections/SecuritySection';
 // Deprecated imports removed
 import { useUserStore } from '../../store/useUserStore';
 import Loader from '../ui/Loader';
-import ThemeToggle from './ThemeToggle';
 import { useFocusTrap } from '../../hooks/useFocusTrap';
 import { eventManager } from '../../utils/eventManager';
 
@@ -144,7 +143,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, initialT
                                             </p>
                                         </div>
                                         <div className="flex items-center gap-3">
-                                            <ThemeToggle />
                                             <button
                                                 onClick={onClose}
                                                 className="p-1.5 text-cyan-400/50 hover:text-cyan-400 hover:bg-cyan-500/10 rounded-lg transition-all duration-200"

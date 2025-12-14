@@ -76,7 +76,7 @@ const ToolCard: React.FC<ToolCardProps> = ({ tool, onToggle, onUpdateConfig }) =
                             className={`transition-all duration-500 transform hover:scale-105 active:scale-95 ${tool.isEnabled
                                 ? 'text-cyan-400 drop-shadow-[0_0_15px_rgba(34,211,238,0.4)]'
                                 : 'text-slate-700 hover:text-slate-400'
-                                }`}
+                                } cursor-pointer`}
                             title={tool.isEnabled ? 'Disable Tool' : 'Enable Tool'}
                         >
                             {tool.isEnabled ? <ToggleRight size={28} strokeWidth={1.5} /> : <ToggleLeft size={28} strokeWidth={1.5} />}
@@ -97,7 +97,7 @@ const ToolCard: React.FC<ToolCardProps> = ({ tool, onToggle, onUpdateConfig }) =
                     {tool?.configSchema && Object.keys(tool.configSchema).length > 0 && (
                         <button
                             onClick={() => setIsConfigOpen(true)}
-                            className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white/5 hover:bg-cyan-500/10 text-slate-400 hover:text-cyan-400 transition-all duration-300 border border-transparent hover:border-cyan-500/20 group/btn"
+                            className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white/5 hover:bg-cyan-500/10 text-slate-400 hover:text-cyan-400 transition-all duration-300 border border-transparent hover:border-cyan-500/20 group/btn cursor-pointer"
                         >
                             <span className="text-[10px] font-medium uppercase tracking-wide">Config</span>
                             <Settings size={12} className="group-hover/btn:rotate-90 transition-transform duration-500" />
@@ -121,7 +121,7 @@ const ToolCard: React.FC<ToolCardProps> = ({ tool, onToggle, onUpdateConfig }) =
                             </h4>
                             <button
                                 onClick={() => setIsConfigOpen(false)}
-                                className="text-slate-500 hover:text-white transition-colors p-1 hover:bg-white/10 rounded-lg"
+                                className="text-slate-500 hover:text-white transition-colors p-1 hover:bg-white/10 rounded-lg cursor-pointer"
                             >
                                 <X size={16} />
                             </button>

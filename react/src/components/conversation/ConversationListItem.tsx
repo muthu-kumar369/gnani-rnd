@@ -157,7 +157,7 @@ const ConversationListItem: React.FC<ConversationListItemProps> = ({
             <div className="flex items-start gap-3">
                 {/* Selection Checkbox */}
                 {isSelectionMode && (
-                    <div className="pt-1" onClick={(e) => { e.stopPropagation(); onToggleSelect && onToggleSelect(conversation.conversationId); }}>
+                    <div className="pt-1 cursor-pointer" onClick={(e) => { e.stopPropagation(); onToggleSelect && onToggleSelect(conversation.conversationId); }}>
                         {isSelected ? (
                             <CheckSquare size={16} className="text-jarvis-cyan" aria-label="Deselect conversation" role="checkbox" aria-checked="true" />
                         ) : (
@@ -210,7 +210,7 @@ const ConversationListItem: React.FC<ConversationListItemProps> = ({
                         {onTogglePin && (
                             <button
                                 onClick={(e) => { e.stopPropagation(); onTogglePin(conversation.conversationId); }}
-                                className={`p-1 rounded hover:bg-white/10 ${conversation.isPinned ? 'text-jarvis-purple' : 'text-gray-400 hover:text-jarvis-purple'}`}
+                                className={`p-1 rounded hover:bg-white/10 ${conversation.isPinned ? 'text-jarvis-purple' : 'text-gray-400 hover:text-jarvis-purple'} cursor-pointer`}
                                 title={conversation.isPinned ? "Unpin" : "Pin"}
                             >
                                 <Pin size={14} className={conversation.isPinned ? "rotate-45" : ""} fill={conversation.isPinned ? "currentColor" : "none"} />
@@ -219,7 +219,7 @@ const ConversationListItem: React.FC<ConversationListItemProps> = ({
                         <button
                             ref={buttonRef}
                             onClick={(e) => { e.stopPropagation(); setShowMenu(!showMenu); }}
-                            className={`p-1 rounded hover:bg-white/10 ${showMenu ? 'text-jarvis-cyan' : 'text-gray-400 hover:text-jarvis-cyan'}`}
+                            className={`p-1 rounded hover:bg-white/10 ${showMenu ? 'text-jarvis-cyan' : 'text-gray-400 hover:text-jarvis-cyan'} cursor-pointer`}
                             title="More options"
                         >
                             <MoreVertical size={14} />
@@ -241,7 +241,7 @@ const ConversationListItem: React.FC<ConversationListItemProps> = ({
                 >
                     <button
                         onClick={(e) => handleMenuAction(() => onResume(conversation.conversationId), e)}
-                        className="w-full px-3 py-2 text-left text-xs text-gray-300 hover:bg-white/10 hover:text-white transition-all rounded flex items-center gap-2"
+                        className="w-full px-3 py-2 text-left text-xs text-gray-300 hover:bg-white/10 hover:text-white transition-all rounded flex items-center gap-2 cursor-pointer"
                     >
                         <Play size={12} />
                         Resume
@@ -250,28 +250,28 @@ const ConversationListItem: React.FC<ConversationListItemProps> = ({
                     <div className="my-1 border-b border-white/10" />
                     <button
                         onClick={(e) => handleMenuAction(() => setIsEditing(true), e)}
-                        className="w-full px-3 py-2 text-left text-xs text-gray-300 hover:bg-white/10 hover:text-white transition-all rounded flex items-center gap-2"
+                        className="w-full px-3 py-2 text-left text-xs text-gray-300 hover:bg-white/10 hover:text-white transition-all rounded flex items-center gap-2 cursor-pointer"
                     >
                         <Edit2 size={12} />
                         Edit Title
                     </button>
                     <button
                         onClick={(e) => handleMenuAction(() => setShowFolderModal(true), e)}
-                        className="w-full px-3 py-2 text-left text-xs text-gray-300 hover:bg-white/10 hover:text-white transition-all rounded flex items-center gap-2"
+                        className="w-full px-3 py-2 text-left text-xs text-gray-300 hover:bg-white/10 hover:text-white transition-all rounded flex items-center gap-2 cursor-pointer"
                     >
                         <FolderInput size={12} />
                         Move to Folder
                     </button>
                     <button
                         onClick={(e) => handleMenuAction(() => setShowShareModal(true), e)}
-                        className="w-full px-3 py-2 text-left text-xs text-gray-300 hover:bg-white/10 hover:text-white transition-all rounded flex items-center gap-2"
+                        className="w-full px-3 py-2 text-left text-xs text-gray-300 hover:bg-white/10 hover:text-white transition-all rounded flex items-center gap-2 cursor-pointer"
                     >
                         <Share2 size={12} />
                         Share
                     </button>
                     <button
                         onClick={(e) => handleMenuAction(() => onDelete(conversation.conversationId), e)}
-                        className="w-full px-3 py-2 text-left text-xs text-red-400 hover:bg-red-500/10 transition-all rounded flex items-center gap-2"
+                        className="w-full px-3 py-2 text-left text-xs text-red-400 hover:bg-red-500/10 transition-all rounded flex items-center gap-2 cursor-pointer"
                     >
                         <Trash2 size={12} />
                         Delete
@@ -296,7 +296,7 @@ const ConversationListItem: React.FC<ConversationListItemProps> = ({
                             <div className="p-4 max-h-96 overflow-y-auto">
                                 <button
                                     onClick={() => handleMoveToFolder(null as any)}
-                                    className="w-full text-left px-3 py-2 rounded hover:bg-jarvis-cyan/10 text-gray-300 hover:text-jarvis-cyan transition-colors mb-1"
+                                    className="w-full text-left px-3 py-2 rounded hover:bg-jarvis-cyan/10 text-gray-300 hover:text-jarvis-cyan transition-colors mb-1 cursor-pointer"
                                 >
                                     📂 Unorganized
                                 </button>
@@ -304,7 +304,7 @@ const ConversationListItem: React.FC<ConversationListItemProps> = ({
                                     <button
                                         key={folder.id}
                                         onClick={() => handleMoveToFolder(folder.id)}
-                                        className="w-full text-left px-3 py-2 rounded hover:bg-jarvis-cyan/10 text-gray-300 hover:text-jarvis-cyan transition-colors mb-1"
+                                        className="w-full text-left px-3 py-2 rounded hover:bg-jarvis-cyan/10 text-gray-300 hover:text-jarvis-cyan transition-colors mb-1 cursor-pointer"
                                     >
                                         {folder.icon} {folder.name}
                                     </button>
@@ -313,7 +313,7 @@ const ConversationListItem: React.FC<ConversationListItemProps> = ({
                             <div className="p-4 border-t border-jarvis-blue/20 flex justify-end">
                                 <button
                                     onClick={() => setShowFolderModal(false)}
-                                    className="px-4 py-2 bg-jarvis-blue/20 hover:bg-jarvis-blue/30 text-jarvis-cyan rounded transition-colors"
+                                    className="px-4 py-2 bg-jarvis-blue/20 hover:bg-jarvis-blue/30 text-jarvis-cyan rounded transition-colors cursor-pointer"
                                     aria-label="Cancel"
                                 >
                                     Cancel
