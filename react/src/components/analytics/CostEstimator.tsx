@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { DollarSign, TrendingUp, TrendingDown } from 'lucide-react';
 import api from '../../api/client';
+import { useThemeStore } from '../../store/themeStore';
 
 interface CostSummary {
     totalTokens: number;
@@ -11,6 +12,7 @@ interface CostSummary {
 
 export const CostEstimator: React.FC = () => {
     const [summary, setSummary] = useState<CostSummary | null>(null);
+    const { theme } = useThemeStore();
 
     useEffect(() => {
         const fetchSummary = async () => {
@@ -33,24 +35,24 @@ export const CostEstimator: React.FC = () => {
 
     return (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            <div className="bg-black/20 rounded-lg p-4 border border-white/5">
-                <div className="text-white/50 text-xs mb-1">Total Cost (All Time)</div>
-                <div className="text-2xl font-semibold text-green-400 flex items-center gap-2">
-                    <DollarSign size={20} />
+            <div className={`rounded-xl p-5 shadow-lg ${theme === 'dark' ? 'bg-black/20' : 'bg-white border border-gray-100'}`}>
+                <div className={`text-sm font-medium mb-1 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>Total Cost (All Time)</div>
+                <div className="text-xl font-bold text-green-400 flex items-center gap-1">
+                    <span className="text-sm opacity-50">$</span>
                     {summary.totalCost.toFixed(4)}
                 </div>
             </div>
 
-            <div className="bg-black/20 rounded-lg p-4 border border-white/5">
-                <div className="text-white/50 text-xs mb-1">Total Tokens</div>
-                <div className="text-2xl font-semibold text-blue-400">
+            <div className={`rounded-xl p-5 shadow-lg ${theme === 'dark' ? 'bg-black/20' : 'bg-white border border-gray-100'}`}>
+                <div className={`text-sm font-medium mb-1 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>Total Tokens</div>
+                <div className="text-xl font-bold text-blue-400">
                     {summary.totalTokens.toLocaleString()}
                 </div>
             </div>
 
-            <div className="bg-black/20 rounded-lg p-4 border border-white/5">
-                <div className="text-white/50 text-xs mb-1">Total Messages</div>
-                <div className="text-2xl font-semibold text-purple-400">
+            <div className={`rounded-xl p-5 shadow-lg ${theme === 'dark' ? 'bg-black/20' : 'bg-white border border-gray-100'}`}>
+                <div className={`text-sm font-medium mb-1 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>Total Messages</div>
+                <div className="text-xl font-bold text-purple-400">
                     {summary.messageCount}
                 </div>
             </div>

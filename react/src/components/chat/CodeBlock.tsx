@@ -32,23 +32,23 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
     const normalizedLang = normalizeLanguage(language);
 
     return (
-        <div className="code-block relative group my-4 rounded-lg overflow-hidden border border-gnani-primary/20 shadow-lg shadow-gnani-primary/10 transition-all hover:border-gnani-primary/40">
+        <div className="code-block relative group my-4 rounded-lg overflow-hidden border transition-all duration-300 border-black/5 dark:border-white/10 shadow-lg dark:shadow-none hover:border-black/10 dark:hover:border-white/20">
             {/* Header */}
-            <div className="flex items-center justify-between px-4 py-2 bg-gnani-primary/10 border-b border-gnani-primary/20 backdrop-blur-sm">
+            <div className="flex items-center justify-between px-4 py-2 bg-gray-50 dark:bg-[#1a2639] border-b border-black/5 dark:border-white/5 backdrop-blur-sm">
                 <div className="flex items-center gap-2">
-                    <span data-testid="language-label" className="text-xs font-mono text-gnani-primary font-semibold uppercase tracking-wider">
+                    <span data-testid="language-label" className="text-xs font-mono font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-300">
                         {normalizedLang}
                     </span>
                 </div>
                 <button
                     onClick={handleCopy}
-                    className="flex items-center gap-1.5 px-2 py-1 rounded text-xs text-gnani-primary hover:text-gnani-primary/80 hover:bg-gnani-primary/10 transition-all duration-200"
+                    className="flex items-center gap-1.5 px-2 py-1 rounded text-xs transition-all duration-200 text-gray-500 hover:text-gray-900 hover:bg-black/5 dark:text-gray-400 dark:hover:text-white dark:hover:bg-white/10"
                     title="Copy code"
                 >
                     {copied ? (
                         <>
-                            <Check size={14} className="text-green-400" />
-                            <span className="text-green-400 font-medium">Copied!</span>
+                            <Check size={14} className="text-emerald-500 dark:text-emerald-400" />
+                            <span className="text-emerald-500 dark:text-emerald-400 font-medium">Copied!</span>
                         </>
                     ) : (
                         <>
@@ -60,9 +60,9 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
             </div>
 
             {/* Code Content */}
-            <div className="relative bg-canvas-app/80">
+            <div className="relative bg-white dark:bg-[#0d1520]">
                 <Suspense fallback={
-                    <pre className="p-4 m-0 text-sm text-gray-300 bg-transparent overflow-auto font-mono">
+                    <pre className="p-4 m-0 text-sm overflow-auto font-mono text-gray-800 dark:text-gray-300 bg-transparent">
                         {code}
                     </pre>
                 }>
@@ -85,6 +85,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
                         }}
                         wrapLines={true}
                         wrapLongLines={true}
+                        PreTag="div"
                     >
                         {code.replace(/\n$/, '')}
                     </SyntaxHighlighter>

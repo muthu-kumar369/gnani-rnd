@@ -6,8 +6,7 @@ import FileUploadZone from './FileUploadZone';
 import AttachedFilesList from './AttachedFilesList';
 import { useUserStore } from '../../store/useUserStore';
 import GlassTooltip from '../ui/GlassTooltip';
-import GlassDropdown from '../ui/GlassDropdown';
-import type { DropdownOption } from '../ui/GlassDropdown';
+import TemplateSelector from './TemplateSelector';
 import DynamicIcon from '../common/DynamicIcon';
 import { eventManager } from '../../utils/eventManager';
 
@@ -45,14 +44,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSend, onMicClick, disabled = fa
         }
     }, [templates.length, fetchTemplates]);
 
-    const templateOptions: DropdownOption[] = [
-        { value: 'default', label: 'No Template', icon: <LayoutTemplate size={14} /> },
-        ...templates.map(t => ({
-            value: t._id,
-            label: t.name,
-            icon: t.icon ? <DynamicIcon name={t.icon} size={14} /> : <LayoutTemplate size={14} />
-        }))
-    ];
+
 
     const handleTemplateChange = async (val: string) => {
         const newValue = val === 'default' ? '' : val; // Store uses string | null, but empty string can mean cleared too?
@@ -192,14 +184,10 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSend, onMicClick, disabled = fa
                         )}
                     </button>
 
-                    <GlassDropdown
-                        options={templateOptions}
-                        value={selectedTemplate || 'default'}
-                        onChange={handleTemplateChange}
-                        placeholder="Template"
-                        className="!bg-glass-shimmer !border-glass-border !py-1.5 !px-3 !text-xs !rounded-lg hover:!bg-glass-border !h-[32px] !w-[160px] !text-type-secondary"
-                        menuClassName="!w-[220px] !mb-2"
-                        placement="top-start"
+                    <TemplateSelector
+                        selectedTemplateId={selectedTemplate}
+                        templates={templates}
+                        onSelect={handleTemplateChange}
                         disabled={disabled || isStreaming}
                     />
                 </div>

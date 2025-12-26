@@ -286,7 +286,7 @@ class ConversationService {
     /**
      * Update template
      */
-    async updateTemplate(conversationId: string, templateId: string, accessToken: string): Promise<void> {
+    async updateTemplate(conversationId: string, templateId: string | null, accessToken: string): Promise<void> {
         try {
             await apiCircuitBreaker.execute(() =>
                 apiClient.patch(`/conversations/${conversationId}/template`, { templateId })

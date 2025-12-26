@@ -1,30 +1,37 @@
 import React, { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Keyboard, Command, Mic, MessageSquare, Settings as SettingsIcon } from 'lucide-react';
+import { X, Keyboard } from 'lucide-react';
 import { useFocusTrap } from '../../hooks/useFocusTrap';
 import { eventManager } from '../../utils/eventManager';
+import { useThemeStore } from '../../store/themeStore';
 
 interface KeyboardShortcutsModalProps {
     isOpen: boolean;
     onClose: () => void;
 }
 
-const ShortcutGroup: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
+const ShortcutGroup: React.FC<{ title: string; children: React.ReactNode; theme: string }> = ({ title, children, theme }) => (
     <div className="mb-6 last:mb-0">
-        <h3 className="text-type-muted text-xs font-semibold uppercase tracking-wider mb-3 px-2">{title}</h3>
+        <h3 className={`text-xs font-semibold uppercase tracking-wider mb-3 px-2 ${theme === 'dark' ? 'text-gray-500' : 'text-gray-500'}`}>{title}</h3>
         <div className="space-y-1">
             {children}
         </div>
     </div>
 );
 
-const ShortcutRow: React.FC<{ description: string; keys: string[] }> = ({ description, keys }) => (
-    <div className="flex items-center justify-between py-2 px-2 rounded-lg hover:bg-glass-hover transition-colors group">
-        <span className="text-type-secondary text-sm font-medium group-hover:text-type-primary transition-colors">{description}</span>
+const ShortcutRow: React.FC<{ description: string; keys: string[]; theme: string }> = ({ description, keys, theme }) => (
+    <div className={`flex items-center justify-between py-2 px-3 rounded-lg transition-colors group ${theme === 'dark' ? 'hover:bg-white/5' : 'hover:bg-gray-50'}`}>
+        <span className={`text-sm font-medium transition-colors ${theme === 'dark' ? 'text-gray-400 group-hover:text-gray-200' : 'text-gray-600 group-hover:text-gray-900'}`}>{description}</span>
         <div className="flex gap-1.5">
             {keys.map((key, i) => (
-                <kbd key={i} className="px-2 py-1 bg-canvas-surface border border-line-base rounded-md text-[11px] text-type-muted font-mono shadow-sm min-w-[24px] text-center flex items-center justify-center group-hover:border-glass-border group-hover:bg-glass-base group-hover:text-type-primary transition-all">
+                <kbd
+                    key={i}
+                    className={`px-2 py-1 min-w-[24px] rounded-md text-[11px] font-mono shadow-sm border flex items-center justify-center transition-all ${theme === 'dark'
+                        ? 'bg-white/10 border-white/5 text-gray-300 group-hover:bg-white/15 group-hover:border-white/10'
+                        : 'bg-gray-100 border-gray-200 text-gray-600 group-hover:bg-white group-hover:border-gray-300'
+                        }`}
+                >
                     {key}
                 </kbd>
             ))}
@@ -34,6 +41,7 @@ const ShortcutRow: React.FC<{ description: string; keys: string[] }> = ({ descri
 
 const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = ({ isOpen, onClose }) => {
     const modalRef = useFocusTrap(isOpen);
+    const { theme } = useThemeStore();
 
     // Listen for Escape key to close
     useEffect(() => {
@@ -66,22 +74,23 @@ const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = ({ isOpen,
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: 20 }}
                         transition={{ duration: 0.2, ease: "easeOut" }}
-                        className="relative w-full max-w-lg bg-canvas-panel border border-glass-border rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh] shadow-[0_0_50px_-12px_rgba(0,0,0,0.5)]"
+                        className={`relative w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh] outline-none ${theme === 'dark' ? 'bg-[#1a2639] ring-1 ring-white/10' : 'bg-white ring-1 ring-black/5'}`}
+                        tabIndex={-1}
                     >
                         {/* Header */}
-                        <div className="flex items-center justify-between p-5 border-b border-line-base bg-canvas-surface/20">
+                        <div className={`flex items-center justify-between p-5 border-b sticky top-0 z-10 ${theme === 'dark' ? 'bg-[#1a2639] border-white/5' : 'bg-white border-gray-100'}`}>
                             <div className="flex items-center gap-3">
-                                <div className="p-2 bg-gradient-to-br from-gnani-primary/20 to-gnani-secondary/20 rounded-lg border border-gnani-primary/20">
-                                    <Keyboard className="w-5 h-5 text-gnani-primary" />
+                                <div className={`p-2 rounded-lg border ${theme === 'dark' ? 'bg-cyan-500/10 border-cyan-500/20' : 'bg-blue-50/50 border-blue-100'}`}>
+                                    <Keyboard className={`w-5 h-5 ${theme === 'dark' ? 'text-cyan-400' : 'text-blue-600'}`} />
                                 </div>
                                 <div>
-                                    <h2 id="shortcuts-modal-title" className="text-type-primary font-semibold text-lg">Keyboard Shortcuts</h2>
-                                    <p className="text-type-secondary text-xs">Essential keys to navigate faster</p>
+                                    <h2 id="shortcuts-modal-title" className={`text-lg font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Keyboard Shortcuts</h2>
+                                    <p className={`text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>Essential keys to navigate faster</p>
                                 </div>
                             </div>
                             <button
                                 onClick={onClose}
-                                className="p-2 text-type-muted hover:text-type-primary hover:bg-glass-hover rounded-lg transition-all"
+                                className={`p-2 rounded-lg transition-all ${theme === 'dark' ? 'text-gray-400 hover:text-white hover:bg-white/10' : 'text-gray-400 hover:text-gray-900 hover:bg-gray-100'}`}
                                 aria-label="Close"
                             >
                                 <X size={20} />
@@ -89,34 +98,36 @@ const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = ({ isOpen,
                         </div>
 
                         {/* Scrollable Content */}
-                        <div className="flex-1 overflow-y-auto p-5 custom-scrollbar">
+                        <div className={`flex-1 overflow-y-auto p-6 custom-scrollbar ${theme === 'dark' ? 'bg-[#1a2639]' : 'bg-white'}`}>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
-                                <ShortcutGroup title="General">
-                                    <ShortcutRow description="Search Chats" keys={['Ctrl', 'K']} />
-                                    <ShortcutRow description="New Chat" keys={['Ctrl', 'N']} />
-                                    <ShortcutRow description="Toggle Sidebar" keys={['Ctrl', 'B']} />
-                                    <ShortcutRow description="Open Workspace" keys={['Alt', 'W']} />
-                                    <ShortcutRow description="Show Shortcuts" keys={['Ctrl', '/']} />
+                                <ShortcutGroup title="General" theme={theme}>
+                                    <ShortcutRow description="Search Chats" keys={['Ctrl', 'K']} theme={theme} />
+                                    <ShortcutRow description="New Chat" keys={['Ctrl', 'N']} theme={theme} />
+                                    <ShortcutRow description="Toggle Sidebar" keys={['Ctrl', 'B']} theme={theme} />
+                                    <ShortcutRow description="Open Workspace" keys={['Alt', 'W']} theme={theme} />
+                                    <ShortcutRow description="Show Shortcuts" keys={['Ctrl', '/']} theme={theme} />
                                 </ShortcutGroup>
 
-                                <ShortcutGroup title="Chat">
-                                    <ShortcutRow description="Voice Mode" keys={['Ctrl', 'M']} />
-                                    <ShortcutRow description="Focus Input" keys={['Shift', 'Esc']} />
+                                <ShortcutGroup title="Chat" theme={theme}>
+                                    <ShortcutRow description="Voice Mode" keys={['Ctrl', 'M']} theme={theme} />
+                                    <ShortcutRow description="Focus Input" keys={['Shift', 'Esc']} theme={theme} />
                                 </ShortcutGroup>
 
-                                <ShortcutGroup title="Settings">
-                                    <ShortcutRow description="Open Settings" keys={['Ctrl', ',']} />
+                                <ShortcutGroup title="Settings" theme={theme}>
+                                    <ShortcutRow description="Open Settings" keys={['Ctrl', ',']} theme={theme} />
                                 </ShortcutGroup>
 
-                                <ShortcutGroup title="System">
-                                    <ShortcutRow description="Close Modal" keys={['Esc']} />
+                                <ShortcutGroup title="System" theme={theme}>
+                                    <ShortcutRow description="Close Modal" keys={['Esc']} theme={theme} />
                                 </ShortcutGroup>
                             </div>
                         </div>
 
                         {/* Footer Hint */}
-                        <div className="p-3 bg-canvas-surface/20 border-t border-line-base text-center">
-                            <p className="text-[10px] text-type-muted">Press <kbd className="font-sans font-semibold text-type-secondary">Esc</kbd> to close</p>
+                        <div className={`p-3 text-center border-t ${theme === 'dark' ? 'bg-[#1a2639] border-white/5' : 'bg-gray-50 border-gray-100'}`}>
+                            <p className={`text-[10px] ${theme === 'dark' ? 'text-gray-500' : 'text-gray-500'}`}>
+                                Press <kbd className={`font-sans font-semibold px-1 py-0.5 rounded mx-0.5 ${theme === 'dark' ? 'bg-white/10 text-gray-300' : 'bg-white border border-gray-200 text-gray-600'}`}>Esc</kbd> to close
+                            </p>
                         </div>
                     </motion.div>
                 </div>

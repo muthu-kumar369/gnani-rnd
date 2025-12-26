@@ -18,7 +18,7 @@ const GnaniLogo: React.FC<GnaniLogoProps> = ({ className = '', size = 32, showTe
             />
 
             {showText && (
-                <span className="font-mono font-bold text-xl tracking-[0.2em] text-white">
+                <span className="font-mono font-bold text-xl tracking-[0.2em] text-gray-900 dark:text-white">
                     GNANI
                 </span>
             )}

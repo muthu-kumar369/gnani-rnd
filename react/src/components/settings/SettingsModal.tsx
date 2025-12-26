@@ -8,6 +8,7 @@ import DataConnectorsSection from './sections/DataConnectorsSection';
 import SecuritySection from './sections/SecuritySection';
 // Deprecated imports removed
 import { useUserStore } from '../../store/useUserStore';
+import { useThemeStore } from '../../store/themeStore';
 import Loader from '../ui/Loader';
 import { useFocusTrap } from '../../hooks/useFocusTrap';
 import { eventManager } from '../../utils/eventManager';
@@ -22,6 +23,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, initialT
     // Default to 'general' instead of 'profile'
     const [activeTab, setActiveTab] = useState<SettingsTab>('general');
     const { user, loading, logout } = useUserStore();
+    const { theme } = useThemeStore();
     const modalRef = useFocusTrap(isOpen);
 
     // Set initial tab when modal opens
@@ -79,12 +81,12 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, initialT
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: 20 }}
                         transition={{ duration: 0.3, ease: [0.23, 1, 0.32, 1] }}
-                        className="relative w-full max-w-6xl h-[85vh] bg-canvas-panel border border-glass-border rounded-2xl overflow-hidden flex shadow-2xl"
+                        className={`relative w-full max-w-6xl h-[85vh] rounded-2xl overflow-hidden flex shadow-2xl ring-1 ring-black/5 dark:ring-white/10 ${theme === 'dark' ? 'bg-[#0f1a2b]' : 'bg-white'}`}
                         tabIndex={-1}
                     >
 
 
-                        {loading ? (
+                        {(loading && !user) ? (
                             <div className="w-full h-full flex items-center justify-center">
                                 <Loader size="lg" text="Loading settings..." />
                             </div>
@@ -125,9 +127,9 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, initialT
                                 <SettingsSidebar activeTab={activeTab} onTabChange={setActiveTab} />
 
                                 {/* Main Content Area */}
-                                <div className="flex-1 flex flex-col min-w-0 bg-canvas-surface/40 relative">
+                                <div className={`flex-1 flex flex-col min-w-0 relative overflow-hidden ${theme === 'dark' ? 'bg-[#0f1a2b]' : 'bg-gray-50'}`}>
                                     {/* Fixed Header */}
-                                    <div className="flex-none flex items-center justify-between px-6 py-4 border-b border-glass-border bg-canvas-panel/50 backdrop-blur-xl z-20">
+                                    <div className={`flex-none flex items-center justify-between px-8 py-6 z-20 ${theme === 'dark' ? 'bg-black/20 shadow-[0_4px_6px_-2px_rgba(0,0,0,0.3)]' : 'bg-gray-50/80 shadow-[0_4px_6px_-2px_rgba(0,0,0,0.1)]'}`}>
                                         <div>
                                             <h2 className="text-lg font-bold text-type-primary tracking-tight">
                                                 {activeTab === 'general' && 'General Settings'}

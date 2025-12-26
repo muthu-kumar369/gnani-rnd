@@ -6,6 +6,7 @@ import TemplatesSection from './sections/TemplatesSection';
 import ToolMarketplace from '../tools/ToolMarketplace';
 import { useFocusTrap } from '../../hooks/useFocusTrap';
 import { eventManager } from '../../utils/eventManager';
+import { useThemeStore } from '../../store/themeStore';
 
 interface WorkspaceModalProps {
     isOpen: boolean;
@@ -15,6 +16,7 @@ interface WorkspaceModalProps {
 
 const WorkspaceModal: React.FC<WorkspaceModalProps> = ({ isOpen, onClose, initialTab }) => {
     const [activeTab, setActiveTab] = useState<WorkspaceTab>('templates');
+    const { theme } = useThemeStore();
     const modalRef = useFocusTrap(isOpen);
 
     // Set initial tab when modal opens
@@ -56,16 +58,16 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({ isOpen, onClose, initia
                         initial={{ scale: 0.95, opacity: 0, y: 20 }}
                         animate={{ scale: 1, opacity: 1, y: 0 }}
                         exit={{ scale: 0.95, opacity: 0, y: 20 }}
-                        className="relative w-full max-w-6xl h-full max-h-[90vh] bg-canvas-panel border border-glass-border rounded-xl shadow-2xl flex overflow-hidden ring-1 ring-glass-border"
+                        className={`relative w-full max-w-6xl h-full max-h-[90vh] rounded-xl overflow-hidden flex shadow-2xl ring-1 ring-black/5 dark:ring-white/10 ${theme === 'dark' ? 'bg-[#0f1a2b]' : 'bg-white'}`}
                     >
                         {/* Sidebar */}
                         <WorkspaceSidebar activeTab={activeTab} onTabChange={setActiveTab} />
 
                         {/* Main Content Area */}
-                        <div className="flex-1 flex flex-col min-w-0 bg-canvas-surface/40 relative">
+                        <div className={`flex-1 flex flex-col min-w-0 relative overflow-hidden ${theme === 'dark' ? 'bg-[#0f1a2b]' : 'bg-gray-50'}`}>
                             {/* Fixed Header */}
                             {/* Fixed Header */}
-                            <div className="flex-none flex items-center justify-between px-6 py-4 border-b border-glass-border bg-canvas-panel/50 backdrop-blur-xl z-20">
+                            <div className={`flex-none flex items-center justify-between px-6 py-4 z-20 ${theme === 'dark' ? 'bg-black/20 shadow-[0_4px_6px_-2px_rgba(0,0,0,0.3)]' : 'bg-gray-50/80 shadow-[0_4px_6px_-2px_rgba(0,0,0,0.1)]'}`}>
                                 <div>
                                     <h2 className="text-lg font-bold text-type-primary tracking-tight">
                                         {activeTab === 'templates' && 'Conversation Templates'}

@@ -31,12 +31,12 @@
     --bg-app: #050A14;          /* Main App Background */
     --bg-panel: rgba(10, 25, 47, 0.7); /* Sidebars, Panels */
     --bg-surface: #0f172a;      /* Cards, Inputs */
-    --bg-popover: rgba(10, 25, 47, 0.98); /* Dropdowns, Modals - Higher opacity for readability */
+    --bg-popover: #0f1a2b;      /* Dropdowns, Modals - Darker theme-matching color */
     --bg-overlay: rgba(0, 0, 0, 0.7); /* Modal Backdrops */
 
     /* Glass Effect (The magic sauce) */
     --glass-bg: rgba(5, 10, 20, 0.6); /* Darker glass for better contrast */
-    --glass-border: rgba(148, 163, 184, 0.1); /* Slate-400 at 10% - Neutral Structure */
+    --glass-border: rgba(148, 163, 184, 0.15); /* Slate-400 at 15% - More visible */
     --glass-shimmer: rgba(255, 255, 255, 0.03);
 
     /* Text */
@@ -92,6 +92,7 @@
 
     /* Semantic Shadows */
     --shadow-glass: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    --shadow-popover: 0 0 0 1px rgba(0, 229, 255, 0.3), 0 2px 8px rgba(0, 0, 0, 0.4); /* Subtle border + soft shadow */
 
     /* ==========================================================================
        LEGACY JARVIS TOKENS (Preserved for compatibility)
@@ -121,12 +122,12 @@
     --bg-app: #F0F4F8;          /* Light Gray/Blueish Tint */
     --bg-panel: rgba(255, 255, 255, 0.85);
     --bg-surface: #FFFFFF;
-    --bg-popover: rgba(255, 255, 255, 0.95);
+    --bg-popover: #FFFFFF;      /* Solid white for visibility */
     --bg-overlay: rgba(0, 0, 0, 0.2);
 
     /* Glass Effect */
     --glass-bg: rgba(255, 255, 255, 0.6);
-    --glass-border: rgba(0, 0, 0, 0.1);
+    --glass-border: rgba(0, 0, 0, 0.25);
     --glass-shimmer: rgba(0, 0, 0, 0.03);
 
     /* Text */
@@ -300,10 +301,8 @@ body {
    DROPDOWN POPUPS
    ============================================ */
 .dropdown-popup {
-    background: rgba(10, 25, 47, 0.95);
-    border: 1px solid var(--jarvis-border);
-    backdrop-filter: blur(12px);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5), 0 0 10px var(--jarvis-glow);
+    background: #0f1a2b;
+    box-shadow: 0 0 0 1px rgba(0, 229, 255, 0.3), 0 2px 8px rgba(0, 0, 0, 0.4);
     border-radius: 8px;
     padding: 4px;
     z-index: 99999;

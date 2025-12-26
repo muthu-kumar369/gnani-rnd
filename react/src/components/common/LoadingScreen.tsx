@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { useThemeStore } from '../../store/themeStore';
 
 const QUOTES = [
     "Initializing neural networks...",
@@ -13,6 +14,7 @@ const QUOTES = [
 ];
 
 const LoadingScreen: React.FC = () => {
+    const { theme } = useThemeStore();
     const [quoteIndex, setQuoteIndex] = useState(0);
 
     useEffect(() => {
@@ -23,9 +25,9 @@ const LoadingScreen: React.FC = () => {
     }, []);
 
     return (
-        <div className="flex flex-col items-center justify-center min-h-screen bg-canvas-app text-type-primary overflow-hidden relative transition-colors duration-300">
+        <div className={`flex flex-col items-center justify-center min-h-screen overflow-hidden relative transition-colors duration-300 ${theme === 'dark' ? 'bg-[#0d1520] text-white' : 'bg-gray-50 text-gray-900'}`}>
             {/* Animated background grid - Subtle */}
-            <div className="absolute inset-0 opacity-[0.05] dark:opacity-10 pointer-events-none">
+            <div className={`absolute inset-0 pointer-events-none ${theme === 'dark' ? 'opacity-10' : 'opacity-[0.05]'}`}>
                 <div className="absolute inset-0 bg-grid-pattern animate-pulse" />
             </div>
 

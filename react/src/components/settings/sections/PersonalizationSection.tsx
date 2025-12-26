@@ -3,6 +3,7 @@ import { API_BASE_URL } from '../../../api/apiClient';
 import { useUserStore } from '../../../store/useUserStore';
 import { useToast } from '../../../context/ToastContext';
 import type { IProfile } from '../../../types/user';
+import { useThemeStore } from '../../../store/themeStore';
 
 import { Camera, Save, StickyNote, Plus, Trash2, User, X } from 'lucide-react';
 import Input from '../../ui/Input';
@@ -13,6 +14,7 @@ import ConfirmationModal from '../../ui/ConfirmationModal';
 const PersonalizationSection: React.FC = () => {
     const { user, updateProfile, uploadProfilePhoto, addNote, deleteNote, loading } = useUserStore();
     const { addToast } = useToast();
+    const { theme } = useThemeStore();
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     // Profile State
@@ -32,7 +34,8 @@ const PersonalizationSection: React.FC = () => {
         }
     }, [user]);
 
-    if (loading || !user) return null;
+    if (loading && !user) return null;
+    if (!user) return null;
 
     // --- Profile Handlers ---
     const handleProfileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -163,199 +166,204 @@ const PersonalizationSection: React.FC = () => {
     }, [user.profile]);
 
     return (
-        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="grid gap-6">
+        <div className="h-full flex flex-col pt-1">
+            <div className="flex-1 overflow-y-auto custom-scrollbar px-1 py-1 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div className="grid gap-6">
 
-                {/* Profile Identity Card */}
-                <div className="bg-canvas-surface/20 border border-glass-border rounded-xl p-5 backdrop-blur-sm">
-                    <div className="flex items-center gap-3 mb-5">
-                        <div className="p-2 bg-blue-500/10 rounded-lg text-blue-400">
-                            <User size={18} />
+                    {/* Profile Identity Card */}
+                    <div className={`${theme === 'dark' ? 'bg-[#1a2639] shadow-[0_4px_20px_-4px_rgba(0,0,0,0.5)] ring-white/5' : 'bg-white shadow-sm ring-black/5'} rounded-xl p-5 ring-1 backdrop-blur-sm transition-all hover:shadow-md`}>
+                        <div className="flex items-center gap-3 mb-5">
+                            <div className="p-2 bg-blue-500/10 rounded-lg text-blue-400">
+                                <User size={18} />
+                            </div>
+                            <div>
+                                <h3 className="text-sm font-bold text-type-primary  tracking-wider">Identity</h3>
+                                <p className="text-xs text-type-muted">Manage your personal profile details</p>
+                            </div>
                         </div>
-                        <div>
-                            <h3 className="text-sm font-bold text-type-primary uppercase tracking-wider">Identity</h3>
-                            <p className="text-xs text-type-muted">Manage your personal profile details</p>
-                        </div>
-                    </div>
 
-                    <div className="flex flex-col md:flex-row gap-8">
-                        {/* Profile Photo Area */}
-                        <div className="flex flex-col items-center gap-4 pt-2">
-                            <div className="relative group">
-                                <div
-                                    onClick={handlePhotoClick}
-                                    className={`w-24 h-24 rounded-2xl overflow-hidden border border-glass-border shadow-lg bg-canvas-surface flex items-center justify-center relative cursor-pointer hover:border-gnani-primary/50 transition-colors ${isUploadingPhoto ? 'opacity-50 pointer-events-none' : ''}`}
-                                >
-                                    {profileImageUrl ? (
-                                        <img
-                                            src={profileImageUrl}
-                                            alt="Profile"
-                                            className="w-full h-full object-cover"
-                                            onError={(e) => {
-                                                e.currentTarget.style.display = 'none';
-                                                e.currentTarget.parentElement?.classList.add('fallback-active');
-                                            }}
-                                        />
-                                    ) : (
-                                        <div className="w-full h-full flex items-center justify-center bg-gnani-primary/5 text-gnani-primary text-2xl font-bold font-mono">
+                        <div className="flex flex-col md:flex-row gap-8">
+                            {/* Profile Photo Area */}
+                            <div className="flex flex-col items-center gap-4 pt-2">
+                                <div className="relative group">
+                                    <div
+                                        onClick={handlePhotoClick}
+                                        className={`w-24 h-24 rounded-2xl overflow-hidden border border-glass-border shadow-lg bg-canvas-surface flex items-center justify-center relative cursor-pointer hover:border-gnani-primary/50 transition-colors ${isUploadingPhoto ? 'opacity-50 pointer-events-none' : ''}`}
+                                    >
+                                        {profileImageUrl ? (
+                                            <img
+                                                src={profileImageUrl}
+                                                alt="Profile"
+                                                className="w-full h-full object-cover"
+                                                onError={(e) => {
+                                                    e.currentTarget.style.display = 'none';
+                                                    e.currentTarget.parentElement?.classList.add('fallback-active');
+                                                }}
+                                            />
+                                        ) : (
+                                            <div className="w-full h-full flex items-center justify-center bg-gnani-primary/5 text-gnani-primary text-2xl font-bold font-mono">
+                                                {getInitials()}
+                                            </div>
+                                        )}
+                                        {/* Fallback duplicated for robustness if img fails */}
+                                        <div className="hidden fallback-active:flex w-full h-full absolute inset-0 items-center justify-center bg-gnani-primary/5 text-gnani-primary text-2xl font-bold font-mono">
                                             {getInitials()}
                                         </div>
+
+                                        {/* Edit Overlay */}
+                                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-[1px]">
+                                            <Camera className="text-white drop-shadow-md pb-1" size={24} />
+                                        </div>
+
+                                    </div>
+
+                                    {/* Delete Button - Moved outside overflow-hidden container */}
+                                    {(profileData.uploadedProfilePhotoId || profileData.profilePhoto) && (
+                                        <button
+                                            onClick={handleRemovePhoto}
+                                            className="absolute -top-2 -right-2 p-1.5 bg-red-500/80 hover:bg-red-500 text-white rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-all z-20 backdrop-blur-sm"
+                                            title="Remove photo"
+                                        >
+                                            <Trash2 size={12} />
+                                        </button>
                                     )}
-                                    {/* Fallback duplicated for robustness if img fails */}
-                                    <div className="hidden fallback-active:flex w-full h-full absolute inset-0 items-center justify-center bg-gnani-primary/5 text-gnani-primary text-2xl font-bold font-mono">
-                                        {getInitials()}
-                                    </div>
 
-                                    {/* Edit Overlay */}
-                                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-[1px]">
-                                        <Camera className="text-white drop-shadow-md pb-1" size={24} />
-                                    </div>
+                                    {/* Hidden Input */}
+                                    <input
+                                        type="file"
+                                        ref={fileInputRef}
+                                        onChange={handlePhotoUpload}
+                                        accept="image/*"
+                                        className="hidden"
+                                    />
 
+                                    <div className="flex items-center justify-center mt-3">
+                                        <p className="text-[10px] text-type-muted font-medium  tracking-wider">Profile Photo</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Profile Inputs */}
+                            <div className="flex-1 space-y-5">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
+                                    <div className="flex flex-col gap-4">
+                                        <label className="text-[11px] font-bold text-type-muted  tracking-widest pl-1">First Name</label>
+                                        <Input
+                                            name="firstName"
+                                            value={profileData.firstName || ''}
+                                            onChange={handleProfileChange}
+                                            placeholder="Enter first name"
+                                            className="!bg-canvas-surface !border-glass-border !rounded-xl !px-4 !py-3 text-sm text-type-primary placeholder:text-type-muted/60 focus:!border-gnani-primary/30"
+                                        />
+                                    </div>
+                                    <div className="flex flex-col gap-4">
+                                        <label className="text-[11px] font-bold text-type-muted  tracking-widest pl-1">Last Name</label>
+                                        <Input
+                                            name="lastName"
+                                            value={profileData.lastName || ''}
+                                            onChange={handleProfileChange}
+                                            placeholder="Enter last name"
+                                            className="!bg-canvas-surface !border-glass-border !rounded-xl !px-4 !py-3 text-sm text-type-primary placeholder:text-type-muted/60 focus:!border-gnani-primary/30"
+                                        />
+                                    </div>
                                 </div>
 
-                                {/* Delete Button - Moved outside overflow-hidden container */}
-                                {(profileData.uploadedProfilePhotoId || profileData.profilePhoto) && (
-                                    <button
-                                        onClick={handleRemovePhoto}
-                                        className="absolute -top-2 -right-2 p-1.5 bg-red-500/80 hover:bg-red-500 text-white rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-all z-20 backdrop-blur-sm"
-                                        title="Remove photo"
+                                <div className="flex flex-col gap-4 max-w-[50%]">
+                                    <label className="text-[11px] font-bold text-type-muted  tracking-widest pl-1">Date of Birth</label>
+                                    <GlassDatePicker
+                                        value={profileData.dob}
+                                        onChange={handleDateChange}
+                                        placeholder="Ex: Jan 1, 1990"
+                                    />
+                                </div>
+
+                                <div className="pt-2 flex justify-end">
+                                    <Button
+                                        onClick={handleSaveProfile}
+                                        disabled={isSavingProfile || !hasProfileChanges}
+                                        isLoading={isSavingProfile}
+                                        className={`px-8 py-2.5 rounded-xl text-xs font-bold  tracking-wider transition-all duration-300 !font-sans ${!hasProfileChanges
+                                            ? '!bg-gray-200 !text-gray-400 dark:!bg-black/40 dark:!text-gray-500 cursor-not-allowed shadow-none border border-transparent'
+                                            : 'bg-gradient-to-r from-cyan-400 to-blue-500 hover:from-cyan-300 hover:to-blue-400 text-white shadow-lg shadow-cyan-500/25 hover:shadow-cyan-500/40 hover:-translate-y-0.5 border border-transparent'
+                                            }`}
+                                        leftIcon={<Save size={16} />}
                                     >
-                                        <Trash2 size={12} />
-                                    </button>
-                                )}
-
-                                {/* Hidden Input */}
-                                <input
-                                    type="file"
-                                    ref={fileInputRef}
-                                    onChange={handlePhotoUpload}
-                                    accept="image/*"
-                                    className="hidden"
-                                />
-
-                                <div className="flex items-center justify-center mt-3">
-                                    <p className="text-[10px] text-type-muted font-medium uppercase tracking-wider">Profile Photo</p>
+                                        Save Profile
+                                    </Button>
                                 </div>
                             </div>
                         </div>
+                    </div>
 
-                        {/* Profile Inputs */}
-                        <div className="flex-1 space-y-5">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
-                                <div className="flex flex-col gap-4">
-                                    <label className="text-[11px] font-bold text-type-muted uppercase tracking-widest pl-1">First Name</label>
+                    {/* Personal Notes (Memory) */}
+                    <div className={`${theme === 'dark' ? 'bg-[#1a2639] shadow-[0_4px_20px_-4px_rgba(0,0,0,0.5)] ring-white/5' : 'bg-white shadow-sm ring-black/5'} rounded-xl p-5 ring-1 backdrop-blur-sm transition-all hover:shadow-md`}>
+                        <div className="flex items-center gap-3 mb-5">
+                            <div className="p-2 bg-purple-500/10 rounded-lg text-purple-400">
+                                <StickyNote size={18} />
+                            </div>
+                            <div>
+                                <h3 className="text-sm font-bold text-type-primary  tracking-wider">Personal Memory</h3>
+                                <p className="text-xs text-type-muted">Facts about you that Gnani should remember</p>
+                            </div>
+                        </div>
+
+                        <div className="flex flex-col gap-4">
+                            <div className="flex gap-3">
+                                <div className="flex-1 relative">
                                     <Input
-                                        name="firstName"
-                                        value={profileData.firstName || ''}
-                                        onChange={handleProfileChange}
-                                        placeholder="Enter first name"
+                                        value={newNote}
+                                        onChange={(e) => setNewNote(e.target.value)}
+                                        onKeyPress={(e) => e.key === 'Enter' && handleAddNote()}
+                                        placeholder="E.g. I am a vegan, I work as a developer..."
                                         className="!bg-canvas-surface !border-glass-border !rounded-xl !px-4 !py-3 text-sm text-type-primary placeholder:text-type-muted/60 focus:!border-gnani-primary/30"
+                                        containerClassName="w-full"
                                     />
                                 </div>
-                                <div className="flex flex-col gap-4">
-                                    <label className="text-[11px] font-bold text-type-muted uppercase tracking-widest pl-1">Last Name</label>
-                                    <Input
-                                        name="lastName"
-                                        value={profileData.lastName || ''}
-                                        onChange={handleProfileChange}
-                                        placeholder="Enter last name"
-                                        className="!bg-canvas-surface !border-glass-border !rounded-xl !px-4 !py-3 text-sm text-type-primary placeholder:text-type-muted/60 focus:!border-gnani-primary/30"
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="flex flex-col gap-4 max-w-[50%]">
-                                <label className="text-[11px] font-bold text-type-muted uppercase tracking-widest pl-1">Date of Birth</label>
-                                <GlassDatePicker
-                                    value={profileData.dob}
-                                    onChange={handleDateChange}
-                                    placeholder="Ex: Jan 1, 1990"
-                                />
-                            </div>
-
-                            <div className="pt-2 flex justify-end">
                                 <Button
-                                    onClick={handleSaveProfile}
-                                    disabled={isSavingProfile || !hasProfileChanges}
-                                    isLoading={isSavingProfile}
-                                    className={`bg-gnani-primary/10 hover:bg-gnani-primary/20 text-gnani-primary border border-gnani-primary/30 px-6 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all shadow-[0_0_15px_-3px_rgba(var(--primary-rgb),0.1)] hover:shadow-[0_0_20px_-3px_rgba(var(--primary-rgb),0.2)] ${!hasProfileChanges ? 'opacity-50 cursor-not-allowed hover:bg-gnani-primary/10 hover:shadow-none' : ''}`}
-                                    leftIcon={<Save size={16} />}
+                                    onClick={handleAddNote}
+                                    disabled={isAddingNote || !newNote.trim()}
+                                    className="bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 border border-purple-500/30 rounded-xl px-5 font-bold  tracking-wider transition-all"
+                                    leftIcon={<Plus size={16} />}
                                 >
-                                    Save Profile
+                                    Add
                                 </Button>
                             </div>
-                        </div>
-                    </div>
-                </div>
 
-                {/* Personal Notes (Memory) */}
-                <div className="bg-canvas-surface/20 border border-glass-border rounded-xl p-5 backdrop-blur-sm">
-                    <div className="flex items-center gap-3 mb-5">
-                        <div className="p-2 bg-purple-500/10 rounded-lg text-purple-400">
-                            <StickyNote size={18} />
-                        </div>
-                        <div>
-                            <h3 className="text-sm font-bold text-type-primary uppercase tracking-wider">Personal Memory</h3>
-                            <p className="text-xs text-type-muted">Facts about you that Gnani should remember</p>
-                        </div>
-                    </div>
+                            <div className="space-y-2.5 pt-2">
+                                {user.notes.map((note: string, index: number) => (
+                                    <div key={index} className="group flex items-center justify-between p-3.5 bg-canvas-surface/50 hover:bg-canvas-surface border border-glass-border hover:border-glass-border/80 rounded-xl transition-all duration-200">
+                                        <span className="text-sm text-type-primary pl-1">{note}</span>
+                                        <button
+                                            onClick={() => handleDeleteNote(index)}
+                                            disabled={deletingNoteIndex === index}
+                                            className="opacity-0 group-hover:opacity-100 p-2 text-type-muted hover:text-status-error hover:bg-status-error/10 rounded-lg transition-all"
+                                            title="Delete memory"
+                                        >
+                                            <Trash2 size={16} />
+                                        </button>
+                                    </div>
+                                ))}
 
-                    <div className="flex flex-col gap-4">
-                        <div className="flex gap-3">
-                            <div className="flex-1 relative">
-                                <input
-                                    type="text"
-                                    value={newNote}
-                                    onChange={(e) => setNewNote(e.target.value)}
-                                    onKeyPress={(e) => e.key === 'Enter' && handleAddNote()}
-                                    placeholder="E.g. I am a vegan, I work as a developer..."
-                                    className="w-full bg-canvas-surface border border-glass-border rounded-xl px-4 py-3 text-sm text-type-primary placeholder:text-type-muted/60 focus:outline-none focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/50 transition-all"
-                                />
+                                {user.notes.length === 0 && (
+                                    <div className="text-center py-8 border border-dashed border-glass-border/50 rounded-xl">
+                                        <p className="text-type-muted text-xs">No memories added yet.</p>
+                                    </div>
+                                )}
                             </div>
-                            <Button
-                                onClick={handleAddNote}
-                                disabled={isAddingNote || !newNote.trim()}
-                                className="bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 border border-purple-500/30 rounded-xl px-5 font-bold uppercase tracking-wider transition-all"
-                                leftIcon={<Plus size={16} />}
-                            >
-                                Add
-                            </Button>
-                        </div>
-
-                        <div className="space-y-2.5 pt-2">
-                            {user.notes.map((note: string, index: number) => (
-                                <div key={index} className="group flex items-center justify-between p-3.5 bg-canvas-surface/50 hover:bg-canvas-surface border border-glass-border hover:border-glass-border/80 rounded-xl transition-all duration-200">
-                                    <span className="text-sm text-type-primary pl-1">{note}</span>
-                                    <button
-                                        onClick={() => handleDeleteNote(index)}
-                                        disabled={deletingNoteIndex === index}
-                                        className="opacity-0 group-hover:opacity-100 p-2 text-type-muted hover:text-status-error hover:bg-status-error/10 rounded-lg transition-all"
-                                        title="Delete memory"
-                                    >
-                                        <Trash2 size={16} />
-                                    </button>
-                                </div>
-                            ))}
-
-                            {user.notes.length === 0 && (
-                                <div className="text-center py-8 border border-dashed border-glass-border/50 rounded-xl">
-                                    <p className="text-type-muted text-xs">No memories added yet.</p>
-                                </div>
-                            )}
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <ConfirmationModal
-                isOpen={isDeletePhotoModalOpen}
-                onClose={() => setIsDeletePhotoModalOpen(false)}
-                onConfirm={confirmRemovePhoto}
-                title="Remove Profile Photo"
-                message="Are you sure you want to remove your profile photo? This action cannot be undone."
-                confirmLabel="Remove"
-                isDangerous={true}
-            />
+                <ConfirmationModal
+                    isOpen={isDeletePhotoModalOpen}
+                    onClose={() => setIsDeletePhotoModalOpen(false)}
+                    onConfirm={confirmRemovePhoto}
+                    title="Remove Profile Photo"
+                    message="Are you sure you want to remove your profile photo? This action cannot be undone."
+                    confirmLabel="Remove"
+                    isDangerous={true}
+                />
+            </div>
         </div>
     );
 };

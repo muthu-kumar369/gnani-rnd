@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Search, ChevronDown, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toolService, type Tool } from '../../api/toolService';
+import { useThemeStore } from '../../store/themeStore';
 import ToolCard from './ToolCard';
 import Button from '../ui/Button';
 import Input from '../ui/Input';
@@ -11,6 +12,7 @@ const ToolMarketplace: React.FC = () => {
     const [tools, setTools] = useState<Tool[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
+    const { theme } = useThemeStore();
     const [filter, setFilter] = useState<'all' | 'enabled' | 'disabled'>('all');
     const [isFilterOpen, setIsFilterOpen] = useState(false);
 
@@ -65,15 +67,19 @@ const ToolMarketplace: React.FC = () => {
     return (
         <div className="p-6 space-y-6">
             {/* Search and Filter Bar */}
-            <div className="relative z-30 flex flex-col md:flex-row gap-3 items-center justify-between bg-canvas-panel p-3 rounded-lg border border-glass-border backdrop-blur-sm">
+            {/* Search and Filter Bar */}
+            <div className={`relative z-30 flex flex-col md:flex-row gap-3 items-center justify-between p-2 rounded-xl backdrop-blur-sm transition-all duration-300 ${theme === 'dark' ? 'bg-black/20 shadow-sm ring-1 ring-white/5' : 'bg-white ring-1 ring-black/5 shadow-sm'}`}>
                 <div className="relative w-full md:w-96 group">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-type-muted group-focus-within:text-gnani-primary transition-colors" size={16} />
+                    <Search className={`absolute left-3 top-1/2 -translate-y-1/2 transition-colors ${theme === 'dark' ? 'text-gray-500 group-focus-within:text-cyan-400' : 'text-gray-400 group-focus-within:text-blue-500'}`} size={16} />
                     <input
                         type="text"
                         placeholder="Search tools..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full pl-9 pr-4 py-2 bg-canvas-surface border border-line-base rounded-md text-sm text-type-primary placeholder:text-type-muted focus:outline-none focus:border-gnani-primary/50 focus:ring-1 focus:ring-gnani-primary/50 transition-all font-mono"
+                        className={`w-full pl-9 pr-4 py-2.5 rounded-lg text-sm transition-all font-mono focus:outline-none focus:ring-2 ${theme === 'dark'
+                            ? 'bg-black/20 text-white placeholder-white/20 focus:ring-cyan-500/20'
+                            : 'bg-gray-50 text-gray-900 placeholder-gray-400 focus:ring-blue-500/20'
+                            }`}
                     />
                 </div>
 
@@ -81,10 +87,13 @@ const ToolMarketplace: React.FC = () => {
                 <div className="relative group w-full md:w-48 z-50">
                     <button
                         onClick={() => setIsFilterOpen(!isFilterOpen)}
-                        className="w-full flex items-center justify-between bg-canvas-surface border border-line-base rounded-md py-2 px-3 text-sm text-gnani-primary font-medium hover:border-gnani-primary/30 transition-all focus:outline-none focus:ring-1 focus:ring-gnani-primary/50"
+                        className={`w-full flex items-center justify-between rounded-lg py-2.5 px-4 text-sm font-bold transition-all focus:outline-none focus:ring-2 ${theme === 'dark'
+                            ? 'bg-black/20 text-white hover:bg-black/40 focus:ring-cyan-500/20'
+                            : 'bg-gray-50 text-gray-900 hover:bg-gray-100 focus:ring-blue-500/20'
+                            }`}
                     >
                         <span className="capitalize">{filter === 'all' ? 'All Tools' : filter}</span>
-                        <ChevronDown size={14} className={`transition-transform duration-300 ${isFilterOpen ? 'rotate-180' : ''}`} />
+                        <ChevronDown size={14} className={`transition-transform duration-300 opacity-50 ${isFilterOpen ? 'rotate-180' : ''}`} />
                     </button>
 
                     <AnimatePresence>
@@ -93,7 +102,7 @@ const ToolMarketplace: React.FC = () => {
                                 initial={{ opacity: 0, y: 5 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 exit={{ opacity: 0, y: 5 }}
-                                className="absolute top-full right-0 left-0 mt-2 bg-canvas-popover border border-glass-border rounded-lg shadow-xl overflow-hidden backdrop-blur-xl z-50"
+                                className={`absolute top-full right-0 left-0 mt-2 rounded-xl shadow-2xl overflow-hidden backdrop-blur-xl z-50 ring-1 ${theme === 'dark' ? 'bg-[#1a2639] ring-white/10' : 'bg-white ring-black/5'}`}
                             >
                                 {(['all', 'enabled', 'disabled'] as const).map((f) => (
                                     <button
@@ -102,13 +111,13 @@ const ToolMarketplace: React.FC = () => {
                                             setFilter(f);
                                             setIsFilterOpen(false);
                                         }}
-                                        className={`w-full text-left px-3 py-2 text-sm transition-colors flex items-center justify-between ${filter === f
-                                            ? 'bg-gnani-primary/10 text-gnani-primary font-semibold'
-                                            : 'text-type-secondary hover:bg-glass-hover hover:text-type-primary'
+                                        className={`w-full text-left px-4 py-3 text-xs font-bold uppercase tracking-wider transition-colors flex items-center justify-between ${filter === f
+                                            ? (theme === 'dark' ? 'bg-cyan-500/10 text-cyan-400' : 'bg-blue-50 text-blue-600')
+                                            : (theme === 'dark' ? 'text-gray-400 hover:bg-white/5 hover:text-white' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900')
                                             }`}
                                     >
                                         <span className="capitalize">{f === 'all' ? 'All Tools' : f}</span>
-                                        {filter === f && <Check size={12} />}
+                                        {filter === f && <Check size={14} />}
                                     </button>
                                 ))}
                             </motion.div>

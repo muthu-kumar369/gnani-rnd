@@ -10,6 +10,7 @@ import ExportButton from './ExportButton';
 import ShareModal from '../common/ShareModal';
 import apiClient from '../../api/client';
 import DropdownPortal from '../common/DropdownPortal';
+import MoveToFolderModal from './MoveToFolderModal';
 
 interface ConversationListItemProps {
     conversation: Conversation;
@@ -143,12 +144,12 @@ const ConversationListItem: React.FC<ConversationListItemProps> = ({
 
     return (
         <div
-            className={`group relative p-3 rounded-lg mb-2 cursor-pointer transition-all duration-200 border ${isActive
-                ? 'bg-gnani-primary/20 border-gnani-primary/50 shadow-[0_0_10px_rgba(0,240,255,0.2)]'
+            className={`group relative p-3 rounded-lg mb-2 cursor-pointer transition-all duration-200 hover:bg-black/5 dark:hover:bg-gnani-primary/10 ${isActive
+                ? 'bg-gnani-primary/10 border-l-2 border-gnani-primary'
                 : conversation.isPinned
-                    ? 'bg-gnani-secondary/10 border-transparent hover:bg-gnani-secondary/15'
-                    : 'bg-canvas-surface/40 border-transparent hover:bg-gnani-primary/10 hover:border-gnani-primary/30'
-                } ${isSelected ? 'bg-gnani-primary/30 border-gnani-primary' : ''}`}
+                    ? 'bg-canvas-surface/40'
+                    : 'bg-canvas-surface/40'
+                } ${isSelected ? 'bg-gnani-primary/20 border-l-2 border-gnani-primary' : ''}`}
             onClick={handleItemClick}
             onMouseEnter={handleMouseEnter}
             draggable
@@ -210,7 +211,7 @@ const ConversationListItem: React.FC<ConversationListItemProps> = ({
                         {onTogglePin && (
                             <button
                                 onClick={(e) => { e.stopPropagation(); onTogglePin(conversation.conversationId); }}
-                                className={`p-1 rounded hover:bg-white/10 ${conversation.isPinned ? 'text-jarvis-purple' : 'text-gray-400 hover:text-jarvis-purple'} cursor-pointer`}
+                                className={`p-1 rounded hover:bg-white/10 ${conversation.isPinned ? 'text-jarvis-purple' : 'text-type-muted hover:text-jarvis-purple'} cursor-pointer`}
                                 title={conversation.isPinned ? "Unpin" : "Pin"}
                             >
                                 <Pin size={14} className={conversation.isPinned ? "rotate-45" : ""} fill={conversation.isPinned ? "currentColor" : "none"} />
@@ -219,7 +220,7 @@ const ConversationListItem: React.FC<ConversationListItemProps> = ({
                         <button
                             ref={buttonRef}
                             onClick={(e) => { e.stopPropagation(); setShowMenu(!showMenu); }}
-                            className={`p-1 rounded hover:bg-white/10 ${showMenu ? 'text-jarvis-cyan' : 'text-gray-400 hover:text-jarvis-cyan'} cursor-pointer`}
+                            className={`p-1 rounded hover:bg-white/10 ${showMenu ? 'text-jarvis-cyan' : 'text-type-muted hover:text-jarvis-cyan'} cursor-pointer`}
                             title="More options"
                         >
                             <MoreVertical size={14} />
@@ -236,18 +237,21 @@ const ConversationListItem: React.FC<ConversationListItemProps> = ({
                     exit={{ opacity: 0, scale: 0.95, y: -5 }}
                     transition={{ duration: 0.15, ease: 'easeOut' }}
                     ref={menuRef}
-                    className="w-40 bg-canvas-surface rounded-xl shadow-xl p-1.5 z-50 overflow-hidden"
+                    className="w-40 bg-canvas-popover rounded-xl p-1.5 z-50 overflow-hidden"
+                    style={{ boxShadow: 'var(--shadow-popover)', background: 'var(--bg-popover)' }}
                     onClick={e => e.stopPropagation()}
                 >
                     <button
                         onClick={(e) => handleMenuAction(() => onResume(conversation.conversationId), e)}
                         className="w-full px-3 py-2 text-left text-xs text-type-secondary hover:text-gnani-primary hover:bg-glass-shimmer transition-all rounded flex items-center gap-2 cursor-pointer"
                     >
-                        <Play size={12} />
-                        Resume
+                        <Play size={14} />
+                        <span>Resume</span>
                     </button>
                     <ExportButton conversationId={conversation.conversationId} asMenuItem />
-                    <div className="my-1 border-b border-white/10" />
+
+                    <div className="my-2 border-t border-gray-200 dark:border-gray-600" />
+
                     <button
                         onClick={(e) => handleMenuAction(() => setIsEditing(true), e)}
                         className="w-full px-3 py-2 text-left text-xs text-type-secondary hover:text-gnani-primary hover:bg-glass-shimmer transition-all rounded flex items-center gap-2 cursor-pointer"
@@ -262,6 +266,9 @@ const ConversationListItem: React.FC<ConversationListItemProps> = ({
                         <FolderInput size={12} />
                         Move to Folder
                     </button>
+
+                    <div className="my-2 border-t border-gray-200 dark:border-gray-600" />
+
                     <button
                         onClick={(e) => handleMenuAction(() => setShowShareModal(true), e)}
                         className="w-full px-3 py-2 text-left text-xs text-type-secondary hover:text-gnani-primary hover:bg-glass-shimmer transition-all rounded flex items-center gap-2 cursor-pointer"
@@ -269,6 +276,9 @@ const ConversationListItem: React.FC<ConversationListItemProps> = ({
                         <Share2 size={12} />
                         Share
                     </button>
+
+                    <div className="my-2 border-t border-gray-200 dark:border-gray-600" />
+
                     <button
                         onClick={(e) => handleMenuAction(() => onDelete(conversation.conversationId), e)}
                         className="w-full px-3 py-2 text-left text-xs text-status-error hover:bg-status-error/10 transition-all rounded flex items-center gap-2 cursor-pointer"
@@ -280,49 +290,12 @@ const ConversationListItem: React.FC<ConversationListItemProps> = ({
             </DropdownPortal>
 
             {/* Move to Folder Modal */}
-            {showFolderModal && (
-                <>
-                    <div
-                        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
-                        onClick={(e) => { e.stopPropagation(); setShowFolderModal(false); }}
-                    />
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={(e) => e.stopPropagation()}>
-                        <div
-                            className="bg-black/95 border border-jarvis-cyan/30 rounded-lg shadow-2xl w-full max-w-sm"
-                        >
-                            <div className="p-4 border-b border-jarvis-blue/20">
-                                <h3 className="text-lg font-semibold text-jarvis-cyan">Move to Folder</h3>
-                            </div>
-                            <div className="p-4 max-h-96 overflow-y-auto">
-                                <button
-                                    onClick={() => handleMoveToFolder(null as any)}
-                                    className="w-full text-left px-3 py-2 rounded hover:bg-jarvis-cyan/10 text-gray-300 hover:text-jarvis-cyan transition-colors mb-1 cursor-pointer"
-                                >
-                                    📂 Unorganized
-                                </button>
-                                {folders.map(folder => (
-                                    <button
-                                        key={folder.id}
-                                        onClick={() => handleMoveToFolder(folder.id)}
-                                        className="w-full text-left px-3 py-2 rounded hover:bg-jarvis-cyan/10 text-gray-300 hover:text-jarvis-cyan transition-colors mb-1 cursor-pointer"
-                                    >
-                                        {folder.icon} {folder.name}
-                                    </button>
-                                ))}
-                            </div>
-                            <div className="p-4 border-t border-jarvis-blue/20 flex justify-end">
-                                <button
-                                    onClick={() => setShowFolderModal(false)}
-                                    className="px-4 py-2 bg-jarvis-blue/20 hover:bg-jarvis-blue/30 text-jarvis-cyan rounded transition-colors cursor-pointer"
-                                    aria-label="Cancel"
-                                >
-                                    Cancel
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </>
-            )}
+            <MoveToFolderModal
+                isOpen={showFolderModal}
+                onClose={() => setShowFolderModal(false)}
+                onMove={handleMoveToFolder}
+                folders={folders}
+            />
 
             {/* Share Modal */}
             {showShareModal && (

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useUserStore } from '../../../store/useUserStore';
 import { useOAuth } from '../../../hooks/useOAuth';
 import { useToast } from '../../../context/ToastContext';
+import { useThemeStore } from '../../../store/themeStore';
 
 import {
     Link as LinkIcon,
@@ -38,6 +39,7 @@ const LinkedAccountsSection: React.FC = () => {
     const { user, loading, unlinkOAuthProvider } = useUserStore();
     const { linkProvider, isAuthenticating } = useOAuth();
     const { addToast } = useToast();
+    const { theme } = useThemeStore();
 
     // State for unlinking modal
     const [unlinkModalOpen, setUnlinkModalOpen] = useState(false);
@@ -63,7 +65,7 @@ const LinkedAccountsSection: React.FC = () => {
             description: 'Access repositories and gists',
             icon: Github,
             category: 'developer',
-            color: 'text-white',
+            color: theme === 'dark' ? 'text-white' : 'text-gray-900',
             status: 'coming_soon'
         },
         {
@@ -72,7 +74,7 @@ const LinkedAccountsSection: React.FC = () => {
             description: 'Sync workspaces and pages',
             icon: FileText,
             category: 'productivity',
-            color: 'text-white',
+            color: theme === 'dark' ? 'text-white' : 'text-gray-900',
             status: 'coming_soon'
         },
         {
@@ -138,12 +140,12 @@ const LinkedAccountsSection: React.FC = () => {
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 whileHover={{ scale: disabled ? 1 : 1.02 }}
-                className={`group relative overflow-hidden rounded-xl border p-4 transition-all duration-300 ${linked
-                    ? 'bg-canvas-surface/40 border-gnani-primary/30 shadow-[0_0_15px_-5px_rgba(var(--primary-rgb),0.15)]'
+                className={`group relative overflow-hidden rounded-xl p-4 transition-all duration-300 ${linked
+                    ? (theme === 'dark' ? 'bg-[#1a2639] shadow-md ring-1 ring-gnani-primary/50' : 'bg-white shadow-md ring-1 ring-gnani-primary/50')
                     : disabled
-                        ? 'bg-canvas-surface/10 border-glass-border/50 opacity-60'
-                        : 'bg-canvas-surface/20 border-glass-border hover:border-gnani-primary/20 hover:bg-canvas-surface/40'
-                    }`}
+                        ? (theme === 'dark' ? 'bg-white/5 ring-white/5 opacity-60' : 'bg-gray-50/50 ring-black/5 opacity-60')
+                        : (theme === 'dark' ? 'bg-[#1a2639] shadow-[0_4px_20px_-4px_rgba(0,0,0,0.5)] ring-white/5' : 'bg-white shadow-sm ring-black/5 hover:shadow-md')
+                    } ${linked ? '' : 'ring-1'}`}
             >
                 {/* Glow Effect for Connected */}
                 {linked && (
@@ -165,7 +167,7 @@ const LinkedAccountsSection: React.FC = () => {
                             <h3 className="flex items-center gap-2 text-sm font-bold text-type-primary">
                                 {connector.name}
                                 {linked && <CheckCircle2 size={12} className="text-gnani-primary" />}
-                                {disabled && <span className="rounded-full bg-glass-shimmer px-2 py-0.5 text-[10px] font-medium text-type-muted uppercase tracking-wide">Coming Soon</span>}
+                                {disabled && <span className="rounded-full bg-gnani-primary/10 text-gnani-primary px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider border border-gnani-primary/20 shadow-sm">Coming Soon</span>}
                             </h3>
                             <p className="text-xs text-type-muted leading-relaxed max-w-[200px]">
                                 {connector.description}
@@ -183,7 +185,7 @@ const LinkedAccountsSection: React.FC = () => {
                         {linked ? (
                             <button
                                 onClick={() => initiateUnlink(connector)}
-                                className="rounded-lg bg-red-500/5 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-red-400 opacity-0 transition-all hover:bg-red-500/10 hover:text-red-300 group-hover:opacity-100"
+                                className="rounded-lg bg-red-100 dark:bg-red-500/20 px-4 py-2 text-[11px] font-bold uppercase tracking-wider text-red-600 dark:text-red-400 opacity-0 transition-all hover:bg-red-200 dark:hover:bg-red-500/30 group-hover:opacity-100 shadow-sm border border-transparent"
                             >
                                 Disconnect
                             </button>
@@ -191,9 +193,9 @@ const LinkedAccountsSection: React.FC = () => {
                             <button
                                 onClick={() => handleLink(connector)}
                                 disabled={disabled || processing}
-                                className={`flex items-center gap-2 rounded-lg px-4 py-2 text-[11px] font-bold uppercase tracking-wider transition-all ${disabled
+                                className={`flex items-center gap-2 rounded-lg px-4 py-2 text-[11px] font-bold uppercase tracking-wider transition-all shadow-md border border-transparent ${disabled
                                     ? 'cursor-not-allowed bg-glass-shimmer text-type-muted'
-                                    : 'bg-gnani-primary/10 text-gnani-primary hover:bg-gnani-primary/20 hover:text-gnani-secondary hover:shadow-[0_0_10px_-2px_rgba(var(--primary-rgb),0.3)]'
+                                    : 'bg-gradient-to-r from-cyan-400 to-blue-500 hover:from-cyan-300 hover:to-blue-400 text-white hover:shadow-lg hover:shadow-cyan-500/25 hover:-translate-y-0.5'
                                     }`}
                             >
                                 {processing ? (
@@ -201,7 +203,7 @@ const LinkedAccountsSection: React.FC = () => {
                                 ) : (
                                     <>
                                         <span>Connect</span>
-                                        <LinkIcon size={12} />
+                                        <LinkIcon size={12} className="text-white" />
                                     </>
                                 )}
                             </button>
@@ -222,7 +224,7 @@ const LinkedAccountsSection: React.FC = () => {
                         <Database size={20} />
                     </div>
                     <div>
-                        <h3 className="text-sm font-bold text-type-primary uppercase tracking-wide">Data Sources</h3>
+                        <h3 className="text-sm font-bold text-type-primary  tracking-wide">Data Sources</h3>
                         <p className="mt-1 text-xs text-type-muted leading-relaxed">
                             Connect your accounts to let Gnani access your personal data context.
                             This allows for more personalized and intelligent responses based on your documents, chats, and code.
@@ -236,7 +238,7 @@ const LinkedAccountsSection: React.FC = () => {
 
                 {/* Available Now */}
                 <div className="space-y-3">
-                    <h4 className="text-xs font-bold text-type-secondary uppercase tracking-widest px-1">Available Connectors</h4>
+                    <h4 className="text-xs font-bold text-type-secondary  tracking-widest px-1">Available Connectors</h4>
                     <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
                         {CONNECTORS.filter(c => c.status !== 'coming_soon').map(renderConnectorCard)}
                     </div>
@@ -244,7 +246,7 @@ const LinkedAccountsSection: React.FC = () => {
 
                 {/* Coming Soon */}
                 <div className="space-y-3">
-                    <h4 className="text-xs font-bold text-type-muted uppercase tracking-widest px-1">Coming Soon</h4>
+                    <h4 className="text-xs font-bold text-type-muted  tracking-widest px-1">Coming Soon</h4>
                     <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
                         {CONNECTORS.filter(c => c.status === 'coming_soon').map(renderConnectorCard)}
                     </div>

@@ -317,7 +317,7 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
             initial={{ width: isCollapsed ? 80 : 320 }}
             animate={{ width: isCollapsed ? 80 : 320 }}
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
-            className={`${isOverlay ? 'fixed top-0 left-0 h-full z-50 shadow-2xl backdrop-blur-xl' : 'h-full border-r border-transparent'} ${isCollapsed ? 'bg-white/5 dark:bg-white/5' : 'bg-canvas-panel'} flex flex-col overflow-hidden transition-colors duration-300`}
+            className={`${isOverlay ? 'fixed top-0 left-0 h-full z-50 shadow-2xl backdrop-blur-xl' : 'h-full border-r border-transparent shadow-[4px_0_10px_-3px_rgba(0,0,0,0.1)]'} ${isCollapsed ? 'bg-white/5 dark:bg-white/5' : 'bg-canvas-panel'} flex flex-col overflow-hidden transition-colors duration-300`}
         >
             {/* Header */}
             <div className={`p-4 flex flex-col gap-4 ${isCollapsed ? 'items-center grid justify-stretch' : 'border-b border-black/5 dark:border-white/5 bg-white/5 dark:bg-white/5'}`}>
@@ -346,7 +346,7 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                     {!isOverlay && !isCollapsed && (
                         <button
                             onClick={toggleCollapse}
-                            className="text-type-secondary hover:text-type-primary transition-colors cursor-pointer"
+                            className="text-type-secondary hover:text-type-primary hover:bg-black/5 dark:hover:bg-gnani-primary/10 transition-colors cursor-pointer p-1.5 rounded-lg"
                         >
                             <PanelLeftClose size={20} />
                         </button>
@@ -365,7 +365,7 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                 <div className="flex flex-col gap-1 pb-2 z-10">
                     <button
                         onClick={handleNewConversation}
-                        className={`w-full flex items-center gap-3 px-2 py-2 text-sm text-type-secondary hover:text-type-primary hover:bg-glass-shimmer border border-transparent hover:border-glass-border rounded-lg transition-all group cursor-pointer ${isCollapsed ? 'justify-center aspect-square px-2' : ''}`}
+                        className={`w-full flex items-center gap-3 px-2 py-2 text-sm text-type-secondary hover:text-type-primary hover:bg-black/5 dark:hover:bg-gnani-primary/10 border border-transparent hover:border-glass-border rounded-lg transition-all group cursor-pointer ${isCollapsed ? 'justify-center aspect-square px-2' : ''}`}
                         title="New Chat"
                     >
                         <SquarePen size={16} className="group-hover:text-gnani-primary transition-colors" />
@@ -374,7 +374,7 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
 
                     <button
                         onClick={() => eventManager.dispatchEvent('open-advanced-search')}
-                        className={`w-full flex items-center gap-3 px-2 py-2 text-sm text-type-secondary hover:text-type-primary hover:bg-glass-shimmer border border-transparent hover:border-glass-border rounded-lg transition-all group cursor-pointer ${isCollapsed ? 'justify-center aspect-square px-2' : ''}`}
+                        className={`w-full flex items-center gap-3 px-2 py-2 text-sm text-type-secondary hover:text-type-primary hover:bg-black/5 dark:hover:bg-gnani-primary/10 border border-transparent hover:border-glass-border rounded-lg transition-all group cursor-pointer ${isCollapsed ? 'justify-center aspect-square px-2' : ''}`}
                         title="Search chats"
                     >
                         <Search size={16} className="group-hover:text-gnani-primary transition-colors" />
@@ -460,9 +460,9 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                                     {/* "All Conversations" / Clear Filter */}
                                     <button
                                         onClick={() => setSelectedFolderId(null)}
-                                        className={`w-full flex items-center gap-2 px-3 py-1.5 rounded-md text-sm transition-colors cursor-pointer ${selectedFolderId === null
-                                            ? 'bg-gnani-primary/10 text-gnani-primary font-medium'
-                                            : 'text-type-secondary hover:bg-white/5 hover:text-type-primary'
+                                        className={`w-full flex items-center gap-2 px-3 py-1.5 rounded-md text-sm transition-colors cursor-pointer hover:bg-black/5 dark:hover:bg-gnani-primary/10 ${selectedFolderId === null
+                                            ? 'bg-gnani-primary/10 text-gnani-primary font-medium border-l-2 border-gnani-primary'
+                                            : 'text-type-secondary hover:text-type-primary'
                                             }`}
                                     >
                                         <Folder size={14} className={selectedFolderId === null ? "text-gnani-primary" : "text-type-muted"} />
@@ -474,9 +474,9 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                                         <button
                                             key={folder.id}
                                             onClick={() => setSelectedFolderId(folder.id)}
-                                            className={`w-full flex items-center gap-2 px-3 py-1.5 rounded-md text-sm transition-colors group cursor-pointer ${selectedFolderId === folder.id
-                                                ? 'bg-gnani-primary/10 text-gnani-primary font-medium'
-                                                : 'text-type-secondary hover:bg-white/5 hover:text-type-primary'
+                                            className={`w-full flex items-center gap-2 px-3 py-1.5 rounded-md text-sm transition-colors group cursor-pointer hover:bg-black/5 dark:hover:bg-gnani-primary/10 ${selectedFolderId === folder.id
+                                                ? 'bg-gnani-primary/10 text-gnani-primary font-medium border-l-2 border-gnani-primary'
+                                                : 'text-type-secondary hover:text-type-primary'
                                                 }`}
                                         >
                                             <span className="text-md opacity-80">{folder.icon}</span>
@@ -503,20 +503,20 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                                         <MoreHorizontal size={14} />
                                     </button>
                                     <DropdownPortal isOpen={isMoreMenuOpen} buttonRef={moreMenuRef} placement="bottom-end" onClose={() => setIsMoreMenuOpen(false)}>
-                                        <div className="w-56 bg-canvas-surface rounded-xl shadow-xl p-1.5 overflow-hidden z-[100]">
+                                        <div className="w-56 bg-canvas-popover rounded-xl p-1.5 overflow-hidden z-[100]" style={{ boxShadow: 'var(--shadow-popover)', background: 'var(--bg-popover)' }}>
                                             {/* Refresh Action */}
                                             <button
                                                 onClick={() => {
                                                     fetchConversations();
                                                     setIsMoreMenuOpen(false);
                                                 }}
-                                                className="w-full flex items-center gap-2 px-3 py-2 text-xs text-type-secondary hover:text-gnani-primary hover:bg-glass-shimmer rounded transition-colors"
+                                                className="w-full flex items-center gap-2 px-3 py-2 text-xs text-type-secondary hover:text-gnani-primary hover:bg-glass-shimmer rounded transition-colors cursor-pointer"
                                             >
                                                 <RotateCcw size={14} />
                                                 <span>Refresh List</span>
                                             </button>
 
-                                            <div className="h-px bg-white/10 my-1" />
+                                            <div className="my-2 border-t border-gray-200 dark:border-gray-600" />
 
                                             {/* Checkbox Toggle */}
                                             <button
@@ -524,7 +524,7 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                                                     setSelectionMode(!selectionMode);
                                                     setIsMoreMenuOpen(false);
                                                 }}
-                                                className="w-full flex items-center justify-between px-3 py-2 text-xs text-type-secondary hover:text-gnani-primary hover:bg-glass-shimmer rounded transition-colors"
+                                                className="w-full flex items-center justify-between px-3 py-2 text-xs text-type-secondary hover:text-gnani-primary hover:bg-glass-shimmer rounded transition-colors cursor-pointer"
                                             >
                                                 <span className="flex items-center gap-2">
                                                     <CheckSquare size={14} /> Select Multiple
@@ -532,32 +532,32 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                                                 {selectionMode && <CheckSquare size={12} className="text-gnani-primary" />}
                                             </button>
 
-                                            <div className="h-px bg-white/10 my-1" />
+                                            <div className="my-2 border-t border-gray-200 dark:border-gray-600" />
                                             <div className="px-3 py-1 text-[10px] text-type-muted uppercase tracking-wider font-semibold">Sort By</div>
 
                                             <button
                                                 onClick={() => { setSortBy('date'); setIsMoreMenuOpen(false); fetchConversations(); }}
-                                                className={`w-full flex items-center justify-between px-3 py-2 text-xs hover:bg-glass-shimmer rounded transition-colors ${sortBy === 'date' ? 'text-gnani-primary' : 'text-type-secondary'}`}
+                                                className={`w-full flex items-center justify-between px-3 py-2 text-xs hover:bg-glass-shimmer rounded transition-colors cursor-pointer ${sortBy === 'date' ? 'text-gnani-primary' : 'text-type-secondary'}`}
                                             >
                                                 <span>Date</span>
                                                 {sortBy === 'date' && <div className="w-1.5 h-1.5 rounded-full bg-gnani-primary" />}
                                             </button>
                                             <button
                                                 onClick={() => { setSortBy('name'); setIsMoreMenuOpen(false); fetchConversations(); }}
-                                                className={`w-full flex items-center justify-between px-3 py-2 text-xs hover:bg-glass-shimmer rounded transition-colors ${sortBy === 'name' ? 'text-gnani-primary' : 'text-type-secondary'}`}
+                                                className={`w-full flex items-center justify-between px-3 py-2 text-xs hover:bg-glass-shimmer rounded transition-colors cursor-pointer ${sortBy === 'name' ? 'text-gnani-primary' : 'text-type-secondary'}`}
                                             >
                                                 <span>Name</span>
                                                 {sortBy === 'name' && <div className="w-1.5 h-1.5 rounded-full bg-gnani-primary" />}
                                             </button>
 
-                                            <div className="h-px bg-white/10 my-1" />
+                                            <div className="my-2 border-t border-gray-200 dark:border-gray-600" />
                                             <button
                                                 onClick={() => {
                                                     setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
                                                     setIsMoreMenuOpen(false);
                                                     fetchConversations();
                                                 }}
-                                                className="w-full flex items-center gap-2 px-3 py-2 text-xs text-type-secondary hover:text-gnani-primary hover:bg-glass-shimmer rounded transition-colors"
+                                                className="w-full flex items-center gap-2 px-3 py-2 text-xs text-type-secondary hover:text-gnani-primary hover:bg-glass-shimmer rounded transition-colors cursor-pointer"
                                             >
                                                 <ArrowUpDown size={14} />
                                                 <span>{sortOrder === 'asc' ? 'Newest First' : 'Oldest First'}</span>
@@ -652,7 +652,7 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                                     <p className="text-sm font-medium text-type-primary truncate">{user?.profile?.firstName || 'User'} {user?.profile?.lastName}</p>
                                     <p className="text-xs text-type-muted truncate">{user?.email || 'user@example.com'}</p>
                                 </div>
-                                <div className="px-2 py-0.5 rounded-full bg-gnani-primary/10 border border-gnani-primary/20 text-gnani-primary text-[10px] font-bold tracking-wide">
+                                <div className="px-2 py-0.5 rounded-full bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-200 text-yellow-950 text-[10px] font-bold tracking-wide shadow-[0_0_10px_rgba(251,191,36,0.4)] border border-yellow-300/50">
                                     UPGRADE
                                 </div>
                             </>
@@ -661,7 +661,7 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
 
                     {/* Profile Popover - Using DropdownPortal if available or fallback to absolute */}
                     <DropdownPortal isOpen={isProfileOpen} buttonRef={profileRef} placement="top-start" onClose={() => setIsProfileOpen(false)}>
-                        <div className="w-64 bg-canvas-popover border border-glass-border rounded-lg shadow-xl overflow-hidden backdrop-blur-xl p-2 space-y-1">
+                        <div className="w-64 bg-canvas-popover rounded-lg overflow-hidden p-2 space-y-1" style={{ boxShadow: 'var(--shadow-popover)', background: 'var(--bg-popover)' }}>
                             <button
                                 onClick={() => {
                                     setIsProfileOpen(false);
@@ -713,7 +713,7 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                             >
                                 <Sparkles className="w-4 h-4" />
                                 <span>Upgrade Plan</span>
-                                <span className="ml-2 inline-flex items-center justify-center h-4 px-1.5 text-[9px] font-bold text-gnani-primary bg-gnani-primary/10 border border-gnani-primary/20 rounded">
+                                <span className="ml-2 inline-flex items-center justify-center h-4 px-1.5 text-[9px] font-bold text-yellow-950 bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-200 border border-yellow-300/50 rounded shadow-[0_0_8px_rgba(251,191,36,0.4)]">
                                     PRO
                                 </span>
                             </button>
@@ -733,7 +733,8 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                                 {/* Submenu */}
                                 <DropdownPortal isOpen={isHelpOpen} buttonRef={helpRef} placement="right-start">
                                     <div
-                                        className="w-56 bg-canvas-popover border border-glass-border rounded-lg shadow-xl overflow-hidden backdrop-blur-xl p-2 space-y-1 z-[110]"
+                                        className="w-56 bg-canvas-popover rounded-lg overflow-hidden p-2 space-y-1 z-[110]"
+                                        style={{ boxShadow: 'var(--shadow-popover)', background: 'var(--bg-popover)' }}
                                         onMouseEnter={handleHelpMouseEnter}
                                         onMouseLeave={handleHelpMouseLeave}
                                         onMouseDown={(e) => e.nativeEvent.stopImmediatePropagation()}
@@ -742,7 +743,7 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                                             <HelpCircle className="w-4 h-4" />
                                             <span>Help center</span>
                                         </button>
-                                        <button className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-300 hover:text-white hover:bg-white/10 rounded-md transition-colors cursor-pointer">
+                                        <button className="w-full flex items-center gap-2 px-3 py-2 text-sm text-type-secondary hover:text-type-primary hover:bg-glass-shimmer rounded-md transition-colors cursor-pointer">
                                             <MessageSquareQuote className="w-4 h-4" />
                                             <span>Release notes</span>
                                         </button>

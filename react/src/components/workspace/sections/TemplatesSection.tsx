@@ -7,6 +7,7 @@ import Button from '../../ui/Button';
 import Loader from '../../ui/Loader';
 import TemplateEditor from '../../templates/TemplateEditor';
 import ConfirmationModal from '../../ui/ConfirmationModal';
+import { useThemeStore } from '../../../store/themeStore';
 
 const TemplatesSection: React.FC = () => {
     const [templates, setTemplates] = useState<Template[]>([]);
@@ -15,6 +16,7 @@ const TemplatesSection: React.FC = () => {
     const [deleteId, setDeleteId] = useState<string | null>(null);
     const [isEditorOpen, setIsEditorOpen] = useState(false);
     const { user } = useUserStore();
+    const { theme } = useThemeStore();
     const { addToast } = useToast();
 
     useEffect(() => {
@@ -81,7 +83,7 @@ const TemplatesSection: React.FC = () => {
         <div>
             <div className="p-6 space-y-6">
                 {/* Actions row */}
-                <div className="flex justify-between items-center bg-canvas-panel p-3 rounded-xl border border-glass-border backdrop-blur-sm">
+                <div className={`flex justify-between items-center p-3 rounded-xl backdrop-blur-sm ${theme === 'dark' ? 'bg-black/20 shadow-sm ring-1 ring-white/5' : 'bg-white shadow-sm ring-1 ring-black/5'}`}>
                     <div className="text-xs text-gnani-primary/60 font-medium tracking-wide uppercase px-1">
                         {templates.length} Templates
                     </div>
@@ -89,7 +91,10 @@ const TemplatesSection: React.FC = () => {
                         onClick={handleCreate}
                         variant="primary"
                         size="sm"
-                        className="bg-gnani-primary hover:bg-gnani-primary/90 text-type-inverse font-semibold shadow-[0_0_20px_rgba(6,182,212,0.3)] hover:shadow-[0_0_30px_rgba(6,182,212,0.5)] transition-all duration-300 px-4"
+                        className={`font-semibold transition-all duration-300 px-4 border-none ${theme === 'dark'
+                            ? 'bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white shadow-[0_0_20px_rgba(6,182,212,0.4)] hover:shadow-[0_0_30px_rgba(6,182,212,0.6)]'
+                            : 'bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white shadow-lg shadow-cyan-500/30 hover:shadow-cyan-500/50'
+                            }`}
                         leftIcon={<Plus size={16} />}
                     >
                         New Template
@@ -98,7 +103,7 @@ const TemplatesSection: React.FC = () => {
 
                 {/* Templates List */}
                 {templates.length === 0 ? (
-                    <div className="relative group overflow-hidden bg-canvas-panel rounded-xl border border-dashed border-line-base p-12 text-center hover:border-gnani-primary/30 transition-all duration-500">
+                    <div className={`relative group overflow-hidden rounded-xl p-12 text-center transition-all duration-500 ${theme === 'dark' ? 'bg-[#1a2639] ring-1 ring-white/5 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.5)]' : 'bg-white ring-1 ring-black/5 shadow-sm'}`}>
                         <div className="absolute inset-0 bg-gradient-to-br from-gnani-primary/0 via-transparent to-gnani-primary/0 group-hover:from-gnani-primary/5 group-hover:to-gnani-secondary/5 transition-all duration-500" />
                         <div className="relative z-10">
                             <div className="w-16 h-16 mx-auto rounded-xl bg-gradient-to-br from-gnani-primary/10 to-gnani-secondary/10 flex items-center justify-center mb-4 ring-1 ring-glass-border group-hover:ring-gnani-primary/30 transition-all duration-500">
@@ -128,7 +133,10 @@ const TemplatesSection: React.FC = () => {
                             return (
                                 <div
                                     key={template._id}
-                                    className="group relative bg-canvas-panel hover:bg-canvas-surface border border-line-base hover:border-gnani-primary/30 rounded-xl p-4 transition-all duration-300 hover:shadow-[0_0_30px_-5px_rgba(6,182,212,0.15)] flex flex-col h-full"
+                                    className={`group relative rounded-xl p-5 transition-all duration-300 flex flex-col h-full ${theme === 'dark'
+                                        ? 'bg-[#1a2639] shadow-[0_4px_20px_-4px_rgba(0,0,0,0.5)] ring-1 ring-white/5 hover:shadow-[0_0_30px_-5px_rgba(6,182,212,0.15)] hover:ring-gnani-primary/20'
+                                        : 'bg-white shadow-sm ring-1 ring-black/5 hover:shadow-xl hover:ring-gnani-primary/20'
+                                        }`}
                                 >
                                     {/* Hover Glow Effect */}
                                     <div className="absolute inset-0 bg-gradient-to-br from-gnani-primary/0 via-transparent to-gnani-secondary/0 group-hover:from-gnani-primary/5 group-hover:to-gnani-secondary/5 rounded-xl transition-all duration-500" />
@@ -190,17 +198,17 @@ const TemplatesSection: React.FC = () => {
                                         )}
 
                                         {/* System Prompt Preview */}
-                                        <div className="mt-auto pt-3 border-t border-line-base group-hover:border-gnani-primary/20 transition-colors">
-                                            <p className="text-[9px] font-bold uppercase tracking-wider text-gnani-primary/60 mb-1.5 flex items-center gap-1.5">
+                                        <div className="mt-auto pt-4">
+                                            <p className="text-[9px] font-bold uppercase tracking-wider text-gnani-primary/60 mb-2 flex items-center gap-1.5">
                                                 <span className="w-1 h-1 rounded-full bg-gnani-primary/40"></span>
                                                 System Prompt
                                             </p>
-                                            <p className="text-[10px] text-type-secondary line-clamp-2 font-mono bg-canvas-surface p-2 rounded border border-line-base max-w-full break-all leading-relaxed">
+                                            <div className={`text-[10px] text-type-secondary font-mono p-3 rounded-lg max-w-full break-all leading-relaxed max-h-24 overflow-y-auto custom-scrollbar ${theme === 'dark' ? 'bg-black/20' : 'bg-gray-50'}`}>
                                                 {template.systemPrompt}
-                                            </p>
+                                            </div>
                                             {/* Date */}
                                             {template.createdAt && (
-                                                <div className="mt-2 text-[9px] text-type-muted text-right font-mono">
+                                                <div className="mt-3 text-[9px] text-type-muted text-right font-mono opacity-60">
                                                     {isSystemTemplate ? 'System' : isOwner ? 'You' : 'Shared'} &nbsp;|&nbsp; {new Date(template.createdAt).toLocaleDateString()}
                                                 </div>
                                             )}

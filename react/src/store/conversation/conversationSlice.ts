@@ -107,7 +107,7 @@ export const createConversationSlice: StateCreator<ConversationStore, [], [], Co
     },
 
     updateConversationTemplate: async (conversationId, templateId, accessToken) => {
-        if (!conversationId || !templateId) return; // Guard against nulls
+        if (!conversationId) return;
         try {
             await conversationService.updateTemplate(conversationId, templateId, accessToken);
             set({ selectedTemplate: templateId });
